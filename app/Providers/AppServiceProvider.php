@@ -5,8 +5,10 @@ namespace App\Providers;
 use App\Auth\Permission;
 use App\Localization\Formatter;
 use App\Localization\Locales;
+use App\Models\Page;
 use App\Models\User;
 use App\Navigation\AdminNavigation;
+use App\Navigation\SiteNavigation;
 use App\Security\InlineStyles;
 use App\Settings\SiteSettings;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(Locales::class);
         $this->app->scoped(Formatter::class);
         $this->app->scoped(AdminNavigation::class);
+        $this->app->scoped(SiteNavigation::class);
         $this->app->scoped(InlineStyles::class);
     }
 
@@ -51,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         // (audit log subjects); unmapped models fail loudly.
         Relation::enforceMorphMap([
             'user' => User::class,
+            'page' => Page::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.

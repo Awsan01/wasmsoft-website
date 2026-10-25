@@ -23,6 +23,17 @@ class SetSiteLocaleTest extends TestCase
         $response->assertSee("<html lang=\"{$locale}\" dir=\"{$direction}\">", false);
     }
 
+    #[TestWith(['ar', 'الخدمات', 'Services'])]
+    #[TestWith(['tr', 'Hizmetler', 'Services'])]
+    #[TestWith(['en', 'Services', 'Hizmetler'])]
+    public function test_interface_strings_follow_the_page_language(string $locale, string $expected, string $otherLanguage): void
+    {
+        $response = $this->get("/{$locale}");
+
+        $response->assertSee(">{$expected}</a>", false);
+        $response->assertDontSee(">{$otherLanguage}</a>", false);
+    }
+
     public function test_generated_links_stay_in_the_current_language(): void
     {
         $response = $this->get('/tr');

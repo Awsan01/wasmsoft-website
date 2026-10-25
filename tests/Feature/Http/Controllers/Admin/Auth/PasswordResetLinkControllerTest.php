@@ -53,6 +53,18 @@ class PasswordResetLinkControllerTest extends TestCase
         $response->assertSessionHasErrors(['email' => 'The email field must be a valid email address.']);
     }
 
+    public function test_reset_email_is_written_in_the_recipients_language_and_direction(): void
+    {
+        $user = User::factory()->create(['name' => 'Awsan', 'locale' => 'ar']);
+
+        $user->notify(new ResetPasswordNotification('token-123'));
+
+        $message = app('mailer')->getSymfonyTransport()->messages()->sole()->getOriginalMessage();
+        $this->assertSame(__('admin.mail.reset.subject', ['site' => 'Wasmsoft'], 'ar'), $message->getSubject());
+        $this->assertStringContainsString('dir="rtl"', $message->getHtmlBody());
+        $this->assertStringContainsString('مرحبًا Awsan،', $message->getHtmlBody());
+    }
+
     public function test_reset_email_links_to_the_reset_form_and_escapes_the_name(): void
     {
         $user = User::factory()->make(['name' => '<script>alert(1)</script>', 'email' => 'editor@example.com']);

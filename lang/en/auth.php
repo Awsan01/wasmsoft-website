@@ -7,14 +7,13 @@ return [
     | Authentication Language Lines
     |--------------------------------------------------------------------------
     |
-    | The following language lines are used during authentication for various
-    | messages that we need to display to the user. You are free to modify
-    | these language lines according to your application's requirements.
+    | Messages shown during sign-in. "failed" is deliberately the same for an
+    | unknown address, a wrong password and a deactivated account.
     |
     */
 
-    'failed' => 'These credentials do not match our records.',
-    'password' => 'The provided password is incorrect.',
-    'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'failed' => 'The email address or password is incorrect.',
+    'password' => 'The password is incorrect.',
+    'throttle' => 'Too many sign-in attempts. Please try again in :seconds seconds.',
 
 ];

@@ -115,4 +115,23 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | resources/views/vendor/mail overrides only the HTML layout (text
+    | direction for Arabic) and adds the Wasmsoft theme; every other mail
+    | component falls back to the framework's own templates.
+    |
+    */
+
+    'markdown' => [
+        'theme' => 'wasmsoft',
+
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];

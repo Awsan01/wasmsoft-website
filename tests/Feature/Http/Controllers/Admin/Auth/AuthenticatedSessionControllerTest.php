@@ -6,6 +6,7 @@ use App\Audit\AuditEvent;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AuthenticatedSessionControllerTest extends TestCase
@@ -85,7 +86,7 @@ class AuthenticatedSessionControllerTest extends TestCase
         $response = $this->post(route('admin.login.store'), ['email' => $user->email, 'password' => self::PASSWORD]);
 
         $response->assertSessionHasErrors('email');
-        $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
+        $this->assertStringStartsWith(Str::before(__('auth.throttle'), ':seconds'), session('errors')->first('email'));
         $this->assertGuest();
         $this->assertDatabaseHas('audit_logs', ['event' => AuditEvent::Lockout->value]);
     }
@@ -97,6 +98,16 @@ class AuthenticatedSessionControllerTest extends TestCase
         $response->assertSessionHasErrors([
             'email' => 'The email field is required.',
             'password' => 'The password field is required.',
+        ]);
+    }
+
+    public function test_validation_messages_use_the_chosen_dashboard_language(): void
+    {
+        $response = $this->withSession(['admin_locale' => 'ar'])->post(route('admin.login.store'), []);
+
+        $response->assertSessionHasErrors([
+            'email' => 'حقل البريد الإلكتروني مطلوب.',
+            'password' => 'حقل كلمة المرور مطلوب.',
         ]);
     }
 

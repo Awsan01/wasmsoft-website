@@ -21,4 +21,11 @@ return [
         'social' => 'Social media',
         'rights' => 'All rights reserved.',
     ],
+
+    'missing' => [
+        'title' => 'Not available in this language',
+        'text' => 'This page has not been published in this language yet.',
+        'available_in' => 'Available in',
+        'home' => 'Go to the home page',
+    ],
 ];

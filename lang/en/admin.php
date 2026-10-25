@@ -107,6 +107,26 @@ return [
         'your_role' => 'Your role',
     ],
 
+    'status' => [
+        'draft' => 'Draft',
+        'published' => 'Published',
+        'archived' => 'Archived',
+    ],
+
+    'pages' => [
+        'templates' => [
+            'default' => 'Standard page',
+            'about' => 'About page (with values, team and milestones)',
+        ],
+        'system' => [
+            'home' => 'Home page',
+            'services' => 'Services page',
+            'projects' => 'Projects page',
+            'news' => 'News page',
+            'contact' => 'Contact page',
+        ],
+    ],
+
     'form' => [
         'errors_title' => 'Please correct the highlighted fields',
         'errors_count' => '{1} One field needs your attention.|[2,*] :count fields need your attention.',
