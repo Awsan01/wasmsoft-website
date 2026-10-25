@@ -1,0 +1,159 @@
+/*
+ * Base element styles. Everything here is direction-agnostic: layout uses
+ * logical properties so the same rules serve Arabic (RTL) and English /
+ * Turkish (LTR).
+ */
+
+@layer base {
+    *,
+    ::before,
+    ::after {
+        border-color: var(--color-border);
+    }
+
+    html {
+        color-scheme: light;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        scroll-padding-block-start: calc(var(--spacing-header) + 1rem);
+        font-family: var(--font-sans);
+    }
+
+    body {
+        min-block-size: 100dvh;
+        background-color: var(--color-surface);
+        color: var(--color-ink);
+        font-size: var(--text-base);
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    /*
+     * Script-specific typography. Elements carry an explicit lang attribute
+     * (the <html> element and any embedded snippet in another language), so
+     * descendants inherit the right stack. Arabic needs more line-height for
+     * its taller ascenders, descenders and diacritics.
+     */
+    [lang='ar'] {
+        font-family: var(--font-arabic);
+    }
+
+    body:lang(ar),
+    body [lang='ar'] {
+        line-height: 1.85;
+    }
+
+    [lang='en'],
+    [lang='tr'] {
+        font-family: var(--font-sans);
+    }
+
+    /* Arabic is cursive: tracking and synthetic italics damage legibility. */
+    :lang(ar) {
+        letter-spacing: 0 !important;
+    }
+
+    :lang(ar) :is(em, i, cite) {
+        font-style: normal;
+        font-weight: var(--font-weight-semibold);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        color: var(--color-ink);
+        font-weight: var(--font-weight-bold);
+        text-wrap: balance;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    ::selection {
+        background-color: var(--color-purple-300);
+        color: var(--color-ink);
+    }
+
+    /* Visible, consistent focus indicator for keyboard users (WCAG 2.4.7 / 2.4.13). */
+    :focus-visible {
+        outline: var(--focus-ring-width) solid var(--focus-ring-color);
+        outline-offset: var(--focus-ring-offset);
+    }
+
+    :focus:not(:focus-visible) {
+        outline: none;
+    }
+
+    /* Dark surfaces swap the ring colour so it stays visible. */
+    .surface-dark {
+        --focus-ring-color: var(--color-white);
+        color: var(--color-on-dark);
+    }
+
+    img,
+    svg,
+    video {
+        max-inline-size: 100%;
+    }
+
+    img {
+        block-size: auto;
+    }
+
+    [hidden]:where(:not([hidden='until-found'])) {
+        display: none !important;
+    }
+
+    dialog {
+        color: inherit;
+    }
+
+    dialog::backdrop {
+        background-color: rgb(33 21 43 / 0.55);
+        backdrop-filter: blur(2px);
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+        font: inherit;
+        color: inherit;
+    }
+
+    /* Code is always written left-to-right, even inside Arabic content. */
+    code,
+    kbd,
+    pre,
+    samp {
+        font-family: var(--font-mono);
+        direction: ltr;
+        unicode-bidi: isolate;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+
+    @media (forced-colors: active) {
+        :focus-visible {
+            outline-color: Highlight;
+        }
+    }
+}

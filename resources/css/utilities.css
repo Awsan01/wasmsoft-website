@@ -1,0 +1,175 @@
+/*
+ * Project utilities built on the design tokens.
+ *
+ * Type scale: use these instead of combining text-*, leading-* and
+ * tracking-* by hand. Each one adapts itself to Arabic, which needs more
+ * line-height and must never be letter-spaced.
+ */
+
+@utility text-display {
+    font-size: var(--text-5xl);
+    line-height: 1.06;
+    letter-spacing: -0.028em;
+    font-weight: var(--font-weight-extrabold);
+
+    &:lang(ar) {
+        line-height: 1.32;
+        font-weight: var(--font-weight-bold);
+    }
+}
+
+@utility text-h1 {
+    font-size: var(--text-4xl);
+    line-height: 1.12;
+    letter-spacing: -0.022em;
+    font-weight: var(--font-weight-extrabold);
+
+    &:lang(ar) {
+        line-height: 1.38;
+        font-weight: var(--font-weight-bold);
+    }
+}
+
+@utility text-h2 {
+    font-size: var(--text-3xl);
+    line-height: 1.2;
+    letter-spacing: -0.016em;
+    font-weight: var(--font-weight-bold);
+
+    &:lang(ar) {
+        line-height: 1.45;
+    }
+}
+
+@utility text-h3 {
+    font-size: var(--text-xl);
+    line-height: 1.4;
+    letter-spacing: -0.008em;
+    font-weight: var(--font-weight-bold);
+
+    &:lang(ar) {
+        line-height: 1.6;
+    }
+}
+
+@utility text-lead {
+    font-size: var(--text-lg);
+    line-height: 1.7;
+
+    &:lang(ar) {
+        line-height: 1.9;
+    }
+}
+
+@utility text-eyebrow {
+    font-size: var(--text-sm);
+    line-height: 1.25rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    &:lang(ar) {
+        text-transform: none;
+    }
+}
+
+/* Small all-caps label for dense UI (sidebar groups, table captions). */
+@utility text-overline {
+    font-size: var(--text-xs);
+    line-height: 1rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    &:lang(ar) {
+        font-size: var(--text-sm);
+        text-transform: none;
+    }
+}
+
+/* ----------------------------------------------------------------------
+ * Layout
+ * ---------------------------------------------------------------------- */
+
+@utility container-page {
+    inline-size: 100%;
+    max-inline-size: calc(var(--container-page) + 2 * var(--spacing-gutter));
+    margin-inline: auto;
+    padding-inline: var(--spacing-gutter);
+}
+
+/* ----------------------------------------------------------------------
+ * Brand motifs — geometric details inspired by the angular logo symbol.
+ * Decorative only; never carry meaning.
+ * ---------------------------------------------------------------------- */
+
+/* The logo's own background gradient. */
+@utility bg-brand-gradient {
+    background-color: var(--color-logo-start);
+    background-image: linear-gradient(100deg, var(--color-logo-start), var(--color-logo-end));
+}
+
+/* Hairline grid that fades towards the edges. */
+@utility bg-grid {
+    background-image:
+        linear-gradient(var(--color-purple-200) 1px, transparent 1px),
+        linear-gradient(90deg, var(--color-purple-200) 1px, transparent 1px);
+    background-size: 44px 44px;
+    background-position: center top;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 25%, transparent 80%);
+}
+
+/* 45° pinstripes, echoing the diagonal bar of the logo (for dark surfaces). */
+@utility bg-diagonal {
+    background-image: repeating-linear-gradient(
+        135deg,
+        color-mix(in oklab, var(--color-white) 7%, transparent) 0 1px,
+        transparent 1px 22px
+    );
+}
+
+/* Chamfered corner, like the notched squares in the logo. Mirrors in RTL. */
+@utility notch-corner {
+    --notch: 0.875rem;
+    clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+
+    &:dir(rtl) {
+        clip-path: polygon(var(--notch) 0, 100% 0, 100% 100%, 0 100%, 0 var(--notch));
+    }
+}
+
+/* Short diagonal slash used before eyebrow labels. */
+@utility slash-mark {
+    display: inline-block;
+    inline-size: 0.75rem;
+    block-size: 2px;
+    border-radius: var(--radius-full);
+    background-color: currentColor;
+    transform: rotate(-55deg);
+}
+
+/* ----------------------------------------------------------------------
+ * Interaction helpers
+ * ---------------------------------------------------------------------- */
+
+@utility transition-base {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--ease-standard);
+}
+
+/* Flip directional icons (arrows, chevrons) in right-to-left layouts. */
+@utility flip-rtl {
+    &:dir(rtl) {
+        transform: scaleX(-1);
+    }
+}
+
+/* Hide scrollbars on horizontally scrollable rails while keeping them usable. */
+@utility scrollbar-none {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}

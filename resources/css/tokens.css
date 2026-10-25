@@ -1,0 +1,179 @@
+/*
+ * Wasmsoft design tokens — the single source of truth for colour, typography,
+ * spacing, radii, elevation, motion and component sizing.
+ *
+ * Tailwind generates a utility for every token declared here
+ * (e.g. --color-primary → bg-primary, text-primary, border-primary).
+ * Tailwind's default palettes, radii and shadows are reset so templates can
+ * only use brand-approved values. Contrast for the text/background pairs is
+ * verified by `npm run check:contrast` (scripts/check-contrast.mjs).
+ */
+
+@theme {
+    /* ------------------------------------------------------------------
+     * Colour — brand scale
+     * Derived from the logo background gradient (#3A1467 → #4F1468).
+     * ------------------------------------------------------------------ */
+    --color-*: initial;
+    --color-transparent: transparent;
+    --color-current: currentColor;
+    --color-white: #ffffff;
+
+    --color-purple-50: #faf7fd;
+    --color-purple-100: #f5f0fa;
+    --color-purple-200: #ebe2f4;
+    --color-purple-300: #d9c9e8;
+    --color-purple-400: #b99bd6;
+    --color-purple-500: #9361c2;
+    --color-purple-600: #6d28a0;
+    --color-purple-700: #5a1f87;
+    --color-purple-800: #481467;
+    --color-purple-900: #38104f;
+    --color-purple-950: #2a0b3d;
+
+    --color-logo-start: #3a1467;
+    --color-logo-end: #4f1468;
+
+    /* ------------------------------------------------------------------
+     * Colour — semantic roles (use these in templates)
+     * ------------------------------------------------------------------ */
+    --color-primary: #481467;
+    --color-primary-hover: #38104f;
+    --color-secondary: #6d28a0;
+    --color-secondary-hover: #5a1f87;
+    --color-lavender: #f5f0fa;
+    --color-lavender-strong: #ebe2f4;
+    --color-surface: #ffffff;
+    --color-canvas: #faf8fc;
+    --color-ink: #21152b;
+    --color-muted: #6f6578;
+    --color-border: #e8e1ed;
+    --color-border-strong: #8e8299;
+    --color-on-dark: #ffffff;
+    --color-on-dark-muted: #c9b3dd;
+
+    --color-success: #15803d;
+    --color-success-soft: #ecfdf3;
+    --color-success-line: #abefc6;
+    --color-warning: #b45309;
+    --color-warning-ink: #92400e;
+    --color-warning-soft: #fff7e6;
+    --color-warning-line: #fedf89;
+    --color-error: #b42318;
+    --color-error-hover: #912018;
+    --color-error-soft: #fef3f2;
+    --color-error-line: #fecdca;
+
+    /* ------------------------------------------------------------------
+     * Typography
+     * Font families are self-hosted by the Vite font pipeline (see
+     * vite.config.js); --font-jakarta / --font-plex-arabic are emitted by
+     * the @fonts Blade directive. Arabic content switches stacks in base.css.
+     * ------------------------------------------------------------------ */
+    --font-sans: var(--font-jakarta, ui-sans-serif), var(--font-plex-arabic, ui-sans-serif), ui-sans-serif, system-ui,
+        sans-serif;
+    --font-arabic: var(--font-plex-arabic, ui-sans-serif), var(--font-jakarta, ui-sans-serif), ui-sans-serif, system-ui,
+        sans-serif;
+    --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Code', Consolas, monospace;
+
+    --font-weight-*: initial;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+
+    --text-*: initial;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: 1.125rem;
+    --text-sm: 0.875rem;
+    --text-sm--line-height: 1.375rem;
+    --text-base: 1rem;
+    --text-base--line-height: 1.625rem;
+    --text-lg: 1.125rem;
+    --text-lg--line-height: 1.75rem;
+    --text-xl: 1.25rem;
+    --text-xl--line-height: 1.875rem;
+    --text-2xl: 1.5rem;
+    --text-2xl--line-height: 2rem;
+    --text-3xl: clamp(1.75rem, 1.45rem + 1.1vw, 2.25rem);
+    --text-3xl--line-height: 1.2;
+    --text-4xl: clamp(2.125rem, 1.65rem + 1.9vw, 3rem);
+    --text-4xl--line-height: 1.12;
+    --text-5xl: clamp(2.5rem, 1.75rem + 3vw, 3.875rem);
+    --text-5xl--line-height: 1.06;
+
+    /* ------------------------------------------------------------------
+     * Spacing & layout (Tailwind's 0.25rem spacing scale is kept)
+     * ------------------------------------------------------------------ */
+    --spacing-section: clamp(4rem, 2.75rem + 4.5vw, 7rem);
+    --spacing-section-sm: clamp(3rem, 2.25rem + 2.5vw, 4.5rem);
+    --spacing-gutter: clamp(1rem, 0.5rem + 2.25vw, 2rem);
+
+    --container-page: 76rem;
+    --container-admin: 90rem;
+    --container-reading: 46rem;
+    --container-narrow: 36rem;
+
+    --breakpoint-sm: 40rem;
+    --breakpoint-md: 48rem;
+    --breakpoint-lg: 64rem;
+    --breakpoint-xl: 80rem;
+    --breakpoint-2xl: 96rem;
+
+    /* ------------------------------------------------------------------
+     * Radii — echo the softened corners of the logo's geometric shapes
+     * ------------------------------------------------------------------ */
+    --radius-*: initial;
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.625rem;
+    --radius-lg: 0.875rem;
+    --radius-xl: 1.25rem;
+    --radius-2xl: 1.75rem;
+    --radius-full: 9999px;
+
+    /* ------------------------------------------------------------------
+     * Elevation — purple-tinted, deliberately subtle
+     * ------------------------------------------------------------------ */
+    --shadow-*: initial;
+    --shadow-xs: 0 1px 2px 0 rgb(33 21 43 / 0.06);
+    --shadow-sm: 0 1px 3px 0 rgb(33 21 43 / 0.08), 0 1px 2px -1px rgb(33 21 43 / 0.06);
+    --shadow-md: 0 10px 28px -12px rgb(72 20 103 / 0.22), 0 2px 6px -2px rgb(33 21 43 / 0.06);
+    --shadow-lg: 0 28px 56px -24px rgb(72 20 103 / 0.32), 0 8px 16px -8px rgb(33 21 43 / 0.08);
+
+    /* ------------------------------------------------------------------
+     * Motion
+     * ------------------------------------------------------------------ */
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --ease-emphasized: cubic-bezier(0.3, 0, 0, 1.15);
+
+    /* ------------------------------------------------------------------
+     * Component dimensions
+     * ------------------------------------------------------------------ */
+    --spacing-control-sm: 2.25rem;
+    --spacing-control-md: 2.75rem;
+    --spacing-control-lg: 3.25rem;
+    --spacing-header: 4.5rem;
+    --spacing-sidebar: 17rem;
+}
+
+/*
+ * Tokens that do not map to a Tailwind utility namespace. They are read
+ * through var() in base.css / components and via Tailwind's arbitrary
+ * variable shorthand, e.g. duration-(--motion-base).
+ */
+:root {
+    --motion-fast: 120ms;
+    --motion-base: 200ms;
+    --motion-slow: 320ms;
+
+    --focus-ring-color: var(--color-secondary);
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 2px;
+
+    --z-header: 40;
+    --z-dropdown: 50;
+    --z-dialog: 60;
+    --z-toast: 70;
+}

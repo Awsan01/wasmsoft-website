@@ -1,0 +1,179 @@
+/*
+ * Component-level styles that are clearer as CSS than as utility strings.
+ * They only reference design tokens.
+ */
+
+@layer components {
+    /* Form controls ---------------------------------------------------- */
+    .form-control {
+        display: block;
+        inline-size: 100%;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        background-color: var(--color-surface);
+        padding-inline: 0.875rem;
+        color: var(--color-ink);
+        font-size: var(--text-base);
+        line-height: 1.5;
+        box-shadow: var(--shadow-xs);
+        transition:
+            border-color var(--motion-fast) var(--ease-standard),
+            box-shadow var(--motion-fast) var(--ease-standard);
+    }
+
+    input.form-control,
+    select.form-control {
+        block-size: var(--spacing-control-md);
+    }
+
+    textarea.form-control {
+        min-block-size: 7rem;
+        padding-block: 0.625rem;
+        resize: vertical;
+    }
+
+    .form-control::placeholder {
+        color: var(--color-muted);
+        opacity: 0.85;
+    }
+
+    .form-control:hover {
+        border-color: var(--color-purple-500);
+    }
+
+    .form-control:focus {
+        border-color: var(--color-secondary);
+    }
+
+    .form-control[aria-invalid='true'] {
+        border-color: var(--color-error);
+    }
+
+    .form-control:disabled,
+    .form-control[readonly] {
+        background-color: var(--color-canvas);
+        color: var(--color-muted);
+    }
+
+    .form-control:disabled {
+        cursor: not-allowed;
+    }
+
+    input[type='file'].form-control {
+        block-size: auto;
+        padding-block: 0.5rem;
+    }
+
+    input[type='file'].form-control::file-selector-button {
+        margin-inline-end: 0.75rem;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background-color: var(--color-lavender);
+        padding: 0.375rem 0.75rem;
+        color: var(--color-primary);
+        font-weight: var(--font-weight-semibold);
+        cursor: pointer;
+    }
+
+    /* Data tables (dashboard) ------------------------------------------ */
+    .data-table {
+        inline-size: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: var(--text-sm);
+    }
+
+    .data-table th {
+        border-block-end: 1px solid var(--color-border);
+        background-color: var(--color-canvas);
+        padding: 0.75rem 1rem;
+        color: var(--color-muted);
+        font-size: var(--text-xs);
+        font-weight: var(--font-weight-semibold);
+        letter-spacing: 0.04em;
+        text-align: start;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .data-table th:lang(ar) {
+        font-size: var(--text-sm);
+        text-transform: none;
+    }
+
+    .data-table td {
+        border-block-end: 1px solid var(--color-border);
+        padding: 0.875rem 1rem;
+        vertical-align: middle;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-block-end: 0;
+    }
+
+    .data-table tbody tr:hover td {
+        background-color: var(--color-purple-50);
+    }
+
+    /* Busy submit buttons (see resources/js/modules/submit-state.js) ---- */
+    [data-loading='true'] {
+        cursor: progress;
+        opacity: 0.7;
+    }
+
+    /* Dashboard navigation drawer (small screens) ---------------------- */
+    .admin-drawer {
+        margin: 0;
+        margin-inline-end: auto;
+        inline-size: min(var(--spacing-sidebar), 86vw);
+        max-inline-size: none;
+        block-size: 100dvh;
+        max-block-size: none;
+        border: 0;
+        border-inline-end: 1px solid var(--color-border);
+        padding: 0;
+        background-color: var(--color-surface);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .admin-drawer[open] {
+        animation: drawer-in var(--motion-base) var(--ease-standard);
+    }
+
+    .admin-drawer[open]:dir(rtl) {
+        animation-name: drawer-in-rtl;
+    }
+
+    @keyframes drawer-in {
+        from {
+            translate: -1.5rem 0;
+            opacity: 0;
+        }
+    }
+
+    @keyframes drawer-in-rtl {
+        from {
+            translate: 1.5rem 0;
+            opacity: 0;
+        }
+    }
+
+    /* Skip link -------------------------------------------------------- */
+    .skip-link {
+        position: absolute;
+        inset-block-start: 0.75rem;
+        inset-inline-start: 0.75rem;
+        z-index: var(--z-toast);
+        transform: translateY(-200%);
+        border-radius: var(--radius-md);
+        background-color: var(--color-primary);
+        padding: 0.75rem 1.25rem;
+        color: var(--color-white);
+        font-weight: var(--font-weight-semibold);
+        transition: transform var(--motion-base) var(--ease-standard);
+    }
+
+    .skip-link:focus {
+        transform: translateY(0);
+    }
+}
