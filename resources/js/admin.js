@@ -1,7 +1,10 @@
 import { initConfirm } from './modules/confirm.js';
+import { initCopyButtons } from './modules/copy.js';
 import { initDialogs } from './modules/dialog.js';
 import { initDismissibles } from './modules/dismiss.js';
 import { initDropdowns } from './modules/dropdown.js';
+import { initFileInputs } from './modules/file-input.js';
+import { initMediaPickers } from './modules/media-picker.js';
 import { initSubmitState } from './modules/submit-state.js';
 import { initTabs } from './modules/tabs.js';
 
@@ -13,3 +16,6 @@ initDialogs();
 initDropdowns();
 initTabs();
 initDismissibles();
+initMediaPickers();
+initCopyButtons();
+initFileInputs();

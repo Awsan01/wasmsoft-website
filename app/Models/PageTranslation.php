@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesContentCache;
 use Database\Factories\PageTranslationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,7 +28,7 @@ use Illuminate\Support\Carbon;
 class PageTranslation extends Translation
 {
     /** @use HasFactory<PageTranslationFactory> */
-    use HasFactory;
+    use FlushesContentCache, HasFactory;
 
     /**
      * @return BelongsTo<Page, $this>

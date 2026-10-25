@@ -25,6 +25,9 @@ return [
     'view_all' => 'View all',
     'back' => 'Back',
     'opens_in_new_tab' => '(opens in a new tab)',
+    'choose_file' => 'Choose file',
+    'choose_files' => 'Choose files',
+    'no_file_chosen' => 'No file chosen',
 
     'pagination' => [
         'label' => 'Pagination',

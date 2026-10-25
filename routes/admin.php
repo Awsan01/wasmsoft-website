@@ -17,6 +17,9 @@ use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LocaleController;
+use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('locale', LocaleController::class)->name('locale');
@@ -36,4 +39,19 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::resource('pages', PageController::class)->except('show');
+    Route::get('pages/{page}/preview/{locale}', [PageController::class, 'preview'])->name('pages.preview');
+
+    Route::resource('services', ServiceController::class)->except('show');
+    Route::patch('services/{service}/move', [ServiceController::class, 'move'])->name('services.move');
+    Route::get('services/{service}/preview/{locale}', [ServiceController::class, 'preview'])->name('services.preview');
+
+    // Media library ("media" is used as-is: a resource route would singularize it to "medium").
+    Route::get('media', [MediaController::class, 'index'])->name('media.index');
+    Route::get('media/picker', [MediaController::class, 'picker'])->name('media.picker');
+    Route::post('media', [MediaController::class, 'store'])->middleware('throttle:uploads')->name('media.store');
+    Route::get('media/{media}/edit', [MediaController::class, 'edit'])->name('media.edit');
+    Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
+    Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
 });

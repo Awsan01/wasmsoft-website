@@ -26,4 +26,21 @@ final class Alternates
 
         return $urls;
     }
+
+    /**
+     * A fixed route (home, listings) exists in every enabled locale.
+     *
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, string>
+     */
+    public static function route(string $name, Locales $locales, array $parameters = []): array
+    {
+        $urls = [];
+
+        foreach ($locales->enabled() as $locale) {
+            $urls[$locale] = route($name, ['locale' => $locale, ...$parameters]);
+        }
+
+        return $urls;
+    }
 }

@@ -28,4 +28,25 @@ return [
         'available_in' => 'Mevcut diller',
         'home' => 'Ana sayfaya git',
     ],
+
+    'preview' => [
+        'banner' => 'Önizleme: Bu sürüm ziyaretçilere görünmüyor.',
+    ],
+
+    'services' => [
+        'title' => 'Hizmetler',
+        'eyebrow' => 'Neler yapıyoruz',
+        'empty' => 'Hizmetlerimiz yakında burada listelenecek.',
+        'benefits' => 'Size kazandırdıkları',
+        'cta_title' => 'Bu hizmetle ilgileniyor musunuz?',
+        'cta_text' => 'Bize projenizden bahsedin, size geri dönelim.',
+        'cta_button' => 'Projenizi konuşalım',
+        'more' => 'Diğer hizmetler',
+    ],
+
+    'cta' => [
+        'title' => 'Aklınızda bir proje mi var?',
+        'text' => 'Ne inşa etmek istediğinizi anlatın, size geri dönelim.',
+        'button' => 'Bize ulaşın',
+    ],
 ];

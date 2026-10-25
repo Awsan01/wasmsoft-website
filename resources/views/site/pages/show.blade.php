@@ -1,12 +1,5 @@
-<x-layouts.site :seo="$seo">
-    <x-site.page-hero
-        :title="$translation->title"
-        :lead="$translation->summary"
-        :breadcrumbs="[
-            ['label' => __('site.nav.home'), 'url' => route('site.home')],
-            ['label' => $translation->title, 'url' => null],
-        ]"
-    />
+<x-layouts.site :seo="$seo" :preview="$preview ?? false">
+    <x-site.page-hero :title="$translation->title" :lead="$translation->summary" :breadcrumbs="$breadcrumbs" />
 
     @if ($body->toHtml() !== '')
         <div class="container-page py-section">

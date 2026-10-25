@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use App\Content\Slug;
+use App\Localization\Locales;
 use App\Models\Translation;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,6 +50,20 @@ trait HasTranslations
     public function hasTranslation(string $locale): bool
     {
         return $this->translation($locale) !== null;
+    }
+
+    /**
+     * The version to name this item by in the dashboard: the dashboard
+     * language, else the site's default language, else any. Render it
+     * with its own lang attribute.
+     *
+     * @return TTranslation|null
+     */
+    public function displayTranslation(): ?Translation
+    {
+        return $this->translation(app()->getLocale())
+            ?? $this->translation(app(Locales::class)->default())
+            ?? $this->translations->first();
     }
 
     /**

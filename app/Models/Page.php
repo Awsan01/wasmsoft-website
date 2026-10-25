@@ -6,7 +6,10 @@ use App\Audit\Auditable;
 use App\Content\PageTemplate;
 use App\Content\PublicationStatus;
 use App\Content\PubliclyRoutable;
+use App\Content\PublishableContent;
 use App\Content\SystemPage;
+use App\Content\TranslatableContent;
+use App\Models\Concerns\FlushesContentCache;
 use App\Models\Concerns\HasTranslations;
 use App\Models\Concerns\Publishable;
 use Database\Factories\PageFactory;
@@ -37,15 +40,15 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, PageTranslation> $translations
  */
 #[Fillable(['template'])]
-class Page extends Model implements Auditable, PubliclyRoutable
+class Page extends Model implements Auditable, PubliclyRoutable, PublishableContent, TranslatableContent
 {
+    use FlushesContentCache, Publishable;
+
     /** @use HasFactory<PageFactory> */
     use HasFactory;
 
     /** @use HasTranslations<PageTranslation> */
     use HasTranslations;
-
-    use Publishable;
 
     /**
      * @var array<string, mixed>

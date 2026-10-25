@@ -5,11 +5,13 @@
     title, description, canonical URL and the locales it exists in.
     `languageUrls` optionally overrides where the language switcher points
     for locales in which this page has no translation (defaults to that
-    locale's home page).
+    locale's home page). `preview` marks a dashboard preview of unpublished
+    content with a banner.
 --}}
 @props([
     'seo',
     'languageUrls' => [],
+    'preview' => false,
 ])
 
 @php
@@ -34,6 +36,15 @@
 <body class="relative flex min-h-dvh flex-col">
     <div data-header-sentinel class="pointer-events-none absolute inset-x-0 top-0 h-px" aria-hidden="true"></div>
     <a href="#main" class="skip-link">{{ __('ui.skip_to_content') }}</a>
+
+    @if ($preview)
+        <div role="status" class="border-b border-warning-line bg-warning-soft text-warning-ink">
+            <p class="container-page flex items-center gap-2 py-2.5 text-sm font-semibold">
+                <x-ui.icon name="eye" :size="18" />
+                {{ __('site.preview.banner') }}
+            </p>
+        </div>
+    @endif
 
     <x-site.header :alternates="$seo->alternates" :language-urls="$languageUrls" />
 

@@ -47,7 +47,7 @@ class SecurityHeaders
         $style = [$self, ...$this->inlineStyles->sources()];
         $font = [$self];
         $connect = [$self];
-        $img = [$self, 'data:', 'blob:', ...$this->mediaOrigins()];
+        $img = [$self, 'data:', 'blob:', ...$this->mediaOrigins($request)];
 
         // The Vite dev server (npm run dev) serves assets from its own origin
         // and injects <style> elements at runtime; allow it in development only.
@@ -98,12 +98,13 @@ class SecurityHeaders
     }
 
     /**
-     * Origins that serve uploaded media when it is stored on an external
-     * disk (e.g. S3 or a CDN).
+     * The origin serving uploaded media when it differs from the page's own
+     * (an S3 bucket or CDN, or an APP_URL host that differs from the one in
+     * the browser, as with localhost and 127.0.0.1 in development).
      *
      * @return list<string>
      */
-    private function mediaOrigins(): array
+    private function mediaOrigins(Request $request): array
     {
         $url = config('filesystems.disks.'.config('wasmsoft.media.disk').'.url');
         $parts = is_string($url) ? parse_url($url) : false;
@@ -114,6 +115,6 @@ class SecurityHeaders
 
         $origin = $parts['scheme'].'://'.$parts['host'].(isset($parts['port']) ? ':'.$parts['port'] : '');
 
-        return $origin === rtrim((string) config('app.url'), '/') ? [] : [$origin];
+        return $origin === $request->getSchemeAndHttpHost() ? [] : [$origin];
     }
 }

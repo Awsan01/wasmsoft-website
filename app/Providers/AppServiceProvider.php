@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Auth\Permission;
 use App\Localization\Formatter;
 use App\Localization\Locales;
+use App\Models\Media;
 use App\Models\Page;
+use App\Models\Service;
 use App\Models\User;
 use App\Navigation\AdminNavigation;
 use App\Navigation\SiteNavigation;
@@ -55,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'user' => User::class,
             'page' => Page::class,
+            'media' => Media::class,
+            'service' => Service::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.

@@ -29,6 +29,12 @@ return [
 
     'default_locale' => env('APP_LOCALE', 'en'),
 
+    /*
+    | Timezone used to show dates and to read dates typed in the dashboard
+    | (e.g. scheduled publication). Timestamps are always stored in UTC.
+    */
+    'display_timezone' => env('DISPLAY_TIMEZONE', 'UTC'),
+
     // Browser UI colour (<meta name="theme-color">); matches --color-primary.
     'theme_color' => '#481467',
 

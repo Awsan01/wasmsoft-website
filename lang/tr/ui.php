@@ -25,6 +25,9 @@ return [
     'view_all' => 'Tümünü gör',
     'back' => 'Geri',
     'opens_in_new_tab' => '(yeni sekmede açılır)',
+    'choose_file' => 'Dosya seç',
+    'choose_files' => 'Dosyaları seç',
+    'no_file_chosen' => 'Dosya seçilmedi',
 
     'pagination' => [
         'label' => 'Sayfalama',

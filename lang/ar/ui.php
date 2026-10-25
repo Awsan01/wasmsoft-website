@@ -25,6 +25,9 @@ return [
     'view_all' => 'عرض الكل',
     'back' => 'رجوع',
     'opens_in_new_tab' => '(يُفتح في علامة تبويب جديدة)',
+    'choose_file' => 'اختيار ملف',
+    'choose_files' => 'اختيار الملفات',
+    'no_file_chosen' => 'لم يُختر أي ملف',
 
     'pagination' => [
         'label' => 'التنقل بين الصفحات',
