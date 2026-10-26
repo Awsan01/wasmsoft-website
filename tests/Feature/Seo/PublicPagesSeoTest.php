@@ -10,7 +10,9 @@ use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\Service;
 use App\Models\Tag;
-use Dom\HTMLDocument;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
@@ -147,11 +149,13 @@ class PublicPagesSeoTest extends TestCase
 
             $response = $this->get($url);
             $this->assertSame(200, $response->getStatusCode(), "Broken link: {$url}");
-            $document = HTMLDocument::createFromString((string) $response->getContent(), LIBXML_NOERROR);
-            $pages[$url] = $this->metadata($document);
+            $document = new DOMDocument;
+            $document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+            $xpath = new DOMXPath($document);
+            $pages[$url] = $this->metadata($xpath);
 
-            foreach ($document->querySelectorAll('a[href]') as $link) {
-                $href = strtok((string) $link->getAttribute('href'), '#');
+            foreach ($this->elements($xpath, '//a[@href]') as $link) {
+                $href = strtok($link->getAttribute('href'), '#');
 
                 if (is_string($href) && $this->isPublicPage($href) && ! isset($pages[$href])) {
                     $queue[] = $href;
@@ -165,41 +169,54 @@ class PublicPagesSeoTest extends TestCase
     /**
      * @return array{lang: string, dir: string, title: string, description: string, canonical: ?string, robots: ?string, h1: int, og: array<string, string>, alternates: array<string, string>, jsonLd: list<string>, linksToDashboard: bool}
      */
-    private function metadata(HTMLDocument $document): array
+    private function metadata(DOMXPath $xpath): array
     {
         $og = [];
-        foreach ($document->querySelectorAll('meta[property^="og:"]') as $meta) {
-            $og[(string) $meta->getAttribute('property')] ??= (string) $meta->getAttribute('content');
+        foreach ($this->elements($xpath, '//meta[starts-with(@property, "og:")]') as $meta) {
+            $og[$meta->getAttribute('property')] ??= $meta->getAttribute('content');
         }
 
         $alternates = [];
-        foreach ($document->querySelectorAll('link[rel="alternate"][hreflang]') as $link) {
-            $alternates[(string) $link->getAttribute('hreflang')] = (string) $link->getAttribute('href');
+        foreach ($this->elements($xpath, '//link[@rel="alternate"][@hreflang]') as $link) {
+            $alternates[$link->getAttribute('hreflang')] = $link->getAttribute('href');
         }
 
         $jsonLd = [];
-        foreach ($document->querySelectorAll('script[type="application/ld+json"]') as $script) {
-            $jsonLd[] = (string) $script->textContent;
+        foreach ($this->elements($xpath, '//script[@type="application/ld+json"]') as $script) {
+            $jsonLd[] = $script->textContent;
         }
 
         $linksToDashboard = false;
-        foreach ($document->querySelectorAll('a[href]') as $link) {
-            $linksToDashboard = $linksToDashboard || str_starts_with((string) $link->getAttribute('href'), url('/admin'));
+        foreach ($this->elements($xpath, '//a[@href]') as $link) {
+            $linksToDashboard = $linksToDashboard || str_starts_with($link->getAttribute('href'), url('/admin'));
         }
 
+        $first = fn (string $query): ?string => ($this->elements($xpath, $query)[0] ?? null)?->getAttribute('content');
+        $canonical = $this->elements($xpath, '//link[@rel="canonical"]')[0] ?? null;
+
         return [
-            'lang' => (string) $document->documentElement?->getAttribute('lang'),
-            'dir' => (string) $document->documentElement?->getAttribute('dir'),
-            'title' => trim((string) $document->querySelector('title')?->textContent),
-            'description' => trim((string) $document->querySelector('meta[name="description"]')?->getAttribute('content')),
-            'canonical' => $document->querySelector('link[rel="canonical"]')?->getAttribute('href'),
-            'robots' => $document->querySelector('meta[name="robots"]')?->getAttribute('content'),
-            'h1' => $document->querySelectorAll('h1')->length,
+            'lang' => (string) $xpath->evaluate('string(/html/@lang)'),
+            'dir' => (string) $xpath->evaluate('string(/html/@dir)'),
+            'title' => trim((string) $xpath->evaluate('string(//title)')),
+            'description' => trim((string) $first('//meta[@name="description"]')),
+            'canonical' => $canonical?->getAttribute('href'),
+            'robots' => $first('//meta[@name="robots"]'),
+            'h1' => count($this->elements($xpath, '//h1')),
             'og' => $og,
             'alternates' => $alternates,
             'jsonLd' => $jsonLd,
             'linksToDashboard' => $linksToDashboard,
         ];
+    }
+
+    /**
+     * @return list<DOMElement>
+     */
+    private function elements(DOMXPath $xpath, string $query): array
+    {
+        $nodes = $xpath->query($query);
+
+        return $nodes === false ? [] : array_values(array_filter(iterator_to_array($nodes), fn (mixed $node): bool => $node instanceof DOMElement));
     }
 
     private function isPublicPage(string $href): bool
