@@ -41,6 +41,7 @@ State of the Wasmsoft website on 2026-10-26, measured against [the specification
 | Server response time (development server, warm cache) | 26–44 ms for public pages |
 | `composer audit`, `npm audit` | No known vulnerabilities |
 | Backup, restore and migration rollback | Verified on SQLite ([details](backup-and-restore.md#what-has-been-verified)) |
+| Fresh clone (acceptance) | `composer run setup`, `php artisan db:seed` and `php artisan storage:link` as in the README, then all 438 tests passed in the clone, every public page, the sitemap, robots.txt, an uploaded image and the dashboard (signed in as the demo administrator) answered correctly with no browser errors |
 
 ## Known limitations
 
