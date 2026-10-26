@@ -32,6 +32,44 @@ enum SocialNetwork: string
     }
 
     /**
+     * Domains a profile link of this network may point to (subdomains included).
+     *
+     * @return list<string>
+     */
+    public function hosts(): array
+    {
+        return match ($this) {
+            self::LinkedIn => ['linkedin.com'],
+            self::X => ['x.com', 'twitter.com'],
+            self::Facebook => ['facebook.com', 'fb.com'],
+            self::Instagram => ['instagram.com'],
+            self::GitHub => ['github.com'],
+            self::YouTube => ['youtube.com', 'youtu.be'],
+        };
+    }
+
+    /**
+     * Whether $url is an https link to this network.
+     */
+    public function allows(string $url): bool
+    {
+        $parts = parse_url($url);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if (($parts['scheme'] ?? null) !== 'https' || $host === '') {
+            return false;
+        }
+
+        foreach ($this->hosts() as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.'.$allowed)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Turn the stored setting into renderable links, skipping anything
      * malformed or not using http(s).
      *

@@ -20,6 +20,7 @@ use App\Navigation\AdminNavigation;
 use App\Navigation\SiteNavigation;
 use App\Security\InlineStyles;
 use App\Settings\SiteSettings;
+use App\Support\Brand;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -48,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(AdminNavigation::class);
         $this->app->scoped(SiteNavigation::class);
         $this->app->scoped(InlineStyles::class);
+        $this->app->scoped(Brand::class);
     }
 
     /**
@@ -106,7 +108,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->resolving(AdminNavigation::class, function (AdminNavigation $navigation): void {
             $navigation->badge('admin.inquiries.index', fn (User $user): ?int => $user->can('viewAny', Inquiry::class)
-                ? Inquiry::query()->where('status', InquiryStatus::New)->count() ?: null
+                ? (Inquiry::query()->where('status', InquiryStatus::New)->count() ?: null)
                 : null);
         });
     }

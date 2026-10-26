@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $title }} · {{ __('admin.meta_title', ['site' => $brand->name()]) }}</title>
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <x-ui.favicons />
     <meta name="theme-color" content="{{ config('wasmsoft.theme_color') }}">
     <x-ui.fonts :aliases="$locale === 'ar' ? null : ['jakarta']" />
     @vite(['resources/css/app.css', 'resources/js/admin.js'])

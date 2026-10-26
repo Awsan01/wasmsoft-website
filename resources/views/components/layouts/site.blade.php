@@ -25,9 +25,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <x-site.seo :seo="$seo" />
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+    <x-ui.favicons />
     <meta name="theme-color" content="{{ config('wasmsoft.theme_color') }}">
     {{-- The Arabic font is only loaded where Arabic is the page language. --}}
     <x-ui.fonts :aliases="$locale === 'ar' ? null : ['jakarta']" />

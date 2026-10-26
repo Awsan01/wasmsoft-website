@@ -7,6 +7,8 @@
     $siteName = app(\App\Support\Brand::class)->name($locale);
     $defaultLocale = $locales->default();
     $jsonFlags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+    // Pages without their own image are shared with the site-wide image.
+    $image = $seo->image ?? app(\App\Support\Brand::class)->socialImageUrl();
 @endphp
 
 <title>{{ $seo->title }}</title>
@@ -44,11 +46,9 @@
         <meta property="og:locale:alternate" content="{{ $locales->openGraph($code) }}">
     @endif
 @endforeach
-@if ($seo->image)
-    <meta property="og:image" content="{{ $seo->image }}">
-    @if ($seo->imageAlt)
-        <meta property="og:image:alt" content="{{ $seo->imageAlt }}">
-    @endif
+<meta property="og:image" content="{{ $image }}">
+@if ($seo->image && $seo->imageAlt)
+    <meta property="og:image:alt" content="{{ $seo->imageAlt }}">
 @endif
 <meta name="twitter:card" content="{{ $seo->image ? 'summary_large_image' : 'summary' }}">
 @if ($seo->type === 'article')

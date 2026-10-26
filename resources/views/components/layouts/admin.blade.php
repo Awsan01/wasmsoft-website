@@ -22,7 +22,7 @@
     {{-- Read by scripts that post with fetch() (media uploads from the picker). --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }} · {{ __('admin.meta_title', ['site' => app(\App\Support\Brand::class)->name()]) }}</title>
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <x-ui.favicons />
     <meta name="theme-color" content="{{ config('wasmsoft.theme_color') }}">
     {{-- Every font: editors work on content in all languages, whatever the dashboard language. --}}
     <x-ui.fonts />
