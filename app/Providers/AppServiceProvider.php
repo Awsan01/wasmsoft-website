@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Auth\Permission;
+use App\Inquiries\InquiryStatus;
 use App\Localization\Formatter;
 use App\Localization\Locales;
+use App\Models\Inquiry;
 use App\Models\Media;
 use App\Models\Page;
 use App\Models\Post;
@@ -69,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
             'post' => Post::class,
             'post_category' => PostCategory::class,
             'tag' => Tag::class,
+            'inquiry' => Inquiry::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.
@@ -91,6 +94,21 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureAuthorization();
         $this->configureRateLimiting();
+        $this->configureNavigationBadges();
+    }
+
+    /**
+     * Counters next to sidebar links. Registered whenever the (request
+     * scoped) navigation is built, and only computed for users who may see
+     * the module.
+     */
+    private function configureNavigationBadges(): void
+    {
+        $this->app->resolving(AdminNavigation::class, function (AdminNavigation $navigation): void {
+            $navigation->badge('admin.inquiries.index', fn (User $user): ?int => $user->can('viewAny', Inquiry::class)
+                ? Inquiry::query()->where('status', InquiryStatus::New)->count() ?: null
+                : null);
+        });
     }
 
     /**

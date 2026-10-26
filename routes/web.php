@@ -5,8 +5,9 @@
 | Session-backed routes ("web" middleware group: cookies, session, CSRF)
 |--------------------------------------------------------------------------
 |
-| The public contact form (it needs CSRF protection and validation
-| feedback) and, in later steps, authentication and the dashboard.
+| The public contact form: it needs CSRF protection and validation
+| feedback, so it cannot use the session-less "site" group. The dashboard
+| has its own file (routes/admin.php).
 |
 */
 

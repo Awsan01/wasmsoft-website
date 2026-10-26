@@ -9,9 +9,9 @@
                 <p class="max-w-sm text-sm">{{ $description }}</p>
             @endif
 
-            @if (count($socialLinks) > 0)
+            @if (count($contact->socialLinks) > 0)
                 <ul class="flex flex-wrap gap-1" aria-label="{{ __('site.footer.social') }}">
-                    @foreach ($socialLinks as $social)
+                    @foreach ($contact->socialLinks as $social)
                         <li>
                             <x-ui.icon-button
                                 :href="$social['url']"
@@ -45,26 +45,26 @@
                 </nav>
             @endforeach
 
-            @if ($email || $phone || $address)
+            @if ($contact->hasDirectContact())
                 <div>
                     <h2 class="text-sm font-semibold text-white">{{ __('site.footer.contact') }}</h2>
                     <ul class="mt-4 grid gap-3 text-sm">
-                        @if ($email)
+                        @if ($contact->email)
                             <li class="flex items-start gap-2.5">
                                 <x-ui.icon name="mail" :size="18" class="mt-0.5" />
-                                <a href="mailto:{{ $email }}" class="break-all transition-base hover:text-white hover:underline" dir="ltr">{{ $email }}</a>
+                                <a href="{{ \App\Support\Mailto::link($contact->email) }}" class="break-all transition-base hover:text-white hover:underline" dir="ltr">{{ $contact->email }}</a>
                             </li>
                         @endif
-                        @if ($phone)
+                        @if ($contact->phone)
                             <li class="flex items-start gap-2.5">
                                 <x-ui.icon name="phone" :size="18" class="mt-0.5" />
-                                <a href="tel:{{ preg_replace('/[^\d+]/', '', $phone) }}" class="transition-base hover:text-white hover:underline" dir="ltr">{{ $phone }}</a>
+                                <a href="{{ $contact->phoneHref() }}" class="transition-base hover:text-white hover:underline" dir="ltr">{{ $contact->phone }}</a>
                             </li>
                         @endif
-                        @if ($address)
+                        @if ($contact->address)
                             <li class="flex items-start gap-2.5">
                                 <x-ui.icon name="map-pin" :size="18" class="mt-0.5" />
-                                <span class="whitespace-pre-line">{{ $address }}</span>
+                                <span class="whitespace-pre-line">{{ $contact->address }}</span>
                             </li>
                         @endif
                     </ul>

@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\LocaleController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PageController;
@@ -62,6 +63,8 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
     Route::resource('post-categories', PostCategoryController::class)->except('show')->parameters(['post-categories' => 'term']);
     Route::patch('post-categories/{term}/move', [PostCategoryController::class, 'move'])->name('post-categories.move');
     Route::resource('tags', TagController::class)->except('show')->parameters(['tags' => 'term']);
+
+    Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'update', 'destroy']);
 
     // Media library ("media" is used as-is: a resource route would singularize it to "medium").
     Route::get('media', [MediaController::class, 'index'])->name('media.index');
