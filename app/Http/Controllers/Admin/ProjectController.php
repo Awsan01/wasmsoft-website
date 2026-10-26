@@ -132,19 +132,17 @@ class ProjectController extends Controller
 
     /**
      * The gallery to show: after a failed submission, the images the editor
-     * had chosen (in their order), otherwise the saved gallery.
+     * had chosen (in their order, possibly none), otherwise the saved gallery.
      *
      * @return Collection<int, Media>
      */
     private function galleryForForm(Project $project): Collection
     {
-        $oldIds = old('gallery');
-
-        if (! is_array($oldIds)) {
+        if (! request()->session()->hasOldInput()) {
             return $project->exists ? $project->gallery : new Collection;
         }
 
-        $ids = array_values(array_map(intval(...), $oldIds));
+        $ids = array_values(array_map(intval(...), array_filter((array) old('gallery', []), is_numeric(...))));
         $media = Media::query()->images()->whereIn('id', $ids)->get()->keyBy('id');
 
         return new Collection(array_values(array_filter(array_map(fn (int $id): ?Media => $media->get($id), $ids))));

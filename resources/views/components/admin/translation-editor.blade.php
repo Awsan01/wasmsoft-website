@@ -80,6 +80,7 @@
                             @endphp
 
                             @if (in_array($type, ['textarea', 'markdown', 'lines'], true))
+                                {{-- Markdown is edited in a monospace font, except Arabic: monospace fonts have no Arabic glyphs. --}}
                                 <x-ui.textarea
                                     :name="$name"
                                     :label="$label"
@@ -90,7 +91,7 @@
                                     :maxlength="$definition['maxlength'] ?? null"
                                     lang="{{ $code }}"
                                     dir="{{ $direction }}"
-                                    @class(['font-mono text-sm' => $type === 'markdown'])
+                                    @class(['text-sm' => $type === 'markdown', 'font-mono' => $type === 'markdown' && $direction === 'ltr'])
                                 />
                             @else
                                 {{-- Slugs mix scripts (Arabic words, Latin digits), so their direction follows the text. --}}

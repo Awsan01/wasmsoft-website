@@ -146,6 +146,24 @@ class ProjectControllerTest extends TestCase
         ], false);
     }
 
+    public function test_an_emptied_gallery_stays_empty_after_a_failed_submission(): void
+    {
+        $editor = User::factory()->editor()->create();
+        $image = Media::factory()->create();
+        $project = Project::factory()->translated(['en'], ['en' => ['title' => 'Portal']])->create();
+        $project->gallery()->attach($image->id, ['position' => 1]);
+
+        // Every image removed, but the title emptied: the form comes back with errors.
+        $this->actingAs($editor)
+            ->from(route('admin.projects.edit', $project))
+            ->put(route('admin.projects.update', $project), $this->payload())
+            ->assertSessionHasErrors();
+
+        $this->actingAs($editor)->get(route('admin.projects.edit', $project))
+            ->assertOk()
+            ->assertDontSee('name="gallery[]" value="'.$image->id.'"', false);
+    }
+
     public function test_gallery_images_cannot_be_deleted_from_the_library(): void
     {
         $image = Media::factory()->create();
