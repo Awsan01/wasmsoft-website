@@ -30,4 +30,26 @@ enum SystemPage: string
     {
         return __("admin.pages.system.{$this->value}");
     }
+
+    /**
+     * Name of the page in the site menus.
+     */
+    public function navLabel(string $locale): string
+    {
+        $label = __("site.nav.{$this->value}", [], $locale);
+
+        return is_string($label) ? $label : $this->value;
+    }
+
+    /**
+     * Route names under which a menu link to this page counts as active.
+     */
+    public function activePattern(): string
+    {
+        return match ($this) {
+            self::Home => 'site.home',
+            self::Contact => 'site.contact',
+            default => str_replace('.index', '.*', $this->routeName()),
+        };
+    }
 }

@@ -7,8 +7,10 @@ use App\Audit\AuditLogger;
 use App\Auth\Role;
 use App\Models\Post;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Lang;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -92,6 +94,20 @@ class AuditLogControllerTest extends TestCase
             ->assertOk()
             ->assertDontSee('<script>alert(1)</script>', false)
             ->assertSee(__('admin.audit.anonymous'));
+    }
+
+    public function test_every_event_and_item_type_has_a_name_in_every_language(): void
+    {
+        foreach (['ar', 'en', 'tr'] as $locale) {
+            foreach (AuditEvent::cases() as $event) {
+                $key = 'admin.audit.events.'.str_replace('.', '_', $event->value);
+                $this->assertTrue(Lang::has($key, $locale, false), "Missing [{$locale}] {$key}");
+            }
+
+            foreach (array_keys(Relation::morphMap()) as $alias) {
+                $this->assertTrue(Lang::has("admin.audit.subjects.{$alias}", $locale, false), "Missing [{$locale}] admin.audit.subjects.{$alias}");
+            }
+        }
     }
 
     public function test_items_link_to_their_page_while_they_exist(): void

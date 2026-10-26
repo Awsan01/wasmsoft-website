@@ -9,6 +9,7 @@ use App\Localization\Locales;
 use App\Models\Highlight;
 use App\Models\Inquiry;
 use App\Models\Media;
+use App\Models\MenuItem;
 use App\Models\Milestone;
 use App\Models\Page;
 use App\Models\Post;
@@ -82,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
             'testimonial' => Testimonial::class,
             'team_member' => TeamMember::class,
             'milestone' => Milestone::class,
+            'menu_item' => MenuItem::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.

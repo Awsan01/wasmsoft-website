@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\LocaleController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\MilestoneController;
+use App\Http\Controllers\Admin\NavigationController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PostCategoryController;
 use App\Http\Controllers\Admin\PostController;
@@ -97,6 +98,9 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
 
     Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    Route::resource('navigation', NavigationController::class)->except('show')->parameters(['navigation' => 'item']);
+    Route::patch('navigation/{item}/move', [NavigationController::class, 'move'])->name('navigation.move');
 
     Route::get('audit', [AuditLogController::class, 'index'])->name('audit.index');
 

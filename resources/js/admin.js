@@ -5,6 +5,7 @@ import { initDismissibles } from './modules/dismiss.js';
 import { initDropdowns } from './modules/dropdown.js';
 import { initFileInputs } from './modules/file-input.js';
 import { initMediaPickers } from './modules/media-picker.js';
+import { initShowFor } from './modules/show-for.js';
 import { initSubmitState } from './modules/submit-state.js';
 import { initTabs } from './modules/tabs.js';
 
@@ -19,3 +20,4 @@ initDismissibles();
 initMediaPickers();
 initCopyButtons();
 initFileInputs();
+initShowFor();

@@ -52,6 +52,7 @@ class AuditLog extends Model
         'testimonial' => 'admin.testimonials.edit',
         'team_member' => 'admin.team-members.edit',
         'milestone' => 'admin.milestones.edit',
+        'menu_item' => 'admin.navigation.edit',
     ];
 
     protected $guarded = ['id'];
