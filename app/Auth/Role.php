@@ -50,6 +50,16 @@ enum Role: string
     }
 
     /**
+     * The roles that grant $permission.
+     *
+     * @return list<self>
+     */
+    public static function granting(Permission $permission): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $role): bool => $role->grants($permission)));
+    }
+
+    /**
      * Privileged roles can only be granted or revoked by an administrator.
      */
     public function isPrivileged(): bool

@@ -22,6 +22,7 @@ class MediaUsage
         ['services', 'image_id'],
         ['projects', 'cover_id'],
         ['media_project', 'media_id'],
+        ['posts', 'cover_id'],
     ];
 
     /** Settings that hold a media id. */

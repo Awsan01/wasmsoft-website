@@ -1,8 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+/*
+|--------------------------------------------------------------------------
+| Scheduled tasks (the server's cron runs `php artisan schedule:run` every minute)
+|--------------------------------------------------------------------------
+*/
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('wasmsoft:release-scheduled')->everyMinute()->withoutOverlapping();

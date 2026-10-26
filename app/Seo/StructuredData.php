@@ -2,6 +2,8 @@
 
 namespace App\Seo;
 
+use Carbon\CarbonInterface;
+
 /**
  * schema.org objects for JSON-LD, built only from content that is actually
  * shown on the page.
@@ -35,5 +37,39 @@ final class StructuredData
             '@type' => 'BreadcrumbList',
             'itemListElement' => $elements,
         ];
+    }
+
+    /**
+     * Article (news post). Without a named author, the company is the author.
+     *
+     * @return array<string, mixed>
+     */
+    public static function article(
+        string $headline,
+        ?string $description,
+        ?string $url,
+        ?string $image,
+        ?CarbonInterface $publishedAt,
+        ?CarbonInterface $modifiedAt,
+        ?string $author,
+        string $publisher,
+        string $locale,
+    ): array {
+        $organization = ['@type' => 'Organization', 'name' => $publisher];
+
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'Article',
+            'headline' => $headline,
+            'description' => $description,
+            'url' => $url,
+            'mainEntityOfPage' => $url,
+            'image' => $image === null ? null : [$image],
+            'datePublished' => $publishedAt?->toAtomString(),
+            'dateModified' => $modifiedAt?->toAtomString(),
+            'inLanguage' => $locale,
+            'author' => $author === null ? $organization : ['@type' => 'Person', 'name' => $author],
+            'publisher' => $organization,
+        ], fn (mixed $value): bool => $value !== null && $value !== '');
     }
 }

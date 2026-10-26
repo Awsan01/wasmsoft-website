@@ -13,22 +13,17 @@
                 <nav aria-label="{{ __('site.projects.filter') }}">
                     <ul class="flex flex-wrap gap-2">
                         <li>
-                            <a
-                                href="{{ route('site.projects.index', array_filter(['q' => $search])) }}"
-                                @if (! $activeCategory) aria-current="page" @endif
-                                class="inline-flex h-control-sm items-center rounded-full border border-border bg-surface px-4 text-sm font-semibold text-ink transition-base hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:bg-primary aria-[current=page]:text-white"
-                            >{{ __('ui.all') }}</a>
+                            <x-site.filter-chip :href="route('site.projects.index', array_filter(['q' => $search]))" :current="! $activeCategory">{{ __('ui.all') }}</x-site.filter-chip>
                         </li>
                         @foreach ($categories as $category)
                             @php
                                 $categoryTranslation = $category->translation();
                             @endphp
                             <li>
-                                <a
-                                    href="{{ route('site.projects.index', array_filter(['category' => $categoryTranslation?->slug, 'q' => $search])) }}"
-                                    @if ($activeCategory?->is($category)) aria-current="page" @endif
-                                    class="inline-flex h-control-sm items-center rounded-full border border-border bg-surface px-4 text-sm font-semibold text-ink transition-base hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:bg-primary aria-[current=page]:text-white"
-                                >{{ $categoryTranslation?->name }}</a>
+                                <x-site.filter-chip
+                                    :href="route('site.projects.index', array_filter(['category' => $categoryTranslation?->slug, 'q' => $search]))"
+                                    :current="(bool) $activeCategory?->is($category)"
+                                >{{ $categoryTranslation?->name }}</x-site.filter-chip>
                             </li>
                         @endforeach
                     </ul>
