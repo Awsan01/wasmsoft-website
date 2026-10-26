@@ -83,7 +83,7 @@
         font-size: var(--text-sm);
     }
 
-    .data-table th {
+    .data-table thead th {
         border-block-end: 1px solid var(--color-border);
         background-color: var(--color-canvas);
         padding: 0.75rem 1rem;
@@ -96,22 +96,28 @@
         white-space: nowrap;
     }
 
-    .data-table th:lang(ar) {
+    .data-table thead th:lang(ar) {
         font-size: var(--text-sm);
         text-transform: none;
     }
 
-    .data-table td {
+    /* Body cells, including row headers (<th scope="row">). */
+    .data-table tbody :is(td, th) {
         border-block-end: 1px solid var(--color-border);
         padding: 0.875rem 1rem;
         vertical-align: middle;
     }
 
-    .data-table tbody tr:last-child td {
+    .data-table tbody th {
+        font-weight: var(--font-weight-semibold);
+        text-align: start;
+    }
+
+    .data-table tbody tr:last-child :is(td, th) {
         border-block-end: 0;
     }
 
-    .data-table tbody tr:hover td {
+    .data-table tbody tr:hover :is(td, th) {
         background-color: var(--color-purple-50);
     }
 
