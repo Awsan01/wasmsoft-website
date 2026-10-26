@@ -2,13 +2,48 @@
 
 namespace Tests\Feature\Http\Controllers\Site;
 
+use App\Content\HighlightGroup;
+use App\Models\Highlight;
+use App\Models\Milestone;
 use App\Models\Page;
+use App\Models\TeamMember;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
 class PageControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_the_about_template_adds_values_team_and_history_written_in_the_language(): void
+    {
+        Page::factory()->published()->about()->translated(['en', 'tr'], [
+            'en' => ['title' => 'About us', 'slug' => 'about', 'body' => 'Our mission is to build useful software.'],
+            'tr' => ['title' => 'Hakkımızda', 'slug' => 'hakkimizda'],
+        ])->create();
+        Highlight::factory()->group(HighlightGroup::Value)->create(['title' => ['en' => 'Honesty', 'tr' => 'Dürüstlük']]);
+        TeamMember::factory()->create(['name' => 'Omar Haddad', 'role' => ['en' => 'Software engineer']]);
+        Milestone::factory()->create(['year' => 2019, 'title' => ['en' => 'Company founded']]);
+
+        $this->get('/en/about')
+            ->assertOk()
+            ->assertSee('Our mission is to build useful software.')
+            ->assertSeeInOrder([__('site.about.values_title'), 'Honesty', __('site.about.team_title'), 'Omar Haddad', 'Software engineer', __('site.about.history_title'), '2019', 'Company founded']);
+
+        // The Turkish version shows only what is written in Turkish.
+        $this->get('/tr/hakkimizda')
+            ->assertOk()
+            ->assertSee('Dürüstlük')
+            ->assertDontSee('Omar Haddad')
+            ->assertDontSee('Company founded');
+    }
+
+    public function test_the_default_template_has_no_about_sections(): void
+    {
+        Page::factory()->published()->translated(['en'], ['en' => ['slug' => 'careers']])->create();
+        Highlight::factory()->group(HighlightGroup::Value)->create(['title' => ['en' => 'Honesty']]);
+
+        $this->get('/en/careers')->assertOk()->assertDontSee('Honesty');
+    }
 
     public function test_published_page_renders_in_its_language(): void
     {

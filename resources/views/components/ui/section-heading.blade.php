@@ -1,4 +1,7 @@
-{{-- Eyebrow + heading + supporting text, used to open page sections. --}}
+{{--
+    Eyebrow + heading + supporting text, used to open page sections.
+    `heading-id` names the heading, for <section aria-labelledby>.
+--}}
 @props([
     'title',
     'eyebrow' => null,
@@ -6,6 +9,7 @@
     'align' => 'start',
     'as' => 'h2',
     'tone' => 'default',
+    'headingId' => null,
 ])
 
 @php
@@ -26,7 +30,7 @@
         </p>
     @endif
 
-    <{{ $as }} @class(['text-h2', 'mt-3' => $eyebrow, 'text-white' => $dark])>{{ $title }}</{{ $as }}>
+    <{{ $as }} @if ($headingId) id="{{ $headingId }}" @endif @class(['text-h2', 'mt-3' => $eyebrow, 'text-white' => $dark])>{{ $title }}</{{ $as }}>
 
     @if ($description)
         <p @class(['mt-4 text-lead', 'text-muted' => ! $dark, 'text-on-dark-muted' => $dark])>{{ $description }}</p>

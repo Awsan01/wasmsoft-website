@@ -3,11 +3,16 @@
 namespace App\Http\Controllers\Site;
 
 use App\Content\Alternates;
+use App\Content\HighlightGroup;
 use App\Content\Markdown;
+use App\Content\PageTemplate;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Site\Concerns\ResolvesTranslatedContent;
 use App\Localization\Locales;
+use App\Models\Highlight;
+use App\Models\Milestone;
 use App\Models\Page;
+use App\Models\TeamMember;
 use App\Seo\SeoMeta;
 use App\Seo\StructuredData;
 use App\Support\Brand;
@@ -50,12 +55,18 @@ class PageController extends Controller
             ['label' => (string) $translation?->title, 'url' => null],
         ];
 
-        return view('site.pages.show', [
+        $about = $page->template === PageTemplate::About;
+
+        return view($about ? 'site.pages.about' : 'site.pages.show', [
             'page' => $page,
             'translation' => $translation,
             'breadcrumbs' => $breadcrumbs,
             'body' => Markdown::toHtml($translation?->body),
             'preview' => $preview,
+            // The about template adds the company's values, team and history.
+            'values' => $about ? Highlight::query()->shownIn(HighlightGroup::Value, $locale)->get() : null,
+            'team' => $about ? TeamMember::query()->shownIn($locale)->with('photo')->get() : null,
+            'milestones' => $about ? Milestone::query()->shownIn($locale)->get() : null,
             'seo' => new SeoMeta(
                 title: ($translation?->meta_title ?: $translation?->title).' · '.$this->brand->name(),
                 description: $translation?->meta_description ?: Markdown::toText($translation?->summary ?: $translation?->body),
