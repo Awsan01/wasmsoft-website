@@ -6,7 +6,8 @@
         "build": "vite build",
         "dev": "vite",
         "check:contrast": "node scripts/check-contrast.mjs",
-        "check:a11y": "node scripts/check-accessibility.mjs"
+        "check:a11y": "node scripts/check-accessibility.mjs",
+        "measure:performance": "node scripts/measure-performance.mjs"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.14.0",
