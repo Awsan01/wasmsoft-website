@@ -165,4 +165,33 @@ return [
         'history_eyebrow' => 'Hikâyemiz',
         'history_title' => 'Kilometre taşları',
     ],
+    'errors' => [
+        'code' => 'Hata :code',
+        'home' => 'Ana sayfaya git',
+        'dashboard' => 'Yönetim paneline dön',
+        '403' => [
+            'title' => 'Erişim reddedildi',
+            'message' => 'Bu sayfayı açma izniniz yok.',
+        ],
+        '404' => [
+            'title' => 'Sayfa bulunamadı',
+            'message' => 'Aradığınız sayfa mevcut değil veya taşındı.',
+        ],
+        '419' => [
+            'title' => 'Sayfanın süresi doldu',
+            'message' => 'Sayfa çok uzun süre açık kaldı. Lütfen sayfayı yeniden açıp işleminizi tekrarlayın.',
+        ],
+        '429' => [
+            'title' => 'Çok fazla istek',
+            'message' => 'Lütfen yeniden denemeden önce biraz bekleyin.',
+        ],
+        '500' => [
+            'title' => 'Bir şeyler ters gitti',
+            'message' => 'Bizim tarafımızda beklenmeyen bir hata oluştu. Lütfen biraz sonra yeniden deneyin.',
+        ],
+        '503' => [
+            'title' => 'Yakında döneceğiz',
+            'message' => 'Web sitesi güncelleniyor. Lütfen birkaç dakika sonra yeniden deneyin.',
+        ],
+    ],
 ];

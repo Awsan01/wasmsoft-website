@@ -165,4 +165,33 @@ return [
         'history_eyebrow' => 'Our story',
         'history_title' => 'Milestones',
     ],
+    'errors' => [
+        'code' => 'Error :code',
+        'home' => 'Go to the home page',
+        'dashboard' => 'Back to the dashboard',
+        '403' => [
+            'title' => 'Access denied',
+            'message' => 'You do not have permission to open this page.',
+        ],
+        '404' => [
+            'title' => 'Page not found',
+            'message' => 'The page you are looking for does not exist or has moved.',
+        ],
+        '419' => [
+            'title' => 'Page expired',
+            'message' => 'The page was open for too long. Please open it again and repeat what you were doing.',
+        ],
+        '429' => [
+            'title' => 'Too many requests',
+            'message' => 'Please wait a moment before trying again.',
+        ],
+        '500' => [
+            'title' => 'Something went wrong',
+            'message' => 'An unexpected error occurred on our side. Please try again in a moment.',
+        ],
+        '503' => [
+            'title' => 'Back soon',
+            'message' => 'The website is being updated. Please check back in a few minutes.',
+        ],
+    ],
 ];
