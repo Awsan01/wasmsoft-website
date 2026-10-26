@@ -13,6 +13,7 @@
 */
 
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Admin\Auth\InvitationController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -22,11 +23,13 @@ use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PostCategoryController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ProjectCategoryController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('locale', LocaleController::class)->name('locale');
@@ -40,6 +43,9 @@ Route::middleware('guest')->group(function (): void {
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:password-reset')->name('password.store');
+
+    Route::get('invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+    Route::post('invitation', [InvitationController::class, 'store'])->middleware('throttle:password-reset')->name('invitation.store');
 });
 
 Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view', 'throttle:dashboard'])->group(function (): void {
@@ -77,4 +83,11 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
 
     Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    Route::resource('users', UserController::class)->except('show');
+    Route::post('users/{user}/invitation', [UserController::class, 'invite'])->name('users.invite');
+
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'password'])->middleware('throttle:login')->name('profile.password');
 });
