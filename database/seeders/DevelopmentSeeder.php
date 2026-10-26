@@ -8,7 +8,8 @@ use Illuminate\Database\Seeder;
 use RuntimeException;
 
 /**
- * Local development data: one demo account per role.
+ * Local development data: one demo account per role, then clearly marked
+ * placeholder content (DemoContentSeeder).
  *
  * All accounts share the password in DEV_SEED_PASSWORD (see .env.example).
  * Refuses to run anywhere but local and testing environments.
@@ -34,5 +35,7 @@ class DevelopmentSeeder extends Seeder
             $user->email_verified_at = now();
             $user->save();
         }
+
+        $this->call(DemoContentSeeder::class);
     }
 }
