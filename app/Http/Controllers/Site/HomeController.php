@@ -61,9 +61,12 @@ class HomeController extends Controller
             'figures' => Highlight::query()->shownIn(HighlightGroup::Metric, $locale)->get(),
             'testimonials' => Testimonial::query()->shownIn($locale)->with('photo')->limit(6)->get(),
             'seo' => new SeoMeta(
-                title: $page?->meta_title ?: ($tagline ? $name.' · '.$tagline : $name),
+                title: $page?->meta_title ?: $name.' · '.($tagline ?: $page?->title ?: __('site.home.hero_title')),
+                // Ends with the hero's own fallback lead, so the page is never described as nothing.
                 description: $page?->meta_description
-                    ?: (Markdown::toText($page?->summary) ?: $this->settings->localized(SettingKey::SiteDescription, $locale)),
+                    ?: Markdown::toText($page?->summary)
+                    ?: $this->settings->localized(SettingKey::SiteDescription, $locale)
+                    ?: __('site.home.hero_lead'),
                 canonical: route('site.home'),
                 alternates: Alternates::route('site.home', $this->locales),
                 structuredData: [

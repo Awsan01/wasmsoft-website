@@ -51,7 +51,9 @@ class PostController extends Controller
             ],
             'seo' => new SeoMeta(
                 title: ($intro?->meta_title ?: $title).' · '.$this->brand->name(),
-                description: $intro?->meta_description ?: Markdown::toText($intro?->summary),
+                description: $intro?->meta_description
+                    ?: Markdown::toText($intro?->summary)
+                    ?: __('site.news.description', ['name' => $this->brand->name()]),
                 canonical: route('site.news.index', $this->pageParameter($posts)),
                 alternates: $posts->currentPage() === 1 ? Alternates::route('site.news.index', $this->locales) : [],
             ),
@@ -82,6 +84,7 @@ class PostController extends Controller
             ],
             'seo' => new SeoMeta(
                 title: $name.' · '.__('site.nav.news').' · '.$this->brand->name(),
+                description: __('site.news.category_description', ['category' => $name, 'name' => $this->brand->name()]),
                 canonical: route('site.news.category', ['slug' => $slug, ...$this->pageParameter($posts)]),
                 alternates: $posts->currentPage() === 1 ? Alternates::of($category, $this->locales) : [],
                 // An empty listing is not worth indexing.
@@ -115,6 +118,7 @@ class PostController extends Controller
             ],
             'seo' => new SeoMeta(
                 title: $name.' · '.__('site.nav.news').' · '.$this->brand->name(),
+                description: __('site.news.tag_description', ['tag' => $name, 'name' => $this->brand->name()]),
                 canonical: route('site.news.tag', ['slug' => $slug, ...$this->pageParameter($posts)]),
                 alternates: $posts->currentPage() === 1 ? Alternates::of($tag, $this->locales) : [],
                 indexable: $posts->isNotEmpty(),

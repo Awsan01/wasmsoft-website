@@ -82,7 +82,9 @@ class ProjectController extends Controller
             'projects' => $projects,
             'seo' => new SeoMeta(
                 title: ($intro?->meta_title ?: $title).($category ? ' · '.$category->translation($locale)?->name : '').' · '.$this->brand->name(),
-                description: $intro?->meta_description ?: Markdown::toText($intro?->summary),
+                description: $intro?->meta_description
+                    ?: Markdown::toText($intro?->summary)
+                    ?: __('site.projects.description', ['name' => $this->brand->name()]),
                 canonical: $canonical,
                 alternates: $category === null ? Alternates::route('site.projects.index', $this->locales) : [],
                 // Search results are not worth indexing; categories and pages are.

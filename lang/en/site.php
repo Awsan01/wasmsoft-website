@@ -36,6 +36,7 @@ return [
     'services' => [
         'title' => 'Services',
         'eyebrow' => 'What we do',
+        'description' => 'An overview of the services :name offers.',
         'empty' => 'Our services will be listed here soon.',
         'benefits' => 'What you get',
         'cta_title' => 'Interested in this service?',
@@ -53,6 +54,7 @@ return [
     'projects' => [
         'title' => 'Projects',
         'eyebrow' => 'Our work',
+        'description' => 'A selection of projects :name has worked on.',
         'filter' => 'Filter projects by category',
         'search' => 'Search projects',
         'empty' => 'Our projects will be shown here soon.',
@@ -72,6 +74,9 @@ return [
     'news' => [
         'title' => 'News',
         'eyebrow' => 'Latest updates',
+        'description' => 'News and articles from :name.',
+        'category_description' => 'Articles in the :category category, from :name.',
+        'tag_description' => 'Articles about :tag, from :name.',
         'filter' => 'Filter news by category',
         'category' => 'Category',
         'tag' => 'Tag',

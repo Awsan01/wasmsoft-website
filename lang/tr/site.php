@@ -36,6 +36,7 @@ return [
     'services' => [
         'title' => 'Hizmetler',
         'eyebrow' => 'Neler yapıyoruz',
+        'description' => ':name tarafından sunulan hizmetlere genel bakış.',
         'empty' => 'Hizmetlerimiz yakında burada listelenecek.',
         'benefits' => 'Size kazandırdıkları',
         'cta_title' => 'Bu hizmetle ilgileniyor musunuz?',
@@ -53,6 +54,7 @@ return [
     'projects' => [
         'title' => 'Projeler',
         'eyebrow' => 'Çalışmalarımız',
+        'description' => ':name ekibinin üzerinde çalıştığı projelerden bir seçki.',
         'filter' => 'Projeleri kategoriye göre filtrele',
         'search' => 'Projelerde ara',
         'empty' => 'Projelerimiz yakında burada gösterilecek.',
@@ -72,6 +74,9 @@ return [
     'news' => [
         'title' => 'Haberler',
         'eyebrow' => 'Son gelişmeler',
+        'description' => ':name ekibinden haberler ve yazılar.',
+        'category_description' => ':name ekibinden :category kategorisindeki yazılar.',
+        'tag_description' => ':name ekibinden “:tag” etiketli yazılar.',
         'filter' => 'Haberleri kategoriye göre filtrele',
         'category' => 'Kategori',
         'tag' => 'Etiket',

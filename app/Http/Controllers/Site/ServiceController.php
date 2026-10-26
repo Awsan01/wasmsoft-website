@@ -38,7 +38,9 @@ class ServiceController extends Controller
             'services' => Service::query()->published()->translatedIn($locale)->withTranslation($locale)->ordered()->get(),
             'seo' => new SeoMeta(
                 title: ($intro?->meta_title ?: $title).' · '.$this->brand->name(),
-                description: $intro?->meta_description ?: Markdown::toText($intro?->summary),
+                description: $intro?->meta_description
+                    ?: Markdown::toText($intro?->summary)
+                    ?: __('site.services.description', ['name' => $this->brand->name()]),
                 canonical: route('site.services.index'),
                 alternates: Alternates::route('site.services.index', $this->locales),
             ),
