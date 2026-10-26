@@ -198,5 +198,17 @@ return [
             'title' => 'Back soon',
             'message' => 'The website is being updated. Please check back in a few minutes.',
         ],
+        '413' => [
+            'title' => 'File too large',
+            'message' => 'What you sent is larger than the server accepts. Please choose a smaller file and try again.',
+        ],
+        '4xx' => [
+            'title' => 'This request could not be completed',
+            'message' => 'The address or the request is not valid. Please check it, or go back to the home page.',
+        ],
+        '5xx' => [
+            'title' => 'Something went wrong',
+            'message' => 'An unexpected error occurred on our side. Please try again in a moment.',
+        ],
     ],
 ];

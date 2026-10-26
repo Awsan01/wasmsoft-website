@@ -17,9 +17,11 @@
     $inDashboard = $segment === 'admin';
     $home = $inDashboard ? url('/admin') : ($locales->isSupported($segment) ? url('/'.$segment) : url('/'));
 
-    // Translated here, after the language is known (status views only pass their code).
-    $title = __("site.errors.{$code}.title");
-    $message = __("site.errors.{$code}.message");
+    // Translated here, after the language is known (status views only pass their
+    // code; the 4xx/5xx catch-alls also name the texts they share).
+    $texts ??= $code;
+    $title = __("site.errors.{$texts}.title");
+    $message = __("site.errors.{$texts}.message");
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $locale }}" dir="{{ $locales->direction($locale) }}">

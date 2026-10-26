@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Auth\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\TestWith;
@@ -56,6 +57,38 @@ class ErrorPagesTest extends TestCase
             ->assertInternalServerError()
             ->assertSee(__('site.errors.500.title'))
             ->assertDontSee('hunter2');
+    }
+
+    public function test_other_client_errors_get_the_branded_page_with_their_code(): void
+    {
+        config(['app.debug' => false]);
+
+        $this->delete('/tr')
+            ->assertMethodNotAllowed()
+            ->assertSee(__('site.errors.4xx.title', [], 'tr'))
+            ->assertSee(__('site.errors.code', ['code' => 405], 'tr'));
+    }
+
+    public function test_other_server_errors_get_the_branded_page_with_their_code(): void
+    {
+        config(['app.debug' => false]);
+        Route::get('/_test/gateway', fn () => abort(502));
+
+        $this->get('/_test/gateway')
+            ->assertStatus(502)
+            ->assertSee(__('site.errors.5xx.title'))
+            ->assertSee(__('site.errors.code', ['code' => 502]));
+    }
+
+    public function test_an_upload_over_the_server_limit_is_explained(): void
+    {
+        config(['app.debug' => false]);
+        Route::post('/admin/_test/upload', fn () => throw new PostTooLargeException);
+
+        $this->post('/admin/_test/upload')
+            ->assertStatus(413)
+            ->assertSee(__('site.errors.413.title'))
+            ->assertSee(__('site.errors.dashboard'));
     }
 
     #[TestWith([500])]

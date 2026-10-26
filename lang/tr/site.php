@@ -198,5 +198,17 @@ return [
             'title' => 'Yakında döneceğiz',
             'message' => 'Web sitesi güncelleniyor. Lütfen birkaç dakika sonra yeniden deneyin.',
         ],
+        '413' => [
+            'title' => 'Dosya çok büyük',
+            'message' => 'Gönderdiğiniz içerik sunucunun kabul ettiğinden büyük. Lütfen daha küçük bir dosya seçip yeniden deneyin.',
+        ],
+        '4xx' => [
+            'title' => 'Bu istek tamamlanamadı',
+            'message' => 'Adres veya istek geçerli değil. Lütfen kontrol edin ya da ana sayfaya dönün.',
+        ],
+        '5xx' => [
+            'title' => 'Bir şeyler ters gitti',
+            'message' => 'Bizim tarafımızda beklenmeyen bir hata oluştu. Lütfen biraz sonra yeniden deneyin.',
+        ],
     ],
 ];
