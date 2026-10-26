@@ -23,9 +23,12 @@ class ContentWriter
     ) {}
 
     /**
+     * @template TModel of Model
+     *
+     * @param  TModel  $model
      * @param  array<string, mixed>  $attributes  mass-assignable attributes
      * @param  array<string, array<string, mixed>>|null  $translations  locale => field => value
-     * @param  (Closure(Model): void)|null  $related  syncs relations (tags, gallery…) inside the transaction
+     * @param  (Closure(TModel): void)|null  $related  syncs relations (tags, gallery…) inside the transaction
      */
     public function save(
         Model $model,

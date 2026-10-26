@@ -19,6 +19,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LocaleController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\ProjectCategoryController;
+use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServiceController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +48,11 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
     Route::resource('services', ServiceController::class)->except('show');
     Route::patch('services/{service}/move', [ServiceController::class, 'move'])->name('services.move');
     Route::get('services/{service}/preview/{locale}', [ServiceController::class, 'preview'])->name('services.preview');
+
+    Route::resource('projects', ProjectController::class)->except('show');
+    Route::get('projects/{project}/preview/{locale}', [ProjectController::class, 'preview'])->name('projects.preview');
+    Route::resource('project-categories', ProjectCategoryController::class)->except('show')->parameters(['project-categories' => 'term']);
+    Route::patch('project-categories/{term}/move', [ProjectCategoryController::class, 'move'])->name('project-categories.move');
 
     // Media library ("media" is used as-is: a resource route would singularize it to "medium").
     Route::get('media', [MediaController::class, 'index'])->name('media.index');

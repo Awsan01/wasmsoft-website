@@ -20,6 +20,8 @@ class MediaUsage
      */
     private const REFERENCES = [
         ['services', 'image_id'],
+        ['projects', 'cover_id'],
+        ['media_project', 'media_id'],
     ];
 
     /** Settings that hold a media id. */

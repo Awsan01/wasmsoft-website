@@ -2,12 +2,15 @@
     Image field backed by the media library: a preview, "choose" (opens the
     picker dialog, where images can also be uploaded) and "remove". The
     selected media id is submitted in a hidden input named `name`.
+    `label-hidden` keeps the label for assistive technology only, for
+    sections whose heading already says the same.
 --}}
 @props([
     'name',
     'label',
     'media' => null,
     'hint' => null,
+    'labelHidden' => false,
 ])
 
 @php
@@ -24,7 +27,7 @@
     role="group"
     aria-labelledby="{{ $id }}-label"
 >
-    <span id="{{ $id }}-label" class="text-sm font-semibold text-ink">{{ $label }}</span>
+    <span id="{{ $id }}-label" @class(['text-sm font-semibold text-ink', 'sr-only' => $labelHidden])>{{ $label }}</span>
 
     <div class="flex items-center gap-4">
         <span class="grid size-20 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-canvas">
@@ -55,10 +58,6 @@
     @endif
 </div>
 
-@pushOnce('dialogs')
-    <x-ui.dialog id="media-picker-dialog" :title="__('admin.media.picker.title')" size="xl">
-        <div data-media-picker-body aria-live="polite" class="min-h-48">
-            <x-ui.spinner :label="__('ui.loading')" class="text-primary" />
-        </div>
-    </x-ui.dialog>
+@pushOnce('dialogs', 'media-picker-dialog')
+    <x-admin.media-picker-dialog />
 @endPushOnce

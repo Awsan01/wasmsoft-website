@@ -15,6 +15,13 @@ interface TranslatableContent
      */
     public function translations(): HasMany;
 
+    public function translation(?string $locale = null): ?Translation;
+
+    /**
+     * The version to name the item by in the dashboard (see HasTranslations).
+     */
+    public function displayTranslation(): ?Translation;
+
     /**
      * @param  array<string, array<string, mixed>>  $input  locale => field => value
      */

@@ -32,6 +32,38 @@ function setValue(picker, media) {
     input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+/**
+ * Gallery fields ([data-gallery]): append the chosen image unless it is
+ * already part of the gallery or the gallery is full.
+ */
+function addToGallery(gallery, media) {
+    const list = gallery.querySelector('[data-gallery-items]');
+    const ids = [...list.querySelectorAll('input')].map((input) => input.value);
+    const max = Number(gallery.dataset.galleryMax || 0);
+
+    if (ids.includes(String(media.id)) || (max > 0 && ids.length >= max)) {
+        return;
+    }
+
+    const item = gallery.querySelector('[data-gallery-template]').content.firstElementChild.cloneNode(true);
+    const input = item.querySelector('input');
+    const remove = item.querySelector('[data-gallery-remove]');
+
+    item.querySelector('img').src = media.url;
+    input.value = media.id;
+    remove.setAttribute('aria-label', remove.dataset.labelTemplate.replace(':name', media.name));
+    list.append(item);
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function choose(picker, media) {
+    if (picker.hasAttribute('data-gallery')) {
+        addToGallery(picker, media);
+    } else {
+        setValue(picker, media);
+    }
+}
+
 export function initMediaPickers() {
     const dialog = document.getElementById('media-picker-dialog');
 
@@ -61,10 +93,10 @@ export function initMediaPickers() {
     }
 
     document.addEventListener('click', (event) => {
-        const choose = event.target.closest('[data-media-choose]');
+        const chooseButton = event.target.closest('[data-media-choose]');
 
-        if (choose) {
-            active = choose.closest('[data-media-picker]');
+        if (chooseButton) {
+            active = chooseButton.closest('[data-media-picker]');
             dialog.showModal();
             load(active.dataset.pickerUrl);
 
@@ -81,6 +113,17 @@ export function initMediaPickers() {
             return;
         }
 
+        const galleryRemove = event.target.closest('[data-gallery-remove]');
+
+        if (galleryRemove) {
+            const gallery = galleryRemove.closest('[data-gallery]');
+            galleryRemove.closest('[data-gallery-item]').remove();
+            gallery.querySelector('[data-media-choose]')?.focus();
+            gallery.dispatchEvent(new Event('change', { bubbles: true }));
+
+            return;
+        }
+
         if (!active || !dialog.contains(event.target)) {
             return;
         }
@@ -88,7 +131,7 @@ export function initMediaPickers() {
         const option = event.target.closest('[data-media-option]');
 
         if (option) {
-            setValue(active, { id: option.dataset.mediaId, url: option.dataset.mediaUrl, name: option.dataset.mediaName });
+            choose(active, { id: option.dataset.mediaId, url: option.dataset.mediaUrl, name: option.dataset.mediaName });
             dialog.close();
             active.querySelector('[data-media-choose]')?.focus();
 
@@ -144,7 +187,7 @@ export function initMediaPickers() {
             return;
         }
 
-        setValue(active, json.data[0]);
+        choose(active, json.data[0]);
         dialog.close();
         active.querySelector('[data-media-choose]')?.focus();
     });

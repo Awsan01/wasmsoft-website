@@ -7,6 +7,8 @@ use App\Localization\Formatter;
 use App\Localization\Locales;
 use App\Models\Media;
 use App\Models\Page;
+use App\Models\Project;
+use App\Models\ProjectCategory;
 use App\Models\Service;
 use App\Models\User;
 use App\Navigation\AdminNavigation;
@@ -59,6 +61,8 @@ class AppServiceProvider extends ServiceProvider
             'page' => Page::class,
             'media' => Media::class,
             'service' => Service::class,
+            'project' => Project::class,
+            'project_category' => ProjectCategory::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.

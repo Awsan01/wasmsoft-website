@@ -144,6 +144,14 @@ return [
         'alt' => 'Alternatif metin',
         'benefits' => 'Faydalar',
         'is_featured' => 'Öne çıkan',
+        'name' => 'Ad',
+        'category' => 'Kategori',
+        'cover' => 'Kapak görseli',
+        'gallery' => 'Galeri',
+        'client_name' => 'Müşteri',
+        'project_url' => 'Proje web sitesi',
+        'technologies' => 'Teknolojiler',
+        'completed_on' => 'Tamamlanma tarihi',
     ],
 
     'translations' => [
@@ -161,6 +169,7 @@ return [
     'content' => [
         'all_statuses' => 'Tüm durumlar',
         'order' => 'Sıra',
+        'usage' => 'Kullanım',
         'reorder_hint' => 'Öğelerin sitede görünme sırasını değiştirmek için okları kullanın.',
         'read_only' => 'Bu içeriğe yalnızca görüntüleme erişiminiz var.',
         'always_published' => 'Bu sayfa her zaman yayındadır.',
@@ -223,6 +232,8 @@ return [
             'none' => 'Görsel seçilmedi',
             'choose' => 'Görsel seç',
             'remove' => 'Görseli kaldır',
+            'add' => 'Görsel ekle',
+            'remove_named' => ':name kaldır',
             'empty' => 'Görsel bulunamadı.',
         ],
         'errors' => [
@@ -248,6 +259,33 @@ return [
         'benefits_hint' => 'Her satıra bir fayda, en fazla 12.',
     ],
 
+    'projects' => [
+        'title' => 'Projeler',
+        'description' => 'Sitede gösterilen portföy projeleri. Yalnızca herkese açık göstermenize izin verilen projeleri yayımlayın.',
+        'new' => 'Yeni proje',
+        'untitled' => 'Başlıksız proje',
+        'empty_title' => 'Henüz proje yok',
+        'empty_text' => 'Portföyünüzde sunmak istediğiniz projeleri ekleyin.',
+        'all_categories' => 'Tüm kategoriler',
+        'no_category' => 'Kategori yok',
+        'details' => 'Proje ayrıntıları',
+        'client_hint' => 'Yalnızca adının anılmasını kabul eden müşterileri yazın.',
+        'technologies_hint' => 'Teknolojileri virgülle ayırın, ör. Laravel, Vue.js, PostgreSQL.',
+        'cover_hint' => 'Proje kartlarında ve proje sayfasının üst kısmında kullanılır.',
+        'gallery_hint' => 'Proje sayfasında gösterilen ek görseller, en fazla :max.',
+        'body_hint' => 'Projenin hikâyesi: sorun, çözüm ve sonuç. Biçimlendirme: ## Başlık, **kalın**, - liste öğesi.',
+    ],
+
+    'project_categories' => [
+        'title' => 'Proje kategorileri',
+        'description' => 'Ziyaretçilerin portföyü filtrelemek için kullanabileceği kategoriler.',
+        'new' => 'Yeni kategori',
+        'untitled' => 'Adsız kategori',
+        'empty_title' => 'Henüz kategori yok',
+        'empty_text' => 'Projelerinizi gruplamak için Web uygulamaları veya Mobil uygulamalar gibi kategoriler oluşturun.',
+        'usage' => '{0} Proje yok|{1} Bir proje|[2,*] :count proje',
+        'delete_text' => 'Bu kategorideki projeler korunur, yalnızca kategorisiz kalır.',
+    ],
     'icons' => [
         'none' => 'Simge yok',
         'code' => 'Kod',

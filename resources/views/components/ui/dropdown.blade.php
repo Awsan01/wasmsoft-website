@@ -31,7 +31,7 @@
         {{ $attributes->class([
             'absolute top-full z-(--z-dropdown) mt-2 rounded-lg border border-border bg-surface p-1.5 shadow-lg',
             $width,
-            $align === 'start' ? 'start-0' : 'end-0',
+            $align === 'start' ? 'inset-s-0' : 'inset-e-0',
         ]) }}
     >
         {{ $slot }}

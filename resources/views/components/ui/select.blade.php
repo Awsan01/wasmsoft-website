@@ -40,6 +40,6 @@
                 <option value="{{ $optionValue }}" @selected((string) $current === (string) $optionValue)>{{ $optionLabel }}</option>
             @endforeach
         </select>
-        <x-ui.icon name="chevron-down" :size="18" class="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-muted" />
+        <x-ui.icon name="chevron-down" :size="18" class="pointer-events-none absolute inset-e-3 top-1/2 -translate-y-1/2 text-muted" />
     </div>
 </x-ui.field>

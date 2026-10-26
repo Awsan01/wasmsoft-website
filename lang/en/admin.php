@@ -144,6 +144,14 @@ return [
         'alt' => 'Alternative text',
         'benefits' => 'Benefits',
         'is_featured' => 'Featured',
+        'name' => 'Name',
+        'category' => 'Category',
+        'cover' => 'Cover image',
+        'gallery' => 'Gallery',
+        'client_name' => 'Client',
+        'project_url' => 'Project website',
+        'technologies' => 'Technologies',
+        'completed_on' => 'Completion date',
     ],
 
     'translations' => [
@@ -161,6 +169,7 @@ return [
     'content' => [
         'all_statuses' => 'All statuses',
         'order' => 'Order',
+        'usage' => 'Used by',
         'reorder_hint' => 'Use the arrows to change the order in which items appear on the website.',
         'read_only' => 'You have read-only access to this content.',
         'always_published' => 'This page is always published.',
@@ -223,6 +232,8 @@ return [
             'none' => 'No image selected',
             'choose' => 'Choose image',
             'remove' => 'Remove image',
+            'add' => 'Add images',
+            'remove_named' => 'Remove :name',
             'empty' => 'No images found.',
         ],
         'errors' => [
@@ -248,6 +259,33 @@ return [
         'benefits_hint' => 'One benefit per line, up to 12.',
     ],
 
+    'projects' => [
+        'title' => 'Projects',
+        'description' => 'Portfolio projects shown on the website. Only publish projects you are allowed to show publicly.',
+        'new' => 'New project',
+        'untitled' => 'Untitled project',
+        'empty_title' => 'No projects yet',
+        'empty_text' => 'Add the projects you want to present in your portfolio.',
+        'all_categories' => 'All categories',
+        'no_category' => 'No category',
+        'details' => 'Project details',
+        'client_hint' => 'Only name clients who agreed to be mentioned.',
+        'technologies_hint' => 'Separate technologies with commas, e.g. Laravel, Vue.js, PostgreSQL.',
+        'cover_hint' => 'Used on project cards and at the top of the project page.',
+        'gallery_hint' => 'Additional images shown on the project page, up to :max.',
+        'body_hint' => 'The story of the project: the challenge, the solution and the result. Formatting: ## Heading, **bold**, - list item.',
+    ],
+
+    'project_categories' => [
+        'title' => 'Project categories',
+        'description' => 'Categories visitors can use to filter the portfolio.',
+        'new' => 'New category',
+        'untitled' => 'Untitled category',
+        'empty_title' => 'No categories yet',
+        'empty_text' => 'Create categories such as Web applications or Mobile apps to group your projects.',
+        'usage' => '{0} No projects|{1} One project|[2,*] :count projects',
+        'delete_text' => 'Projects in this category are kept and simply lose their category.',
+    ],
     'icons' => [
         'none' => 'No icon',
         'code' => 'Code',

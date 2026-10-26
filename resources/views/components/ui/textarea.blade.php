@@ -14,6 +14,8 @@
     $id ??= \App\View\FormField::id($name);
     $error = \App\View\FormField::error($name);
     $current = \App\View\FormField::old($name, $value);
+    // List values (e.g. benefits) are edited one item per line.
+    $current = is_array($current) ? implode("\n", $current) : $current;
 @endphp
 
 <x-ui.field :id="$id" :label="$label" :hint="$hint" :error="$error" :required="$required" :label-hidden="$labelHidden" @class([$wrapperClass])>
