@@ -18,9 +18,11 @@ use App\Http\Controllers\Admin\Auth\InvitationController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\HighlightController;
 use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\LocaleController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\MilestoneController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PostCategoryController;
 use App\Http\Controllers\Admin\PostController;
@@ -30,6 +32,8 @@ use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\TeamMemberController;
+use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -71,6 +75,15 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
     Route::resource('post-categories', PostCategoryController::class)->except('show')->parameters(['post-categories' => 'term']);
     Route::patch('post-categories/{term}/move', [PostCategoryController::class, 'move'])->name('post-categories.move');
     Route::resource('tags', TagController::class)->except('show')->parameters(['tags' => 'term']);
+
+    // Home and about page items ({block}: see Admin\BlockController).
+    Route::resource('highlights', HighlightController::class)->except('show')->parameters(['highlights' => 'block']);
+    Route::patch('highlights/{block}/move', [HighlightController::class, 'move'])->name('highlights.move');
+    Route::resource('testimonials', TestimonialController::class)->except('show')->parameters(['testimonials' => 'block']);
+    Route::patch('testimonials/{block}/move', [TestimonialController::class, 'move'])->name('testimonials.move');
+    Route::resource('team-members', TeamMemberController::class)->except('show')->parameters(['team-members' => 'block']);
+    Route::patch('team-members/{block}/move', [TeamMemberController::class, 'move'])->name('team-members.move');
+    Route::resource('milestones', MilestoneController::class)->except('show')->parameters(['milestones' => 'block']);
 
     Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'update', 'destroy']);
 

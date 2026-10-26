@@ -48,6 +48,10 @@ class AuditLog extends Model
         'media' => 'admin.media.edit',
         'user' => 'admin.users.edit',
         'inquiry' => 'admin.inquiries.show',
+        'highlight' => 'admin.highlights.edit',
+        'testimonial' => 'admin.testimonials.edit',
+        'team_member' => 'admin.team-members.edit',
+        'milestone' => 'admin.milestones.edit',
     ];
 
     protected $guarded = ['id'];

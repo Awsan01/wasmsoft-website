@@ -6,8 +6,10 @@ use App\Auth\Permission;
 use App\Inquiries\InquiryStatus;
 use App\Localization\Formatter;
 use App\Localization\Locales;
+use App\Models\Highlight;
 use App\Models\Inquiry;
 use App\Models\Media;
+use App\Models\Milestone;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\PostCategory;
@@ -15,6 +17,8 @@ use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\Service;
 use App\Models\Tag;
+use App\Models\TeamMember;
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Navigation\AdminNavigation;
 use App\Navigation\SiteNavigation;
@@ -74,6 +78,10 @@ class AppServiceProvider extends ServiceProvider
             'post_category' => PostCategory::class,
             'tag' => Tag::class,
             'inquiry' => Inquiry::class,
+            'highlight' => Highlight::class,
+            'testimonial' => Testimonial::class,
+            'team_member' => TeamMember::class,
+            'milestone' => Milestone::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.

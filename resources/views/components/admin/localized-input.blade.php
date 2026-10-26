@@ -2,7 +2,8 @@
     One text per language for a localized setting (company name, address…),
     submitted as `{name}[{locale}]`. Every supported language is listed, so
     texts can be prepared before a language is enabled. `required` names the
-    language that must be filled in.
+    language that must be filled in; `label-hidden` keeps the legend for
+    assistive technology only (when the section heading says the same).
 --}}
 @props([
     'name',
@@ -13,6 +14,7 @@
     'rows' => 2,
     'required' => null,
     'hint' => null,
+    'labelHidden' => false,
 ])
 
 @php
@@ -21,7 +23,7 @@
 @endphp
 
 <fieldset {{ $attributes->class(['grid min-w-0 gap-3']) }} @if ($hint) aria-describedby="{{ $id }}-hint" @endif>
-    <legend class="mb-1 text-sm font-semibold text-ink">{{ $label }}</legend>
+    <legend @class(['mb-1 text-sm font-semibold text-ink', 'sr-only' => $labelHidden])>{{ $label }}</legend>
 
     @if ($hint)
         <p id="{{ $id }}-hint" class="-mt-1 text-sm text-muted">{{ $hint }}</p>
