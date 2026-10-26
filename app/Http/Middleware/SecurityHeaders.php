@@ -25,6 +25,9 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // Sent by PHP itself (expose_php); it only advertises the PHP version.
+        header_remove('X-Powered-By');
+
         $headers = $response->headers;
         $headers->set('Content-Security-Policy', $this->contentSecurityPolicy($request));
         $headers->set('X-Content-Type-Options', 'nosniff');
