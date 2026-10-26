@@ -12,6 +12,7 @@
 |
 */
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\InvitationController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
@@ -83,6 +84,8 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
 
     Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    Route::get('audit', [AuditLogController::class, 'index'])->name('audit.index');
 
     Route::resource('users', UserController::class)->except('show');
     Route::post('users/{user}/invitation', [UserController::class, 'invite'])->name('users.invite');

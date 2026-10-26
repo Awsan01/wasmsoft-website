@@ -60,9 +60,13 @@ class ContentWriter
             // Translation or relation changes alone do not update the timestamp.
             $model->touch();
 
-            $this->audit->record($this->eventFor($model, $creating, $previousStatus), $model, [
-                'status' => $model->getAttribute('status') instanceof PublicationStatus ? $model->getAttribute('status')->value : null,
-            ]);
+            $status = $model->getAttribute('status');
+
+            $this->audit->record(
+                $this->eventFor($model, $creating, $previousStatus),
+                $model,
+                $status instanceof PublicationStatus ? ['status' => $status->value] : [],
+            );
         });
 
         $this->cache->flush();
