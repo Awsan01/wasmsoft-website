@@ -6,6 +6,7 @@ use App\Content\SystemPage;
 use App\Models\Page;
 use App\Models\Service;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ServiceControllerTest extends TestCase
@@ -22,18 +23,25 @@ class ServiceControllerTest extends TestCase
         $response = $this->get('/en/services');
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Mobile apps', 'Cloud hosting']);
-        $response->assertDontSee('Secret draft');
-        $response->assertDontSee('خدمة عربية فقط');
-        $response->assertSee('<link rel="alternate" hreflang="ar" href="'.url('/ar/services').'">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/services/index')
+            ->has('services', 2)
+            ->where('services.0.title', 'Mobile apps')
+            ->where('services.1.title', 'Cloud hosting'));
+        $response->assertPageDoesNotShow('Secret draft', 'خدمة عربية فقط');
+        $response->assertHeadHas('<link data-inertia="alternate-ar" rel="alternate" hreflang="ar" href="'.url('/ar/services').'">');
     }
 
     public function test_index_uses_the_editable_introduction_and_falls_back_to_the_interface_title(): void
     {
         Page::factory()->system(SystemPage::Services)->translated(['en'], ['en' => ['title' => 'What Wasmsoft builds', 'summary' => 'From idea to launch.']])->create();
 
-        $this->get('/en/services')->assertSee('What Wasmsoft builds')->assertSee('From idea to launch.');
-        $this->get('/tr/services')->assertSee('<h1 class="text-h1">'.__('site.services.title', [], 'tr').'</h1>', false);
+        $this->get('/en/services')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', 'What Wasmsoft builds')
+            ->where('lead', 'From idea to launch.'));
+        $this->get('/tr/services')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', __('site.services.title', [], 'tr'))
+            ->where('lead', null));
     }
 
     public function test_service_page_shows_benefits_breadcrumbs_and_a_contact_link_for_this_service(): void
@@ -47,8 +55,12 @@ class ServiceControllerTest extends TestCase
         $response = $this->get('/en/services/web-development');
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Accessible by default', 'Fast pages']);
-        $response->assertSee('href="'.url('/en/contact?service='.$service->id).'"', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/services/show')
+            ->where('service.benefits', ['Accessible by default', 'Fast pages'])
+            ->where('contactUrl', url('/en/contact?service='.$service->id))
+            ->where('breadcrumbs.1.url', url('/en/services'))
+            ->where('breadcrumbs.2.label', 'Web development'));
         $response->assertSee('"@type":"BreadcrumbList"', false);
     }
 
@@ -76,7 +88,6 @@ class ServiceControllerTest extends TestCase
 
         $response = $this->get('/en/services/main');
 
-        $response->assertSee(__('site.services.more'));
-        $response->assertSee('Other service');
+        $response->assertInertia(fn (AssertableInertia $page) => $page->has('others', 1)->where('others.0.title', 'Other service'));
     }
 }

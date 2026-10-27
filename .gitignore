@@ -15,9 +15,13 @@
 /auth.json
 /node_modules
 /public/build
+/bootstrap/ssr
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+/test-results
+/playwright-report
+/blob-report
 /storage/*.key
 /storage/pail
 /vendor

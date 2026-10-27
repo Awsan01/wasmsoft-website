@@ -4,27 +4,35 @@ namespace App\Http\Controllers\Admin;
 
 use App\Content\ContentWriter;
 use App\Content\PublicationStatus;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Site\ProjectController as SiteProjectController;
+use App\Http\Presenters\AdminPresenter;
 use App\Http\Requests\Admin\ProjectRequest;
+use App\Http\Responses\SitePreview;
 use App\Localization\Locales;
 use App\Models\Media;
 use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Support\Search;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
+use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ProjectController extends Controller
 {
-    public function __construct(private readonly ContentWriter $writer) {}
+    use RendersAdminPages;
 
-    public function index(Request $request): View
+    public function __construct(
+        private readonly ContentWriter $writer,
+        private readonly AdminPresenter $present,
+    ) {}
+
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Project::class);
 
@@ -42,16 +50,30 @@ class ProjectController extends Controller
             ->paginate((int) config('wasmsoft.pagination.admin'))
             ->withQueryString();
 
-        return view('admin.projects.index', [
-            'projects' => $projects,
-            'categories' => $this->categoryOptions(),
-            'status' => $status,
-            'categoryId' => $categoryId,
-            'search' => $search,
+        return $this->adminPage('projects/index', __('admin.projects.title'), [
+            'description' => __('admin.projects.description'),
+            'createUrl' => Gate::allows('create', Project::class) ? route('admin.projects.create') : null,
+            'categoriesUrl' => route('admin.project-categories.index'),
+            'projects' => $projects->getCollection()->map(fn (Project $project): array => [
+                'id' => $project->id,
+                'title' => $this->present->display($project, 'title', __('admin.projects.untitled')),
+                'coverUrl' => $project->cover?->urlForWidth(480),
+                'featured' => $project->is_featured,
+                'category' => $project->category ? $this->present->display($project->category, 'name', '—') : null,
+                'status' => $this->present->status($project),
+                'locales' => $this->present->locales($project),
+                'updated' => $this->present->time($project->updated_at),
+                'editUrl' => route('admin.projects.edit', $project),
+            ])->values()->all(),
+            'pagination' => $this->present->pagination($projects),
+            'filters' => ['q' => $search, 'status' => $status->value ?? '', 'category' => (string) ($categoryId ?? '')],
+            'statusOptions' => $this->present->options(PublicationStatus::options()),
+            'categoryOptions' => $this->present->options($this->categoryOptions()),
+            'indexUrl' => route('admin.projects.index'),
         ]);
     }
 
-    public function create(): View
+    public function create(): Response
     {
         Gate::authorize('create', Project::class);
 
@@ -67,7 +89,7 @@ class ProjectController extends Controller
         return redirect()->route('admin.projects.edit', $project)->with('status', __('admin.content.created'));
     }
 
-    public function edit(Project $project): View
+    public function edit(Project $project): Response
     {
         Gate::authorize('view', $project);
 
@@ -90,7 +112,7 @@ class ProjectController extends Controller
         return redirect()->route('admin.projects.index')->with('status', __('admin.content.deleted'));
     }
 
-    public function preview(Project $project, string $locale, Locales $locales, SiteProjectController $site): View
+    public function preview(Request $request, Project $project, string $locale, Locales $locales, SiteProjectController $site, SitePreview $sitePreview): HttpResponse
     {
         Gate::authorize('view', $project);
 
@@ -103,7 +125,7 @@ class ProjectController extends Controller
         app()->setLocale($locale);
         URL::defaults(['locale' => $locale]);
 
-        return $site->render($project, $locale, preview: true);
+        return $sitePreview->render($request, fn () => $site->render($project, $locale, preview: true));
     }
 
     private function save(ProjectRequest $request, Project $project): void
@@ -121,31 +143,48 @@ class ProjectController extends Controller
         );
     }
 
-    private function form(Project $project): View
+    private function form(Project $project): Response
     {
-        return view('admin.projects.form', [
-            'project' => $project,
-            'categories' => $this->categoryOptions(),
-            'gallery' => $this->galleryForForm($project),
+        $isNew = ! $project->exists;
+        $title = $isNew ? __('admin.projects.new') : ($project->displayTranslation()->title ?? __('admin.projects.untitled'));
+
+        $editor = $this->present->editor($project, [
+            'title' => ['required' => true, 'maxlength' => 200],
+            'slug' => ['type' => 'slug', 'maxlength' => 120],
+            'summary' => ['type' => 'textarea', 'rows' => 3, 'maxlength' => 600, 'hint' => __('admin.services.summary_hint')],
+            'body' => ['type' => 'markdown', 'rows' => 14, 'hint' => __('admin.projects.body_hint')],
+            'meta_title' => ['seo' => true, 'maxlength' => 70],
+            'meta_description' => ['type' => 'textarea', 'seo' => true, 'rows' => 2, 'maxlength' => 200],
         ]);
-    }
 
-    /**
-     * The gallery to show: after a failed submission, the images the editor
-     * had chosen (in their order, possibly none), otherwise the saved gallery.
-     *
-     * @return Collection<int, Media>
-     */
-    private function galleryForForm(Project $project): Collection
-    {
-        if (! request()->session()->hasOldInput()) {
-            return $project->exists ? $project->gallery : new Collection;
-        }
-
-        $ids = array_values(array_map(intval(...), array_filter((array) old('gallery', []), is_numeric(...))));
-        $media = Media::query()->images()->whereIn('id', $ids)->get()->keyBy('id');
-
-        return new Collection(array_values(array_filter(array_map(fn (int $id): ?Media => $media->get($id), $ids))));
+        return $this->adminPage('projects/form', $title, [
+            'canEdit' => $isNew ? Gate::allows('create', Project::class) : Gate::allows('update', $project),
+            'submit' => $this->present->formAction($project, 'admin.projects'),
+            'editor' => $editor,
+            'form' => [
+                'translations' => $this->present->translationValues($project, $editor['fields']),
+                'status' => $project->status->value,
+                'is_featured' => $project->is_featured,
+                'project_category_id' => (string) ($project->project_category_id ?? ''),
+                'client_name' => (string) $project->client_name,
+                'project_url' => (string) $project->project_url,
+                'completed_on' => $project->completed_on?->format('Y-m-d') ?? '',
+                // Typed as one comma-separated line (ProjectRequest splits it).
+                'technologies' => implode(', ', $project->technologies ?? []),
+                'cover' => $this->present->media($project->cover),
+                'gallery' => $project->exists ? $project->gallery->map(fn (Media $media): ?array => $this->present->media($media))->values()->all() : [],
+            ],
+            'statusOptions' => $this->present->options(PublicationStatus::options()),
+            'categoryOptions' => $this->present->options($this->categoryOptions()),
+            'maxGallery' => ProjectRequest::MAX_GALLERY_IMAGES,
+            'viewLinks' => $this->present->viewLinks($project, 'admin.projects.preview'),
+            'destroy' => ! $isNew && Gate::allows('delete', $project)
+                ? $this->present->deletion(route('admin.projects.destroy', $project), $title, __('admin.content.danger_text'))
+                : null,
+        ], [
+            ['label' => __('admin.projects.title'), 'url' => route('admin.projects.index')],
+            ['label' => $title, 'url' => null],
+        ]);
     }
 
     /**

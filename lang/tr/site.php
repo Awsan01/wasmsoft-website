@@ -36,6 +36,7 @@ return [
     'services' => [
         'title' => 'Hizmetler',
         'eyebrow' => 'Neler yapıyoruz',
+        'description' => ':name tarafından sunulan hizmetlere genel bakış.',
         'empty' => 'Hizmetlerimiz yakında burada listelenecek.',
         'benefits' => 'Size kazandırdıkları',
         'cta_title' => 'Bu hizmetle ilgileniyor musunuz?',
@@ -53,6 +54,7 @@ return [
     'projects' => [
         'title' => 'Projeler',
         'eyebrow' => 'Çalışmalarımız',
+        'description' => ':name ekibinin üzerinde çalıştığı projelerden bir seçki.',
         'filter' => 'Projeleri kategoriye göre filtrele',
         'search' => 'Projelerde ara',
         'empty' => 'Projelerimiz yakında burada gösterilecek.',
@@ -72,6 +74,9 @@ return [
     'news' => [
         'title' => 'Haberler',
         'eyebrow' => 'Son gelişmeler',
+        'description' => ':name ekibinden haberler ve yazılar.',
+        'category_description' => ':name ekibinden :category kategorisindeki yazılar.',
+        'tag_description' => ':name ekibinden “:tag” etiketli yazılar.',
         'filter' => 'Haberleri kategoriye göre filtrele',
         'category' => 'Kategori',
         'tag' => 'Etiket',
@@ -137,5 +142,79 @@ return [
         'address' => 'Adres',
         'hours' => 'Çalışma saatleri',
         'map' => 'Haritada görüntüle',
+    ],
+    'home' => [
+        'hero_title' => 'İşinize göre şekillenen yazılımlar',
+        'hero_lead' => 'Web ve mobil uygulamaları planlıyor, tasarlıyor, geliştiriyor ve bakımını yapıyoruz. İhtiyacınızı anlatın, oraya birlikte ulaşalım.',
+        'hero_secondary' => 'Çalışmalarımızı görün',
+        'services_eyebrow' => 'Neler yapıyoruz',
+        'services_title' => 'Hizmetler',
+        'services_all' => 'Tüm hizmetler',
+        'why_eyebrow' => 'Neden biz',
+        'why_title' => 'Neden bizimle çalışmalısınız',
+        'figures_title' => 'Rakamlarla',
+        'projects_eyebrow' => 'Çalışmalarımız',
+        'projects_title' => 'Seçilmiş projeler',
+        'projects_all' => 'Tüm projeler',
+        'testimonials_eyebrow' => 'Müşterilerimiz',
+        'testimonials_title' => 'Müşterilerimiz ne diyor',
+        'news_eyebrow' => 'Haberler',
+        'news_title' => 'Son haberler',
+        'news_all' => 'Tüm haberler',
+    ],
+    'about' => [
+        'values_eyebrow' => 'Neyi savunuyoruz',
+        'values_title' => 'Değerlerimiz',
+        'team_eyebrow' => 'İnsanlar',
+        'team_title' => 'Ekibimiz',
+        'history_eyebrow' => 'Hikâyemiz',
+        'history_title' => 'Kilometre taşları',
+    ],
+    'partnerships' => [
+        'models_title' => 'Ortaklık biçimleri',
+        'cta_title' => 'Birlikte çalışmak ister misiniz?',
+        'cta_text' => 'Bize şirketinizden ve aklınızdaki iş birliğinden bahsedin.',
+        'cta_button' => 'Ortaklık için bize yazın',
+    ],
+    'errors' => [
+        'code' => 'Hata :code',
+        'home' => 'Ana sayfaya git',
+        'dashboard' => 'Yönetim paneline dön',
+        '403' => [
+            'title' => 'Erişim reddedildi',
+            'message' => 'Bu sayfayı açma izniniz yok.',
+        ],
+        '404' => [
+            'title' => 'Sayfa bulunamadı',
+            'message' => 'Aradığınız sayfa mevcut değil veya taşındı.',
+        ],
+        '419' => [
+            'title' => 'Sayfanın süresi doldu',
+            'message' => 'Sayfa çok uzun süre açık kaldı. Lütfen sayfayı yeniden açıp işleminizi tekrarlayın.',
+        ],
+        '429' => [
+            'title' => 'Çok fazla istek',
+            'message' => 'Lütfen yeniden denemeden önce biraz bekleyin.',
+        ],
+        '500' => [
+            'title' => 'Bir şeyler ters gitti',
+            'message' => 'Bizim tarafımızda beklenmeyen bir hata oluştu. Lütfen biraz sonra yeniden deneyin.',
+        ],
+        '503' => [
+            'title' => 'Yakında döneceğiz',
+            'message' => 'Web sitesi güncelleniyor. Lütfen birkaç dakika sonra yeniden deneyin.',
+        ],
+        '413' => [
+            'title' => 'Dosya çok büyük',
+            'message' => 'Gönderdiğiniz içerik sunucunun kabul ettiğinden büyük. Lütfen daha küçük bir dosya seçip yeniden deneyin.',
+        ],
+        '4xx' => [
+            'title' => 'Bu istek tamamlanamadı',
+            'message' => 'Adres veya istek geçerli değil. Lütfen kontrol edin ya da ana sayfaya dönün.',
+        ],
+        '5xx' => [
+            'title' => 'Bir şeyler ters gitti',
+            'message' => 'Bizim tarafımızda beklenmeyen bir hata oluştu. Lütfen biraz sonra yeniden deneyin.',
+        ],
     ],
 ];

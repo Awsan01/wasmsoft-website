@@ -21,6 +21,7 @@ enum AuditEvent: string
     case UserDeactivated = 'user.deactivated';
     case UserDeleted = 'user.deleted';
     case InvitationSent = 'user.invitation_sent';
+    case InvitationAccepted = 'user.invitation_accepted';
 
     case SettingsUpdated = 'settings.updated';
     case NavigationUpdated = 'navigation.updated';

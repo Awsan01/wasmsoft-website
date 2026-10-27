@@ -83,7 +83,7 @@
         font-size: var(--text-sm);
     }
 
-    .data-table th {
+    .data-table thead th {
         border-block-end: 1px solid var(--color-border);
         background-color: var(--color-canvas);
         padding: 0.75rem 1rem;
@@ -96,29 +96,29 @@
         white-space: nowrap;
     }
 
-    .data-table th:lang(ar) {
+    .data-table thead th:lang(ar) {
         font-size: var(--text-sm);
         text-transform: none;
     }
 
-    .data-table td {
+    /* Body cells, including row headers (<th scope="row">). */
+    .data-table tbody :is(td, th) {
         border-block-end: 1px solid var(--color-border);
         padding: 0.875rem 1rem;
         vertical-align: middle;
     }
 
-    .data-table tbody tr:last-child td {
+    .data-table tbody th {
+        font-weight: var(--font-weight-semibold);
+        text-align: start;
+    }
+
+    .data-table tbody tr:last-child :is(td, th) {
         border-block-end: 0;
     }
 
-    .data-table tbody tr:hover td {
+    .data-table tbody tr:hover :is(td, th) {
         background-color: var(--color-purple-50);
-    }
-
-    /* Busy submit buttons (see resources/js/modules/submit-state.js) ---- */
-    [data-loading='true'] {
-        cursor: progress;
-        opacity: 0.7;
     }
 
     /* Dashboard navigation drawer (small screens) ---------------------- */
@@ -175,5 +175,210 @@
 
     .skip-link:focus {
         transform: translateY(0);
+    }
+
+    /* Page-load progress bar (Inertia's NProgress; its own styles would be an inline <style>) */
+    #nprogress {
+        pointer-events: none;
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: var(--z-toast);
+        margin: 0;
+        border: 0;
+        padding: 0;
+        background: none;
+        overflow: visible;
+        block-size: 0;
+    }
+
+    #nprogress::backdrop {
+        display: none;
+    }
+
+    #nprogress .bar {
+        position: fixed;
+        inset-block-start: 0;
+        inset-inline-start: 0;
+        inline-size: 100%;
+        block-size: 3px;
+        background-color: var(--color-secondary);
+    }
+
+    #nprogress .peg {
+        position: absolute;
+        inset-inline-end: 0;
+        display: block;
+        inline-size: 6rem;
+        block-size: 100%;
+        box-shadow:
+            0 0 10px var(--color-secondary),
+            0 0 5px var(--color-secondary);
+        opacity: 1;
+        transform: rotate(3deg) translate(0, -4px);
+    }
+
+    /*
+     * The home page's opening figure: two blocks and a diagonal bar, the
+     * arrangement of the logo's mark, filled with the site's own content.
+     * The blocks' cut corners face the bar at 45°; like the rest of the
+     * layout, the figure mirrors in right-to-left pages.
+     */
+    .split-figure {
+        --notch: 7rem;
+        position: relative;
+        inline-size: 100%;
+        aspect-ratio: 1;
+    }
+
+    .split-figure__block {
+        position: absolute;
+        inline-size: 64%;
+        block-size: 45%;
+        filter: drop-shadow(0 22px 28px rgb(72 20 103 / 0.18)) drop-shadow(0 3px 6px rgb(33 21 43 / 0.08));
+        animation: split-block-in 900ms var(--ease-standard) both;
+    }
+
+    .split-figure__block > * {
+        block-size: 100%;
+        border-radius: var(--radius-xl);
+    }
+
+    .split-figure__block--upper {
+        --split-from: -1.5rem -1.5rem;
+        inset-block-start: 0;
+        inset-inline-start: 0;
+    }
+
+    .split-figure__block--upper > * {
+        clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, 0 100%);
+    }
+
+    .split-figure__block--lower {
+        --split-from: 1.5rem 1.5rem;
+        inset-block-end: 0;
+        inset-inline-end: 0;
+        animation-delay: 120ms;
+    }
+
+    .split-figure__block--lower > * {
+        clip-path: polygon(var(--notch) 0, 100% 0, 100% 100%, 0 100%, 0 var(--notch));
+    }
+
+    .split-figure__bar {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        inline-size: 0.875rem;
+        block-size: 46%;
+        border-radius: var(--radius-full);
+        background-image: linear-gradient(180deg, var(--color-accent), color-mix(in oklab, var(--color-accent) 72%, var(--color-secondary)));
+        box-shadow: 0 12px 24px -8px rgb(244 183 64 / 0.55);
+        transform: translate(-50%, -50%) rotate(45deg);
+        animation: split-bar-in 700ms var(--ease-emphasized) 260ms both;
+    }
+
+    .split-figure:dir(rtl) .split-figure__block--upper {
+        --split-from: 1.5rem -1.5rem;
+    }
+
+    .split-figure:dir(rtl) .split-figure__block--upper > * {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, var(--notch) 100%, 0 calc(100% - var(--notch)));
+    }
+
+    .split-figure:dir(rtl) .split-figure__block--lower {
+        --split-from: -1.5rem 1.5rem;
+    }
+
+    .split-figure:dir(rtl) .split-figure__block--lower > * {
+        clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+    }
+
+    .split-figure:dir(rtl) .split-figure__bar {
+        transform: translate(-50%, -50%) rotate(-45deg);
+    }
+
+    @keyframes split-block-in {
+        from {
+            opacity: 0;
+            translate: var(--split-from);
+        }
+    }
+
+    @keyframes split-bar-in {
+        from {
+            opacity: 0;
+            scale: 1 0.4;
+        }
+    }
+
+    /* The slash motif at the end of an inner page's opening band. */
+    .page-hero-slash {
+        inset-inline-end: 9%;
+        inline-size: 7rem;
+        background-image: linear-gradient(180deg, transparent, var(--color-purple-200) 35%, var(--color-purple-200) 65%, transparent);
+        transform: skewX(-30deg);
+    }
+
+    .page-hero-slash:dir(rtl) {
+        transform: skewX(30deg);
+    }
+
+    .page-hero-slash::after {
+        content: '';
+        position: absolute;
+        inset-block-start: 2.5rem;
+        block-size: min(8rem, 45%);
+        inset-inline-start: -2.75rem;
+        inline-size: 4px;
+        border-radius: var(--radius-full);
+        background-color: var(--color-accent);
+    }
+
+    /*
+     * Two featured items side by side, split by a slanted channel holding
+     * the logo's bar. The start item's lower corner is cut, so its text keeps
+     * clear of the slant; mirrored in right-to-left pages.
+     */
+    @media (min-width: 64rem) {
+        .split-pair {
+            --split-slant: 3.25rem;
+            --split-line: 4px;
+            position: relative;
+        }
+
+        .split-pair:has(> .split-pair__end)::after {
+            content: '';
+            position: absolute;
+            inset-block: 0;
+            left: calc(50% - (var(--split-slant) + var(--split-line)) / 2);
+            inline-size: calc(var(--split-slant) + var(--split-line));
+            background-color: var(--color-accent);
+            clip-path: polygon(calc(100% - var(--split-line)) 0, 100% 0, var(--split-line) 100%, 0 100%);
+            pointer-events: none;
+        }
+
+        .split-pair:dir(rtl)::after {
+            clip-path: polygon(0 0, var(--split-line) 0, 100% 100%, calc(100% - var(--split-line)) 100%);
+        }
+
+        .split-pair__start {
+            clip-path: polygon(0 0, 100% 0, calc(100% - var(--split-slant)) 100%, 0 100%);
+        }
+
+        .split-pair__end {
+            clip-path: polygon(var(--split-slant) 0, 100% 0, 100% 100%, 0 100%);
+        }
+
+        .split-pair__start:dir(rtl) {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, var(--split-slant) 100%);
+        }
+
+        .split-pair__end:dir(rtl) {
+            clip-path: polygon(0 0, calc(100% - var(--split-slant)) 0, 100% 100%, 0 100%);
+        }
+
+        .split-pair__start .split-pair__content {
+            padding-inline-end: calc(var(--split-slant) + 2.5rem);
+        }
     }
 }

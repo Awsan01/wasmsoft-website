@@ -1,58 +1,95 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Wasmsoft website
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The public website of Wasmsoft and the dashboard its staff use to manage it.
 
-## About Laravel
+- **Public site** in Arabic (right to left), English and Turkish: home, about, services, projects, news, contact and any other page editors create.
+- **Dashboard** at `/admin`: overview, pages, services, projects, news (categories, tags), home and about page items (highlights, testimonials, team, milestones), media library, navigation menus, contact inquiries, users and roles, settings and an audit log.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The full brief is in [docs/specification.md](docs/specification.md). What is finished, what is not and what the company still has to supply is in [docs/project-status.md](docs/project-status.md).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Technology
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Laravel 13 (PHP 8.4) and Inertia.js 3: the pages of the public site and of the dashboard are React 19 components written in TypeScript, styled with Tailwind CSS 4 and built by Vite 8, while Laravel keeps the routing, validation, authorization and data (there is no separate API). There is no third-party script, font or tracking service: fonts are self-hosted and the Content-Security-Policy only allows the site's own files. Decisions that shape the code are recorded in [docs/adr](docs/adr/), the move to React in [ADR 0008](docs/adr/0008-react-pages-with-inertia.md).
 
-## Learning Laravel
+## Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.4 (Composer allows 8.3; development and tests use 8.4) with the extensions `gd` (with JPEG, PNG and WebP support), `intl`, `mbstring`, `fileinfo`, `openssl`, `pdo_sqlite` (development) or the driver of the production database, and optionally `exif` (corrects photo orientation).
+- Composer 2.
+- Node.js 22 LTS and npm (assets are built with Vite; on the server only if server-side rendering is turned on).
+- Google Chrome, only for the browser tests and checks (`npm run test:browser`, `npm run check:a11y`, `npm run measure:performance`).
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Local development
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```sh
+composer run setup     # dependencies, .env, application key, SQLite database, migrations, asset build
+php artisan db:seed    # demo accounts and clearly marked sample content
+php artisan storage:link
+composer run dev       # web server, queue worker and Vite (plus the log viewer on macOS and Linux)
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Open http://localhost:8000 (the root redirects to the visitor's language) and the dashboard at http://localhost:8000/admin.
 
-## Contributing
+The seeder creates one account per role, all with the password in `DEV_SEED_PASSWORD` (default `Wasmsoft-Dev-2026`):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Account | Role |
+|---|---|
+| administrator@wasmsoft.test | Administrator: everything, including users, settings and the audit log |
+| editor@wasmsoft.test | Editor: all content, media, navigation and inquiries |
+| author@wasmsoft.test | Author: writes news articles (own drafts) and uploads media |
+| viewer@wasmsoft.test | Viewer: reads content in the dashboard, changes nothing |
 
-## Code of Conduct
+The sample content fills every section of the site, so it can be previewed in all three languages: services, projects, news, differentiators, figures, testimonials, values, team, history, contact details and social links. Nothing passes for real company information: every sample text starts with "Sample:" (نموذج: / Örnek:), sample people and companies are called "Sample person" or "Sample client", the contact email uses the reserved `.test` domain, social links point to the networks' home pages and sample images are labelled. Dhaman and Fantastic, the company's products in development, are listed by name with a placeholder description. The seeders refuse to run outside local environments.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+On a database that already has content, `php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder` adds only the samples each section is short of. It never changes or removes existing content, and never overwrites a setting that has been filled in.
 
-## Security Vulnerabilities
+Built assets are served from `public/build`; after changing pages, views, CSS or JavaScript without `composer run dev`, run `npm run build` (it also builds the server-side rendering bundle in `bootstrap/ssr`).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+An existing copy needs `composer install`, `npm install` and `npm run build` once after updating to the React pages, which brought new packages (`inertiajs/inertia-laravel`, React, TypeScript). Commit the updated `package-lock.json` that `npm install` writes.
 
-## License
+## Checks
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Command | What it does |
+|---|---|
+| `php artisan test --compact` | Feature and unit tests (PHPUnit), on an in-memory SQLite database |
+| `vendor/bin/pint` | Formats PHP code (Laravel style) |
+| `vendor/bin/phpstan analyse` | Static analysis (Larastan, level 8) |
+| `npm run typecheck` | TypeScript check of the React pages and components (strict) |
+| `npm run test:browser` | Browser tests (Playwright, `tests/Browser`): every public page in each language, navigation, keyboard use, menus, language switch, contact form, error pages. They start their own copy of the site with its own database of demo content; run `npm run build` first |
+| `npm run check:contrast` | WCAG 2.2 contrast of every colour pair the design tokens use |
+| `npm run check:a11y` | Crawls the site and dashboard with axe-core (WCAG 2.2 AA) and checks reflow at 320 px |
+| `npm run measure:performance` | Time to first byte, FCP, LCP, CLS and page weight in Chrome |
+| `composer audit` / `npm audit` | Known vulnerabilities in dependencies |
+
+The two browser checks need a running site (`BASE=http://127.0.0.1:8000` by default) and, for the dashboard part of `check:a11y`, the demo administrator or the account in `A11Y_EMAIL` / `A11Y_PASSWORD`. The browser tests need no running site: they serve one on port 8123 with a database, storage folder and caches of their own in the system's temporary folder, so the development database is never touched (see `playwright.config.ts` for running them against another server).
+
+## How the code is organised
+
+| Path | Contents |
+|---|---|
+| `routes/site.php`, `routes/web.php`, `routes/admin.php` | Public pages (no session), the contact form (session) and the dashboard |
+| `app/Http/Controllers/Site`, `app/Http/Controllers/Admin` | Thin controllers; validation in `app/Http/Requests`, authorization in `app/Policies` |
+| `app/Http/Presenters`, `app/Http/Middleware/Handle{Site,Admin}InertiaRequests.php` | The data each page receives (`SitePresenter`, `AdminPresenter`), and what every page of the site or the dashboard shares (language, menus or sidebar, signed-in account, interface texts) |
+| `app/Auth` | Roles and permissions (`Role`, `Permission`), invitations |
+| `app/Content` | Saving content (`ContentWriter`: transaction, audit entry, cache refresh), the public content cache, slugs, Markdown |
+| `app/Models` | Eloquent models; translations live in `*_translations` tables (`HasTranslations`) |
+| `app/Localization`, `lang/{ar,en,tr}` | Supported languages, formatting, interface texts |
+| `app/Media` | Uploads: type checks, generated names, re-encoded images and WebP sizes |
+| `app/Seo`, `app/Navigation`, `app/Settings`, `app/Security`, `app/Audit` | Metadata and sitemap, menus, site settings, security headers and spam checks, audit log |
+| `resources/css/tokens.css` | Design tokens (colours, type, spacing) used by every component |
+| `resources/js/pages/{site,admin}`, `resources/js/components/{ui,site,admin}`, `resources/js/layouts` | The public site and the dashboard in React and TypeScript: one file per page, shared components (form fields, the translation editor, the image picker…) and the layouts around every page |
+| `resources/js/site.tsx`, `resources/js/admin.tsx`, `resources/js/ssr.tsx`, `resources/views/app` | Start of the public site and of the dashboard in the browser, server-side rendering of the site, and the HTML pages they start from |
+| `resources/views/errors`, `resources/views/mail`, `resources/views/components/ui` | Blade, still: the self-contained server error pages and the emails |
+| `tests/Browser` | Browser tests (Playwright) and the server they start |
+| `scripts/` | The browser checks above, the contrast check and the icon generator (`npm run icons`) |
+
+## Languages
+
+Every public address starts with the language: `/ar/...`, `/en/...`, `/tr/...`. Content is written separately for each language and is never shown in another language by accident: a page that exists only in English is not listed on the Turkish site, and opening it in Turkish explains that it is not available and links to the languages it exists in. Which languages are offered, and the default, are chosen in the dashboard (Settings). Each dashboard user picks their own dashboard language.
+
+## Further documentation
+
+- [Deployment](docs/deployment.md): production configuration, first installation, updates, scheduler and queue, checklist.
+- [Backup and restore](docs/backup-and-restore.md)
+- [Rollback](docs/rollback.md)
+- [Architecture decisions](docs/adr/)
+- [Project status](docs/project-status.md): features, known limitations, outstanding work and missing business information.

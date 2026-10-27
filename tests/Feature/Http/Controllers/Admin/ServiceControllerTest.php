@@ -10,6 +10,7 @@ use App\Models\Media;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -155,7 +156,8 @@ class ServiceControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('admin.services.index'));
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Alpha service', 'Beta service']);
+        $response->assertInertia(fn (AssertableInertia $page) => $page->component('admin/services/index')->where('canReorder', false));
+        $this->assertSame(['Alpha service', 'Beta service'], array_column(array_column($response->inertiaProps('services'), 'title'), 'text'));
     }
 
     public function test_preview_renders_a_draft_service(): void
@@ -166,7 +168,10 @@ class ServiceControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('<html lang="ar" dir="rtl">', false);
-        $response->assertSee('تطوير التطبيقات');
-        $response->assertSee(__('site.preview.banner', [], 'ar'));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/services/show')
+            ->where('preview', true)
+            ->where('service.title', 'تطوير التطبيقات')
+            ->where('service.benefits', ['سرعة']));
     }
 }

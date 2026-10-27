@@ -4,17 +4,22 @@ namespace App\Http\Controllers\Admin;
 
 use App\Audit\AuditEvent;
 use App\Audit\AuditLogger;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
+use App\Http\Presenters\AdminPresenter;
 use App\Inquiries\InquiryStatus;
+use App\Localization\Locales;
 use App\Models\Inquiry;
+use App\Support\Brand;
+use App\Support\Mailto;
 use App\Support\Search;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Inertia\Response;
 
 /**
  * The contact form inbox. Inquiries are read one at a time: there is no
@@ -22,9 +27,14 @@ use Illuminate\Validation\Rule;
  */
 class InquiryController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    use RendersAdminPages;
 
-    public function index(Request $request): View
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly AdminPresenter $present,
+    ) {}
+
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Inquiry::class);
 
@@ -45,19 +55,71 @@ class InquiryController extends Controller
             ->paginate((int) config('wasmsoft.pagination.admin'))
             ->withQueryString();
 
-        return view('admin.inquiries.index', [
-            'inquiries' => $inquiries,
-            'status' => $status,
-            'search' => $search,
-            'newCount' => Inquiry::query()->where('status', InquiryStatus::New)->count(),
+        $newCount = Inquiry::query()->where('status', InquiryStatus::New)->count();
+
+        return $this->adminPage('inquiries/index', __('admin.inquiries.title'), [
+            'description' => trans_choice('admin.inquiries.new_count', $newCount, ['count' => $this->present->number($newCount)]),
+            'inquiries' => $inquiries->getCollection()->map(fn (Inquiry $inquiry): array => [
+                'id' => $inquiry->id,
+                'name' => $inquiry->name,
+                'email' => $inquiry->email,
+                'service' => $inquiry->service ? $this->present->display($inquiry->service, 'title', '—') : null,
+                'received' => $this->present->time($inquiry->created_at),
+                'status' => ['label' => $inquiry->status->label(), 'tone' => $inquiry->status->tone()],
+                'isNew' => $inquiry->status === InquiryStatus::New,
+                'showUrl' => route('admin.inquiries.show', $inquiry),
+            ])->values()->all(),
+            'pagination' => $this->present->pagination($inquiries),
+            'filters' => ['q' => $search, 'status' => $status->value ?? ''],
+            'statusOptions' => $this->present->options(InquiryStatus::options()),
+            'indexUrl' => route('admin.inquiries.index'),
         ]);
     }
 
-    public function show(Inquiry $inquiry): View
+    public function show(Inquiry $inquiry, Locales $locales, Brand $brand): Response
     {
         Gate::authorize('view', $inquiry);
 
-        return view('admin.inquiries.show', ['inquiry' => $inquiry->load(['service.translations', 'handler'])]);
+        $inquiry->load(['service.translations', 'handler']);
+        $replySubject = __('admin.inquiries.reply_subject', ['site' => $brand->name($inquiry->locale)], $inquiry->locale);
+
+        return $this->adminPage('inquiries/show', $inquiry->name, [
+            'inquiry' => [
+                'name' => $inquiry->name,
+                'email' => $inquiry->email,
+                'emailUrl' => Mailto::link($inquiry->email),
+                'phone' => $inquiry->phone,
+                'phoneUrl' => $inquiry->phone ? 'tel:'.preg_replace('/[^\d+]/', '', $inquiry->phone) : null,
+                'company' => $inquiry->company,
+                'service' => $inquiry->service ? $this->present->display($inquiry->service, 'title', __('admin.inquiries.no_service')) : null,
+                'locale' => $locales->isSupported($inquiry->locale) ? $locales->nativeName($inquiry->locale) : $inquiry->locale,
+                'localeCode' => $inquiry->locale,
+                'message' => $inquiry->message,
+                'received' => $this->present->time($inquiry->created_at, 'datetime'),
+                'consentedAt' => $this->present->time($inquiry->consented_at, 'datetime'),
+            ],
+            'replyUrl' => Mailto::link($inquiry->email, $replySubject),
+            'spamNotice' => $inquiry->status === InquiryStatus::Spam
+                ? __('admin.inquiries.spam_notice', ['days' => Inquiry::SPAM_RETENTION_DAYS])
+                : null,
+            'canUpdate' => Gate::allows('update', $inquiry),
+            'submit' => ['url' => route('admin.inquiries.update', $inquiry), 'method' => 'patch'],
+            'form' => [
+                'status' => $inquiry->status->value,
+                'internal_note' => (string) $inquiry->internal_note,
+            ],
+            'statusOptions' => $this->present->options(InquiryStatus::options()),
+            'lastChange' => $inquiry->handled_at ? [
+                'who' => $inquiry->handler->name ?? __('admin.inquiries.former_user'),
+                'at' => $this->present->time($inquiry->handled_at),
+            ] : null,
+            'destroy' => Gate::allows('delete', $inquiry)
+                ? $this->present->deletion(route('admin.inquiries.destroy', $inquiry), $inquiry->name, __('admin.inquiries.delete_text'))
+                : null,
+        ], [
+            ['label' => __('admin.inquiries.title'), 'url' => route('admin.inquiries.index')],
+            ['label' => $inquiry->name, 'url' => null],
+        ]);
     }
 
     public function update(Request $request, Inquiry $inquiry): RedirectResponse

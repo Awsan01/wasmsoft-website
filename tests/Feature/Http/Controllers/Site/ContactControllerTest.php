@@ -12,6 +12,7 @@ use App\Settings\SiteSettings;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ContactControllerTest extends TestCase
@@ -53,14 +54,23 @@ class ContactControllerTest extends TestCase
         $response = $this->get('/en/contact');
 
         $response->assertOk();
-        $response->assertSee('name="form_token"', false);
-        $response->assertDontSee(__('site.contact.details_title'));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/contact')
+            ->where('form.action', url('/en/contact'))
+            ->where('form.tokenField', SpamGuard::TOKEN)
+            ->where('form.honeypotField', SpamGuard::HONEYPOT)
+            ->where('form.token', fn (string $token): bool => app(SpamGuard::class)->isValid($token))
+            ->where('sent', false)
+            // Nothing configured: the page leaves out the contact details.
+            ->where('footer.contact.email', null)
+            ->where('footer.contact.phone', null)
+            ->where('footer.contact.address', null));
 
         app(SiteSettings::class)->put([SettingKey::ContactEmail->value => 'hello@wasmsoft.example']);
 
-        $this->get('/en/contact')
-            ->assertSee(__('site.contact.details_title'))
-            ->assertSee('href="mailto:hello@wasmsoft.example"', false);
+        $this->get('/en/contact')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('footer.contact.email', 'hello@wasmsoft.example')
+            ->where('footer.contact.emailHref', 'mailto:hello@wasmsoft.example'));
     }
 
     public function test_a_message_is_stored_and_the_team_inbox_is_notified(): void
@@ -91,8 +101,13 @@ class ContactControllerTest extends TestCase
     {
         $this->followingRedirects()->post('/ar/contact', $this->submission())
             ->assertOk()
-            ->assertSee(__('site.contact.sent_title', [], 'ar'))
-            ->assertDontSee('name="message"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('site/contact')
+                ->where('locale.code', 'ar')
+                ->where('sent', true));
+
+        // The confirmation is shown once; the next visit shows the form again.
+        $this->get('/ar/contact')->assertInertia(fn (AssertableInertia $page) => $page->where('sent', false));
     }
 
     public function test_without_a_configured_inbox_no_mail_is_sent(): void
@@ -107,18 +122,16 @@ class ContactControllerTest extends TestCase
 
     public function test_errors_are_listed_and_the_input_is_kept(): void
     {
+        // The form keeps what was typed in the browser; the page receives one message per field.
         $this->from('/en/contact')
             ->followingRedirects()
             ->post('/en/contact', $this->submission(['name' => '', 'email' => 'not-an-email', 'consent' => null]))
             ->assertOk()
-            ->assertSee(trans_choice('site.contact.errors_title', 3, ['count' => 3]))
-            ->assertSee(__('site.contact.errors.name_required'))
-            ->assertSee(__('site.contact.errors.email_invalid'))
-            ->assertSee('href="#field-name"', false)
-            ->assertSee('href="#field-consent"', false)
-            ->assertSee('href="#field-email"', false)
-            ->assertSee('value="not-an-email"', false)
-            ->assertSee('We would like a quote');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('errors', 3)
+                ->where('errors.name', __('site.contact.errors.name_required'))
+                ->where('errors.email', __('site.contact.errors.email_invalid'))
+                ->where('errors.consent', __('site.contact.errors.consent')));
 
         $this->assertSame(0, Inquiry::query()->count());
     }
@@ -130,8 +143,9 @@ class ContactControllerTest extends TestCase
         $this->from('/en/contact')
             ->followingRedirects()
             ->post('/en/contact', $submission)
-            ->assertSee('id="field-message-error"', false)
-            ->assertSee('value="'.$submission[SpamGuard::TOKEN].'"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('errors.message', __('site.contact.errors.message_min', ['min' => 10]))
+                ->where('form.token', $submission[SpamGuard::TOKEN]));
     }
 
     public function test_a_filled_honeypot_keeps_the_message_as_spam_without_telling_the_sender(): void
@@ -197,12 +211,23 @@ class ContactControllerTest extends TestCase
         $draft = Service::factory()->translated(['en'])->create();
         $published = Service::factory()->published()->translated(['en'], ['en' => ['title' => 'Mobile apps']])->create();
 
-        $this->get('/en/contact')->assertSee('Mobile apps');
+        $this->get('/en/contact')->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('services', 1)
+            ->where('services.0', ['value' => (string) $published->id, 'label' => 'Mobile apps']));
 
         $this->post('/en/contact', $this->submission(['service_id' => (string) $draft->id]))->assertSessionHasErrors('service_id');
         $this->post('/en/contact', $this->submission(['service_id' => (string) $published->id]))->assertSessionHasNoErrors();
 
         $this->assertSame($published->id, Inquiry::query()->sole()->service_id);
+    }
+
+    public function test_a_service_page_link_chooses_its_topic_in_advance(): void
+    {
+        $service = Service::factory()->published()->translated(['en'], ['en' => ['title' => 'Mobile apps']])->create();
+        $draft = Service::factory()->translated(['en'])->create();
+
+        $this->get('/en/contact?service='.$service->id)->assertInertia(fn (AssertableInertia $page) => $page->where('form.service', (string) $service->id));
+        $this->get('/en/contact?service='.$draft->id)->assertInertia(fn (AssertableInertia $page) => $page->where('form.service', ''));
     }
 
     public function test_the_page_is_never_cached_by_shared_caches(): void

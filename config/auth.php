@@ -99,6 +99,15 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Invitations of new dashboard users to choose their first password:
+        // a separate table, so reset links cannot be stretched into invitations.
+        'invitations' => [
+            'provider' => 'users',
+            'table' => 'user_invitation_tokens',
+            'expire' => (int) env('INVITATION_EXPIRE_MINUTES', 4320),
+            'throttle' => 60,
+        ],
     ],
 
     /*

@@ -10,7 +10,7 @@ use App\Support\Brand;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Finds published content by its slug in the current language, applying
@@ -22,6 +22,8 @@ use Illuminate\Http\Response;
  */
 trait ResolvesTranslatedContent
 {
+    use RendersSitePages;
+
     /**
      * @template TContent of Model
      *
@@ -46,14 +48,21 @@ trait ResolvesTranslatedContent
             return redirect()->to($url, 301);
         }
 
-        $alternates = Alternates::of($elsewhere, app(Locales::class));
+        $locales = app(Locales::class);
+        $alternates = Alternates::of($elsewhere, $locales);
 
         abort_if($alternates === [], 404);
 
-        return response()->view('site.translation-missing', [
-            'alternates' => $alternates,
-            'seo' => new SeoMeta(title: __('site.missing.title').' · '.app(Brand::class)->name(), indexable: false),
-        ], 404);
+        return $this->sitePage('site/translation-missing', [
+            'available' => array_map(fn (string $code, string $url): array => [
+                'code' => $code,
+                'name' => $locales->nativeName($code),
+                'dir' => $locales->direction($code),
+                'url' => $url,
+            ], array_keys($alternates), array_values($alternates)),
+        ], new SeoMeta(title: __('site.missing.title').' · '.app(Brand::class)->name(), indexable: false), languageUrls: $alternates)
+            ->toResponse(request())
+            ->setStatusCode(404);
     }
 
     /**

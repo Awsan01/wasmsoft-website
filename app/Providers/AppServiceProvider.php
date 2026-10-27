@@ -6,8 +6,11 @@ use App\Auth\Permission;
 use App\Inquiries\InquiryStatus;
 use App\Localization\Formatter;
 use App\Localization\Locales;
+use App\Models\Highlight;
 use App\Models\Inquiry;
 use App\Models\Media;
+use App\Models\MenuItem;
+use App\Models\Milestone;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\PostCategory;
@@ -15,6 +18,8 @@ use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\Service;
 use App\Models\Tag;
+use App\Models\TeamMember;
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Navigation\AdminNavigation;
 use App\Navigation\SiteNavigation;
@@ -26,7 +31,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -74,6 +78,11 @@ class AppServiceProvider extends ServiceProvider
             'post_category' => PostCategory::class,
             'tag' => Tag::class,
             'inquiry' => Inquiry::class,
+            'highlight' => Highlight::class,
+            'testimonial' => Testimonial::class,
+            'team_member' => TeamMember::class,
+            'milestone' => Milestone::class,
+            'menu_item' => MenuItem::class,
         ]);
 
         // Refuse migrate:fresh, db:wipe and similar commands in production.
@@ -85,9 +94,6 @@ class AppServiceProvider extends ServiceProvider
             // Checks the Have I Been Pwned range API (k-anonymity); network access required.
             return $this->app->isProduction() ? $rule->uncompromised() : $rule;
         });
-
-        Paginator::defaultView('pagination.default');
-        Paginator::defaultSimpleView('pagination.simple');
 
         // Vite remembers which assets a response already preloaded. Reset that
         // after every request so long-lived workers (and tests) render each

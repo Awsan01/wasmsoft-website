@@ -12,20 +12,30 @@
 |
 */
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Admin\Auth\InvitationController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
 use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\HighlightController;
 use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\LocaleController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\MilestoneController;
+use App\Http\Controllers\Admin\NavigationController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PostCategoryController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ProjectCategoryController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\TeamMemberController;
+use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('locale', LocaleController::class)->name('locale');
@@ -39,6 +49,9 @@ Route::middleware('guest')->group(function (): void {
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:password-reset')->name('password.store');
+
+    Route::get('invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+    Route::post('invitation', [InvitationController::class, 'store'])->middleware('throttle:password-reset')->name('invitation.store');
 });
 
 Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view', 'throttle:dashboard'])->group(function (): void {
@@ -64,6 +77,15 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
     Route::patch('post-categories/{term}/move', [PostCategoryController::class, 'move'])->name('post-categories.move');
     Route::resource('tags', TagController::class)->except('show')->parameters(['tags' => 'term']);
 
+    // Home and about page items ({block}: see Admin\BlockController).
+    Route::resource('highlights', HighlightController::class)->except('show')->parameters(['highlights' => 'block']);
+    Route::patch('highlights/{block}/move', [HighlightController::class, 'move'])->name('highlights.move');
+    Route::resource('testimonials', TestimonialController::class)->except('show')->parameters(['testimonials' => 'block']);
+    Route::patch('testimonials/{block}/move', [TestimonialController::class, 'move'])->name('testimonials.move');
+    Route::resource('team-members', TeamMemberController::class)->except('show')->parameters(['team-members' => 'block']);
+    Route::patch('team-members/{block}/move', [TeamMemberController::class, 'move'])->name('team-members.move');
+    Route::resource('milestones', MilestoneController::class)->except('show')->parameters(['milestones' => 'block']);
+
     Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'update', 'destroy']);
 
     // Media library ("media" is used as-is: a resource route would singularize it to "medium").
@@ -73,4 +95,19 @@ Route::middleware(['auth', 'auth.session', 'admin.active', 'can:dashboard.view',
     Route::get('media/{media}/edit', [MediaController::class, 'edit'])->name('media.edit');
     Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+
+    Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    Route::resource('navigation', NavigationController::class)->except('show')->parameters(['navigation' => 'item']);
+    Route::patch('navigation/{item}/move', [NavigationController::class, 'move'])->name('navigation.move');
+
+    Route::get('audit', [AuditLogController::class, 'index'])->name('audit.index');
+
+    Route::resource('users', UserController::class)->except('show');
+    Route::post('users/{user}/invitation', [UserController::class, 'invite'])->name('users.invite');
+
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'password'])->middleware('throttle:login')->name('profile.password');
 });

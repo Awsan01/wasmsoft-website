@@ -2,6 +2,7 @@
 
 namespace App\Settings;
 
+use App\Support\Mailto;
 use App\Support\SocialNetwork;
 
 /**
@@ -49,5 +50,29 @@ final readonly class ContactDetails
     public function hasDirectContact(): bool
     {
         return $this->email !== null || $this->phone !== null || $this->address !== null;
+    }
+
+    /**
+     * The details as page data for the public site, links resolved.
+     *
+     * @return array{email: string|null, emailHref: string|null, phone: string|null, phoneHref: string|null, address: string|null, hours: string|null, mapUrl: string|null, social: list<array{network: string, label: string, icon: string, url: string}>}
+     */
+    public function toArray(): array
+    {
+        return [
+            'email' => $this->email,
+            'emailHref' => $this->email === null ? null : Mailto::link($this->email),
+            'phone' => $this->phone,
+            'phoneHref' => $this->phoneHref(),
+            'address' => $this->address,
+            'hours' => $this->hours,
+            'mapUrl' => $this->mapUrl,
+            'social' => array_map(fn (array $link): array => [
+                'network' => $link['network']->value,
+                'label' => $link['network']->label(),
+                'icon' => $link['network']->icon(),
+                'url' => $link['url'],
+            ], $this->socialLinks),
+        ];
     }
 }

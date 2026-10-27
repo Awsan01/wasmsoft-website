@@ -2,15 +2,19 @@
 
 use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\HandleAdminInertiaRequests;
+use App\Http\Middleware\HandleSiteInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetAdminLocale;
 use App\Http\Middleware\SetSiteLocale;
+use App\Http\Responses\SiteErrorPage;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             // Dashboard and its sign-in pages: sessions, CSRF, never cached.
-            Route::middleware(['web', 'admin.locale', 'cache.headers:private;no_store'])
+            Route::middleware(['web', 'admin.locale', 'admin.inertia', 'cache.headers:private;no_store'])
                 ->prefix('admin')
                 ->name('admin.')
                 ->group(base_path('routes/admin.php'));
@@ -40,7 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'site.locale' => SetSiteLocale::class,
             'site.cache' => CachePublicPages::class,
+            'site.inertia' => HandleSiteInertiaRequests::class,
             'admin.locale' => SetAdminLocale::class,
+            'admin.inertia' => HandleAdminInertiaRequests::class,
             'admin.active' => EnsureUserIsActive::class,
         ]);
 
@@ -49,6 +55,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => ($request->is('api/*') || $request->expectsJson()) && ! $request->header('X-Inertia'),
         );
+
+        // Client errors on public pages are pages of the site (see App\Http\Responses\SiteErrorPage).
+        $exceptions->respond(fn (Response $response, Throwable $exception, Request $request): Response => app(SiteErrorPage::class)->render($response, $request) ?? $response);
     })->create();

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -62,8 +63,11 @@ class ProjectCategoryControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('admin.project-categories.index'));
 
         $response->assertOk();
-        $response->assertSee('Mobile');
-        $response->assertSee(trans_choice('admin.project_categories.usage', 2, ['count' => 2]));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/taxonomies/index')
+            ->where('terms.0.name.text', 'Mobile')
+            ->where('terms.0.usage', trans_choice('admin.project_categories.usage', 2, ['count' => 2]))
+        );
     }
 
     public function test_deleting_a_category_keeps_its_projects(): void

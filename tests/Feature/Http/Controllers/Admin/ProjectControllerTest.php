@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -127,41 +128,28 @@ class ProjectControllerTest extends TestCase
         $this->assertSame([$c->id, $a->id], $project->fresh()?->gallery->modelKeys());
     }
 
-    public function test_after_a_failed_submission_the_chosen_gallery_is_shown_again(): void
+    public function test_the_form_starts_with_the_saved_gallery_in_its_order(): void
     {
         $editor = User::factory()->editor()->create();
         $first = Media::factory()->create(['original_name' => 'first.jpg']);
         $second = Media::factory()->create(['original_name' => 'second.jpg']);
+        $project = Project::factory()->translated(['en'], ['en' => ['title' => 'Portal']])->create(['technologies' => ['Laravel', 'React']]);
+        $project->gallery()->sync([$second->id => ['position' => 1], $first->id => ['position' => 2]]);
 
-        $this->actingAs($editor)
-            ->from(route('admin.projects.create'))
-            ->post(route('admin.projects.store'), $this->payload([], ['gallery' => [(string) $second->id, (string) $first->id]]))
-            ->assertSessionHasErrors();
-
-        $response = $this->actingAs($editor)->get(route('admin.projects.create'));
-
-        $response->assertSeeInOrder([
-            'name="gallery[]" value="'.$second->id.'"',
-            'name="gallery[]" value="'.$first->id.'"',
-        ], false);
-    }
-
-    public function test_an_emptied_gallery_stays_empty_after_a_failed_submission(): void
-    {
-        $editor = User::factory()->editor()->create();
-        $image = Media::factory()->create();
-        $project = Project::factory()->translated(['en'], ['en' => ['title' => 'Portal']])->create();
-        $project->gallery()->attach($image->id, ['position' => 1]);
-
-        // Every image removed, but the title emptied: the form comes back with errors.
-        $this->actingAs($editor)
-            ->from(route('admin.projects.edit', $project))
-            ->put(route('admin.projects.update', $project), $this->payload())
-            ->assertSessionHasErrors();
-
+        // What is chosen before a refused submission stays in the browser; the page itself always shows what is saved.
         $this->actingAs($editor)->get(route('admin.projects.edit', $project))
             ->assertOk()
-            ->assertDontSee('name="gallery[]" value="'.$image->id.'"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/projects/form')
+                ->where('form.gallery.0.id', $second->id)
+                ->where('form.gallery.0.name', 'second.jpg')
+                ->where('form.gallery.1.id', $first->id)
+                ->where('form.technologies', 'Laravel, React')
+                ->where('maxGallery', 24)
+            );
+
+        $this->actingAs($editor)->get(route('admin.projects.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('form.gallery', [])->where('form.cover', null));
     }
 
     public function test_gallery_images_cannot_be_deleted_from_the_library(): void
@@ -190,8 +178,11 @@ class ProjectControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('admin.projects.preview', [$project, 'en']));
 
         $response->assertOk();
-        $response->assertSee('Unreleased portal');
-        $response->assertSee('Northwind');
-        $response->assertSee(__('site.preview.banner'));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/projects/show')
+            ->where('preview', true)
+            ->where('project.title', 'Unreleased portal')
+            ->where('project.client', 'Northwind')
+        );
     }
 }

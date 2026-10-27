@@ -23,6 +23,8 @@ class MediaUsage
         ['projects', 'cover_id'],
         ['media_project', 'media_id'],
         ['posts', 'cover_id'],
+        ['testimonials', 'photo_id'],
+        ['team_members', 'photo_id'],
     ];
 
     /** Settings that hold a media id. */

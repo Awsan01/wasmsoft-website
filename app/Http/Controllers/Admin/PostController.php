@@ -4,29 +4,39 @@ namespace App\Http\Controllers\Admin;
 
 use App\Content\ContentWriter;
 use App\Content\PublicationStatus;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Site\PostController as SitePostController;
+use App\Http\Presenters\AdminPresenter;
 use App\Http\Requests\Admin\PostRequest;
+use App\Http\Responses\SitePreview;
 use App\Localization\Locales;
 use App\Models\Post;
 use App\Models\PostCategory;
 use App\Models\Tag;
+use App\Support\DateInput;
 use App\Support\Search;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
+use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class PostController extends Controller
 {
+    use RendersAdminPages;
+
     /** Pseudo-status of the list filter: published with a future date. */
     private const SCHEDULED = 'scheduled';
 
-    public function __construct(private readonly ContentWriter $writer) {}
+    public function __construct(
+        private readonly ContentWriter $writer,
+        private readonly AdminPresenter $present,
+    ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Post::class);
 
@@ -51,19 +61,42 @@ class PostController extends Controller
             ->paginate((int) config('wasmsoft.pagination.admin'))
             ->withQueryString();
 
-        return view('admin.posts.index', [
-            'posts' => $posts,
-            'statuses' => [...PublicationStatus::options(), self::SCHEDULED => __('admin.content.scheduled')],
-            'categories' => $this->categoryOptions(),
-            'authors' => PostRequest::authorOptions(new Post),
-            'status' => $status,
-            'categoryId' => $categoryId,
-            'authorId' => $authorId,
-            'search' => $search,
+        $authors = PostRequest::authorOptions(new Post);
+
+        return $this->adminPage('posts/index', __('admin.posts.title'), [
+            'description' => __('admin.posts.description'),
+            'createUrl' => Gate::allows('create', Post::class) ? route('admin.posts.create') : null,
+            'categoriesUrl' => route('admin.post-categories.index'),
+            'tagsUrl' => route('admin.tags.index'),
+            'posts' => $posts->getCollection()->map(fn (Post $post): array => [
+                'id' => $post->id,
+                'title' => $this->present->display($post, 'title', __('admin.posts.untitled')),
+                'coverUrl' => $post->cover?->urlForWidth(480),
+                'featured' => $post->is_featured,
+                'category' => $post->category ? $this->present->display($post->category, 'name', '—') : null,
+                'author' => $post->author?->name,
+                'status' => $this->present->status($post),
+                'locales' => $this->present->locales($post),
+                'publishedAt' => $this->present->time($post->published_at, 'datetime', 'short'),
+                'editUrl' => route('admin.posts.edit', $post),
+                'canUpdate' => Gate::allows('update', $post),
+            ])->values()->all(),
+            'pagination' => $this->present->pagination($posts),
+            'filters' => [
+                'q' => $search,
+                'status' => $status ?? '',
+                'category' => (string) ($categoryId ?? ''),
+                'author' => (string) ($authorId ?? ''),
+            ],
+            'statusOptions' => $this->present->options([...PublicationStatus::options(), self::SCHEDULED => __('admin.content.scheduled')]),
+            'categoryOptions' => $this->present->options($this->categoryOptions()),
+            // Filtering by author helps once several people write.
+            'authorOptions' => count($authors) > 1 ? $this->present->options($authors) : [],
+            'indexUrl' => route('admin.posts.index'),
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         Gate::authorize('create', Post::class);
 
@@ -80,7 +113,7 @@ class PostController extends Controller
         return redirect()->route('admin.posts.edit', $post)->with('status', __('admin.content.created'));
     }
 
-    public function edit(Post $post): View
+    public function edit(Post $post): Response
     {
         Gate::authorize('view', $post);
 
@@ -103,7 +136,7 @@ class PostController extends Controller
         return redirect()->route('admin.posts.index')->with('status', __('admin.content.deleted'));
     }
 
-    public function preview(Post $post, string $locale, Locales $locales, SitePostController $site): View
+    public function preview(Request $request, Post $post, string $locale, Locales $locales, SitePostController $site, SitePreview $sitePreview): HttpResponse
     {
         Gate::authorize('view', $post);
 
@@ -116,7 +149,7 @@ class PostController extends Controller
         app()->setLocale($locale);
         URL::defaults(['locale' => $locale]);
 
-        return $site->render($post, $locale, preview: true);
+        return $sitePreview->render($request, fn () => $site->render($post, $locale, preview: true));
     }
 
     private function save(PostRequest $request, Post $post): void
@@ -134,20 +167,61 @@ class PostController extends Controller
         );
     }
 
-    private function form(Post $post): View
+    private function form(Post $post): Response
     {
-        // After a failed submission show what was chosen, even "no tags".
-        $selectedTags = request()->session()->hasOldInput()
-            ? array_map(intval(...), array_values(array_filter((array) old('tags', []), is_numeric(...))))
-            : ($post->exists ? $post->tags->modelKeys() : []);
+        $isNew = ! $post->exists;
+        $user = request()->user();
+        $canEdit = $isNew ? Gate::allows('create', Post::class) : Gate::allows('update', $post);
+        $canPublish = Gate::allows('publish', Post::class);
+        $title = $isNew ? __('admin.posts.new') : ($post->displayTranslation()->title ?? __('admin.posts.untitled'));
 
-        return view('admin.posts.form', [
-            'post' => $post,
-            'categories' => $this->categoryOptions(),
-            'tags' => $this->tagOptions(),
-            'selectedTags' => $selectedTags,
-            'authors' => PostRequest::authorOptions($post),
-            'canPublish' => Gate::allows('publish', Post::class),
+        $editor = $this->present->editor($post, [
+            'title' => ['required' => true, 'maxlength' => 200],
+            'slug' => ['type' => 'slug', 'maxlength' => 120],
+            'summary' => ['type' => 'textarea', 'rows' => 3, 'maxlength' => 600, 'hint' => __('admin.posts.summary_hint')],
+            'body' => ['type' => 'markdown', 'rows' => 18, 'hint' => __('admin.posts.body_hint')],
+            'meta_title' => ['seo' => true, 'maxlength' => 70],
+            'meta_description' => ['type' => 'textarea', 'seo' => true, 'rows' => 2, 'maxlength' => 200],
+        ]);
+
+        $tags = $this->tagOptions();
+
+        return $this->adminPage('posts/form', $title, [
+            'canEdit' => $canEdit,
+            // Authors keep their own article once an editor has published or archived it.
+            'readOnlyMessage' => ! $canEdit && ! $isNew && $user !== null && $post->isWrittenBy($user) ? __('admin.posts.locked_own') : null,
+            'canPublish' => $canPublish,
+            'submit' => $this->present->formAction($post, 'admin.posts'),
+            'editor' => $editor,
+            // The status, date, featured flag and author are only sent by those who may publish (PostRequest).
+            'form' => [
+                'translations' => $this->present->translationValues($post, $editor['fields']),
+                'status' => $post->status->value,
+                'post_category_id' => (string) ($post->post_category_id ?? ''),
+                'tags' => $post->exists ? array_map(strval(...), $post->tags->modelKeys()) : [],
+                'cover' => $this->present->media($post->cover),
+                ...($canPublish ? [
+                    'published_at' => $post->published_at ? DateInput::format($post->published_at) : '',
+                    'is_featured' => $post->is_featured,
+                    'author_id' => (string) ($post->author_id ?? ''),
+                ] : []),
+            ],
+            'author' => $post->author->name ?? $user?->name,
+            'statusOptions' => $this->present->options($canPublish
+                ? PublicationStatus::options()
+                : [PublicationStatus::Draft->value => PublicationStatus::Draft->label()]),
+            'publishedAtHint' => __('admin.content.published_at_hint', ['timezone' => config('wasmsoft.display_timezone')]),
+            'categoryOptions' => $this->present->options($this->categoryOptions()),
+            'tagOptions' => $this->present->options($tags),
+            'tagsHint' => $tags === [] ? null : __('admin.posts.tags_hint', ['max' => PostRequest::MAX_TAGS]),
+            'authorOptions' => $this->present->options(PostRequest::authorOptions($post)),
+            'viewLinks' => $this->present->viewLinks($post, 'admin.posts.preview'),
+            'destroy' => ! $isNew && Gate::allows('delete', $post)
+                ? $this->present->deletion(route('admin.posts.destroy', $post), $title, __('admin.content.danger_text'))
+                : null,
+        ], [
+            ['label' => __('admin.posts.title'), 'url' => route('admin.posts.index')],
+            ['label' => $title, 'url' => null],
         ]);
     }
 

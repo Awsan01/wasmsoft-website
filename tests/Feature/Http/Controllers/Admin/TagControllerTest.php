@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -34,10 +35,10 @@ class TagControllerTest extends TestCase
         $first = Tag::factory()->translated(['en'], ['en' => ['name' => 'accessibility']])->create();
         $editor = User::factory()->editor()->create();
 
-        $this->actingAs($editor)->get(route('admin.tags.index'))
-            ->assertOk()
-            ->assertSeeInOrder(['accessibility', 'Security'])
-            ->assertDontSee(__('admin.content.reorder_hint'));
+        $response = $this->actingAs($editor)->get(route('admin.tags.index'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('canReorder', false)->where('terms.0.moveUrl', null));
+        $this->assertSame(['accessibility', 'Security'], array_column(array_column($response->inertiaProps('terms'), 'name'), 'text'));
 
         $this->assertFalse(app('router')->has('admin.tags.move'));
     }

@@ -36,6 +36,7 @@ return [
     'services' => [
         'title' => 'Services',
         'eyebrow' => 'What we do',
+        'description' => 'An overview of the services :name offers.',
         'empty' => 'Our services will be listed here soon.',
         'benefits' => 'What you get',
         'cta_title' => 'Interested in this service?',
@@ -53,6 +54,7 @@ return [
     'projects' => [
         'title' => 'Projects',
         'eyebrow' => 'Our work',
+        'description' => 'A selection of projects :name has worked on.',
         'filter' => 'Filter projects by category',
         'search' => 'Search projects',
         'empty' => 'Our projects will be shown here soon.',
@@ -72,6 +74,9 @@ return [
     'news' => [
         'title' => 'News',
         'eyebrow' => 'Latest updates',
+        'description' => 'News and articles from :name.',
+        'category_description' => 'Articles in the :category category, from :name.',
+        'tag_description' => 'Articles about :tag, from :name.',
         'filter' => 'Filter news by category',
         'category' => 'Category',
         'tag' => 'Tag',
@@ -137,5 +142,79 @@ return [
         'address' => 'Address',
         'hours' => 'Opening hours',
         'map' => 'View on the map',
+    ],
+    'home' => [
+        'hero_title' => 'Software built around your business',
+        'hero_lead' => 'We plan, design, build and maintain web and mobile applications. Tell us what you need, and we will help you get there.',
+        'hero_secondary' => 'See our work',
+        'services_eyebrow' => 'What we do',
+        'services_title' => 'Services',
+        'services_all' => 'All services',
+        'why_eyebrow' => 'Why choose us',
+        'why_title' => 'Why work with us',
+        'figures_title' => 'In figures',
+        'projects_eyebrow' => 'Our work',
+        'projects_title' => 'Selected projects',
+        'projects_all' => 'All projects',
+        'testimonials_eyebrow' => 'Clients',
+        'testimonials_title' => 'What our clients say',
+        'news_eyebrow' => 'News',
+        'news_title' => 'Latest news',
+        'news_all' => 'All news',
+    ],
+    'about' => [
+        'values_eyebrow' => 'What we stand for',
+        'values_title' => 'Our values',
+        'team_eyebrow' => 'People',
+        'team_title' => 'Our team',
+        'history_eyebrow' => 'Our story',
+        'history_title' => 'Milestones',
+    ],
+    'partnerships' => [
+        'models_title' => 'Ways to partner',
+        'cta_title' => 'Interested in working together?',
+        'cta_text' => 'Tell us about your company and the partnership you have in mind.',
+        'cta_button' => 'Talk to us about a partnership',
+    ],
+    'errors' => [
+        'code' => 'Error :code',
+        'home' => 'Go to the home page',
+        'dashboard' => 'Back to the dashboard',
+        '403' => [
+            'title' => 'Access denied',
+            'message' => 'You do not have permission to open this page.',
+        ],
+        '404' => [
+            'title' => 'Page not found',
+            'message' => 'The page you are looking for does not exist or has moved.',
+        ],
+        '419' => [
+            'title' => 'Page expired',
+            'message' => 'The page was open for too long. Please open it again and repeat what you were doing.',
+        ],
+        '429' => [
+            'title' => 'Too many requests',
+            'message' => 'Please wait a moment before trying again.',
+        ],
+        '500' => [
+            'title' => 'Something went wrong',
+            'message' => 'An unexpected error occurred on our side. Please try again in a moment.',
+        ],
+        '503' => [
+            'title' => 'Back soon',
+            'message' => 'The website is being updated. Please check back in a few minutes.',
+        ],
+        '413' => [
+            'title' => 'File too large',
+            'message' => 'What you sent is larger than the server accepts. Please choose a smaller file and try again.',
+        ],
+        '4xx' => [
+            'title' => 'This request could not be completed',
+            'message' => 'The address or the request is not valid. Please check it, or go back to the home page.',
+        ],
+        '5xx' => [
+            'title' => 'Something went wrong',
+            'message' => 'An unexpected error occurred on our side. Please try again in a moment.',
+        ],
     ],
 ];

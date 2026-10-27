@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\PostCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class PostCategoryControllerTest extends TestCase
@@ -33,8 +34,11 @@ class PostCategoryControllerTest extends TestCase
 
         $this->actingAs(User::factory()->author()->create())->get(route('admin.post-categories.index'))
             ->assertOk()
-            ->assertSee('Insights')
-            ->assertSee(trans_choice('admin.post_categories.usage', 3, ['count' => 3]));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/taxonomies/index')
+                ->where('terms.0.name.text', 'Insights')
+                ->where('terms.0.usage', trans_choice('admin.post_categories.usage', 3, ['count' => 3]))
+            );
     }
 
     public function test_deleting_a_category_keeps_its_articles(): void

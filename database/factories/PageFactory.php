@@ -55,6 +55,11 @@ class PageFactory extends Factory
         return $this->state(fn (array $attributes) => ['template' => PageTemplate::About]);
     }
 
+    public function partnerships(): static
+    {
+        return $this->state(fn (array $attributes) => ['template' => PageTemplate::Partnerships]);
+    }
+
     public function system(SystemPage $page): static
     {
         return $this->published()->state(fn (array $attributes) => ['system_key' => $page]);

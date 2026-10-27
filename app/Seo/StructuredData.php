@@ -2,6 +2,7 @@
 
 namespace App\Seo;
 
+use App\Settings\ContactDetails;
 use Carbon\CarbonInterface;
 
 /**
@@ -36,6 +37,47 @@ final class StructuredData
             '@context' => 'https://schema.org',
             '@type' => 'BreadcrumbList',
             'itemListElement' => $elements,
+        ];
+    }
+
+    /**
+     * The company, with only the contact details that are configured.
+     *
+     * @return array<string, mixed>
+     */
+    public static function organization(string $name, string $url, string $logo, ContactDetails $contact): array
+    {
+        $contactPoint = array_filter([
+            '@type' => 'ContactPoint',
+            'contactType' => 'customer support',
+            'email' => $contact->email,
+            'telephone' => $contact->phone,
+        ]);
+
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => $name,
+            'url' => $url,
+            'logo' => $logo,
+            'sameAs' => array_column($contact->socialLinks, 'url') ?: null,
+            'contactPoint' => count($contactPoint) > 2 ? $contactPoint : null,
+        ], fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * The website itself, in the language of the page.
+     *
+     * @return array<string, mixed>
+     */
+    public static function website(string $name, string $url, string $locale): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $name,
+            'url' => $url,
+            'inLanguage' => $locale,
         ];
     }
 

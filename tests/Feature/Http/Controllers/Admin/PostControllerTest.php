@@ -12,6 +12,9 @@ use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 class PostControllerTest extends TestCase
@@ -46,11 +49,15 @@ class PostControllerTest extends TestCase
     /**
      * The rendered checkbox of a tag in the post form.
      */
-    private function tagCheckbox(string $html, Tag $tag): string
+    /**
+     * The titles of the listed articles.
+     *
+     * @param  TestResponse<Response>  $response
+     * @return list<string>
+     */
+    private function titles(TestResponse $response): array
     {
-        preg_match('/<input[^>]*name="tags\[\]"[^>]*value="'.$tag->id.'"[^>]*>/s', $html, $match);
-
-        return $match[0] ?? '';
+        return array_column(array_column($response->inertiaProps('posts'), 'title'), 'text');
     }
 
     public function test_editor_publishes_an_article_with_category_tags_cover_and_author(): void
@@ -203,7 +210,12 @@ class PostControllerTest extends TestCase
 
         $this->actingAs($author)->get(route('admin.posts.edit', $post))
             ->assertOk()
-            ->assertSee(__('admin.posts.locked_own'));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/posts/form')
+                ->where('canEdit', false)
+                ->where('readOnlyMessage', __('admin.posts.locked_own'))
+                ->where('destroy', null)
+            );
     }
 
     public function test_authors_delete_their_own_drafts(): void
@@ -244,25 +256,30 @@ class PostControllerTest extends TestCase
         $response->assertSessionHasErrors('tags');
     }
 
-    public function test_unchecked_tags_stay_unchecked_after_a_failed_submission(): void
+    public function test_the_form_starts_with_the_saved_tags_and_only_editors_get_the_publishing_fields(): void
     {
-        $editor = User::factory()->editor()->create();
+        $author = User::factory()->author()->create();
         $tag = Tag::factory()->translated(['en'])->create();
-        $post = Post::factory()->translated(['en'], ['en' => ['title' => 'Tagged']])->create();
+        $post = Post::factory()->by($author)->translated(['en'], ['en' => ['title' => 'Tagged']])->create();
         $post->tags()->attach($tag);
 
-        $this->assertStringContainsString('checked', $this->tagCheckbox($this->actingAs($editor)->get(route('admin.posts.edit', $post))->getContent() ?: '', $tag));
+        // What is typed after a refused submission stays in the browser; the page itself always shows what is saved.
+        $this->actingAs(User::factory()->editor()->create())->get(route('admin.posts.edit', $post))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('form.tags', [(string) $tag->id])
+                ->where('canPublish', true)
+                ->has('form.published_at')
+                ->has('form.author_id')
+            );
 
-        // All tags unchecked, but the title emptied: the form comes back with errors.
-        $this->actingAs($editor)
-            ->from(route('admin.posts.edit', $post))
-            ->put(route('admin.posts.update', $post), $this->payload())
-            ->assertSessionHasErrors();
-
-        $html = $this->actingAs($editor)->get(route('admin.posts.edit', $post))->getContent() ?: '';
-
-        $this->assertNotSame('', $this->tagCheckbox($html, $tag));
-        $this->assertStringNotContainsString('checked', $this->tagCheckbox($html, $tag));
+        $this->actingAs($author)->get(route('admin.posts.edit', $post))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('canPublish', false)
+                ->missing('form.published_at')
+                ->missing('form.author_id')
+                ->missing('form.is_featured')
+                ->where('statusOptions', [['value' => 'draft', 'label' => PublicationStatus::Draft->label()]])
+            );
     }
 
     public function test_index_filters_by_status_including_scheduled_and_by_author(): void
@@ -273,19 +290,15 @@ class PostControllerTest extends TestCase
         Post::factory()->by($author)->translated(['en'], ['en' => ['title' => 'Draft by Rana']])->create();
         $editor = User::factory()->editor()->create();
 
-        $this->actingAs($editor)->get(route('admin.posts.index', ['status' => 'scheduled']))
-            ->assertOk()
-            ->assertSee('Coming next week')
-            ->assertDontSee('Already live')
-            ->assertSee(__('admin.content.scheduled'));
+        $scheduled = $this->actingAs($editor)->get(route('admin.posts.index', ['status' => 'scheduled']));
+        $scheduled->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('posts.0.status.label', __('admin.content.scheduled'))
+            ->where('filters.status', 'scheduled')
+        );
+        $this->assertSame(['Coming next week'], $this->titles($scheduled));
 
-        $this->actingAs($editor)->get(route('admin.posts.index', ['status' => 'published']))
-            ->assertSee('Already live')
-            ->assertDontSee('Coming next week');
-
-        $this->actingAs($editor)->get(route('admin.posts.index', ['author' => $author->id]))
-            ->assertSee('Draft by Rana')
-            ->assertDontSee('Already live');
+        $this->assertSame(['Already live'], $this->titles($this->actingAs($editor)->get(route('admin.posts.index', ['status' => 'published']))));
+        $this->assertSame(['Draft by Rana'], $this->titles($this->actingAs($editor)->get(route('admin.posts.index', ['author' => $author->id]))));
     }
 
     public function test_cover_images_cannot_be_deleted_from_the_library(): void
@@ -305,8 +318,10 @@ class PostControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->author()->create())->get(route('admin.posts.preview', [$post, 'en']));
 
         $response->assertOk();
-        $response->assertSee('Embargoed announcement');
-        $response->assertSee(__('site.preview.banner'));
-        $response->assertSee('<meta name="robots" content="noindex, nofollow">', false);
+        $response->assertSee('<meta data-inertia="robots" name="robots" content="noindex, nofollow">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/news/show')
+            ->where('preview', true)
+            ->where('post.title', 'Embargoed announcement'));
     }
 }

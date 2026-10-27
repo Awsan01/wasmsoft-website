@@ -58,6 +58,9 @@ const PAIRS = [
     ['secondary', 'lavender', 'ui', 'focus ring on tinted sections'],
     ['white', 'purple-950', 'ui', 'focus ring on dark surfaces'],
     ['warning', 'warning-soft', 'ui', 'warning icons'],
+    ['accent', 'purple-950', 'ui', 'diagonal bar motif on dark surfaces'],
+    ['white', 'purple-900', 'text', 'headings on the featured work band'],
+    ['on-dark-muted', 'purple-900', 'text', 'text on the featured work band'],
 ];
 
 const channels = (hex) => hex.match(/[0-9a-f]{2}/gi).map((pair) => parseInt(pair, 16));
