@@ -19,6 +19,7 @@ php artisan optimize:clear && php artisan optimize
 sudo systemctl reload php8.4-fpm
 php artisan cache:clear        # drops public content cached by the newer release
 php artisan queue:restart
+php artisan inertia:stop-ssr   # only with server-side rendering: restarts it with this release's bundle
 ```
 
 Without release directories: `git checkout <previous-tag>`, then `composer install --no-dev --optimize-autoloader`, `npm ci && npm run build` and the commands above.

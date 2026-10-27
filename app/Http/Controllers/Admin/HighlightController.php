@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Differentiators, values and metrics, listed one group at a time.
@@ -43,9 +44,9 @@ class HighlightController extends BlockController
         return 'admin.highlights';
     }
 
-    protected function formView(): string
+    protected function formComponent(): string
     {
-        return 'admin.highlights.form';
+        return 'highlights/form';
     }
 
     protected function listQuery(Request $request): Builder
@@ -59,11 +60,46 @@ class HighlightController extends BlockController
 
         return [
             'description' => $current->description(),
-            'createParameters' => ['group' => $current->value],
-            'tabs' => array_map(
-                fn (HighlightGroup $group): array => [$group->label(), route('admin.highlights.index', ['group' => $group->value]), $group === $current],
-                HighlightGroup::cases(),
-            ),
+            // A new item starts in the group being listed.
+            'createUrl' => Gate::allows('create', Highlight::class) ? route('admin.highlights.create', ['group' => $current->value]) : null,
+            'groups' => [
+                'label' => __('admin.highlights.groups_label'),
+                'links' => array_map(fn (HighlightGroup $group): array => [
+                    'label' => $group->label(),
+                    'url' => route('admin.highlights.index', ['group' => $group->value]),
+                    'current' => $group === $current,
+                ], HighlightGroup::cases()),
+            ],
+        ];
+    }
+
+    protected function listUrl(Model&ContentBlock $block): string
+    {
+        return $block instanceof Highlight
+            ? route('admin.highlights.index', ['group' => $block->group->value])
+            : parent::listUrl($block);
+    }
+
+    protected function formProps(Model&ContentBlock $block): array
+    {
+        $highlight = $block instanceof Highlight ? $block : new Highlight;
+        $groups = [];
+
+        foreach (HighlightGroup::cases() as $group) {
+            $groups[$group->value] = $group->label();
+        }
+
+        return [
+            'form' => [
+                'group' => $highlight->group->value,
+                'figure' => (string) $highlight->figure,
+                'title' => $this->present->localized($highlight->title),
+                'description' => $this->present->localized($highlight->description),
+                'icon' => $highlight->icon->value ?? '',
+                'is_visible' => $highlight->is_visible,
+            ],
+            'groupOptions' => $this->present->options($groups),
+            'icons' => $this->present->icons(),
         ];
     }
 

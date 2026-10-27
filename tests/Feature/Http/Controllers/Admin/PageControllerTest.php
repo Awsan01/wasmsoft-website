@@ -11,6 +11,7 @@ use App\Models\Page;
 use App\Models\PageTranslation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -53,7 +54,10 @@ class PageControllerTest extends TestCase
 
         $response->assertOk();
         $this->assertSame(count(SystemPage::cases()), Page::query()->whereNotNull('system_key')->count());
-        $response->assertSee(SystemPage::Home->label());
+        $this->assertSame(
+            array_map(fn (SystemPage $page): string => $page->label(), SystemPage::cases()),
+            array_column($response->inertiaProps('systemPages'), 'label'),
+        );
     }
 
     public function test_editor_creates_a_page_in_the_languages_that_were_filled_in(): void
@@ -178,8 +182,11 @@ class PageControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('admin.pages.edit', $page));
 
         $response->assertOk();
-        $response->assertSee(__('admin.content.read_only'));
-        $response->assertSee('<fieldset disabled', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/pages/form')
+            ->where('canEdit', false)
+            ->where('destroy', null)
+        );
     }
 
     public function test_editor_deletes_a_page_with_all_its_translations(): void
@@ -213,9 +220,14 @@ class PageControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('<html lang="tr" dir="ltr">', false);
-        $response->assertSee(__('site.preview.banner', [], 'tr'));
-        $response->assertSee('Taslak metin.');
-        $response->assertSee('<meta name="robots" content="noindex, nofollow">', false);
+        $response->assertSee('<meta data-inertia="robots" name="robots" content="noindex, nofollow">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/pages/show')
+            ->where('preview', true)
+            ->where('locale.code', 'tr')
+            ->where('page.title', 'Kariyer')
+            ->where('page.body', fn (string $body): bool => str_contains($body, 'Taslak metin.'))
+            ->where('translations.site.preview.banner', __('site.preview.banner', [], 'tr')));
         $response->assertHeader('Cache-Control', 'no-store, private');
     }
 

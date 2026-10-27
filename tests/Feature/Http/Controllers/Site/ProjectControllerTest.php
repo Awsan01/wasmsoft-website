@@ -6,6 +6,7 @@ use App\Models\Media;
 use App\Models\Project;
 use App\Models\ProjectCategory;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ProjectControllerTest extends TestCase
@@ -22,9 +23,12 @@ class ProjectControllerTest extends TestCase
         $response = $this->get('/en/projects');
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Newer project', 'Older project']);
-        $response->assertDontSee('Unpublished project');
-        $response->assertDontSee('مشروع عربي فقط');
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/projects/index')
+            ->has('projects', 2)
+            ->where('projects.0.title', 'Newer project')
+            ->where('projects.1.title', 'Older project'));
+        $response->assertPageDoesNotShow('Unpublished project', 'مشروع عربي فقط');
     }
 
     public function test_category_filter_shows_only_that_category_and_only_used_categories_are_offered(): void
@@ -38,11 +42,20 @@ class ProjectControllerTest extends TestCase
         $response = $this->get('/en/projects?category=web');
 
         $response->assertOk();
-        $response->assertSee('Shop website');
-        $response->assertDontSee('Delivery app');
-        $response->assertSee('Mobile');
-        $response->assertDontSee('Empty category');
-        $response->assertSee('<link rel="canonical" href="'.url('/en/projects?category=web').'">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('projects', 1)
+            ->where('projects.0.title', 'Shop website')
+            ->where('search.category', 'web')
+            ->where('filtered', true)
+            // "All", then the categories with published projects.
+            ->has('filters', 3)
+            ->where('filters.0.current', false)
+            ->where('filters.1.label', 'Web')
+            ->where('filters.1.current', true)
+            ->where('filters.2.label', 'Mobile')
+            ->where('filters.2.url', url('/en/projects?category=mobile')));
+        $response->assertPageDoesNotShow('Delivery app', 'Empty category');
+        $response->assertSee('<link data-inertia="canonical" rel="canonical" href="'.url('/en/projects?category=web').'">', false);
     }
 
     public function test_unknown_category_is_not_found(): void
@@ -60,9 +73,12 @@ class ProjectControllerTest extends TestCase
         $response = $this->get('/en/projects?q=booking');
 
         $response->assertOk();
-        $response->assertDontSee('Analytics dashboard');
-        $response->assertSee('q=booking&amp;page=2', false);
-        $response->assertSee('<meta name="robots" content="noindex, nofollow">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('search.value', 'booking')
+            ->where('pagination.total', 2)
+            ->where('pagination.nextUrl', url('/en/projects?q=booking&page=2')));
+        $response->assertPageDoesNotShow('Analytics dashboard');
+        $response->assertSee('<meta data-inertia="robots" name="robots" content="noindex, nofollow">', false);
     }
 
     public function test_project_page_shows_details_gallery_and_an_external_link(): void
@@ -78,11 +94,14 @@ class ProjectControllerTest extends TestCase
         $response = $this->get('/en/projects/fleet-portal');
 
         $response->assertOk();
-        $response->assertSee('Acme Logistics');
-        $response->assertSeeInOrder(['Laravel', 'Vue.js']);
-        $response->assertSee('alt="Dashboard screen"', false);
-        $response->assertSee('href="https://fleet.example"', false);
-        $response->assertSee('rel="noopener noreferrer"', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/projects/show')
+            ->where('project.client', 'Acme Logistics')
+            ->where('project.technologies', ['Laravel', 'Vue.js'])
+            ->where('project.gallery.0.image.alt', 'Dashboard screen')
+            ->where('project.gallery.0.url', $image->url())
+            // Rendered as a link that opens in a new tab with rel="noopener noreferrer" (see the browser tests).
+            ->where('project.website', 'https://fleet.example'));
     }
 
     public function test_editor_entered_text_is_escaped(): void
@@ -97,6 +116,10 @@ class ProjectControllerTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('<script>alert(1)</script>', false);
         $response->assertDontSee('<b>bold</b>', false);
+        // Plain text in the page data; React escapes it when rendering.
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('project.client', '<script>alert(1)</script>')
+            ->where('project.technologies', ['<b>bold</b>']));
     }
 
     public function test_related_projects_come_from_the_same_category(): void
@@ -109,8 +132,8 @@ class ProjectControllerTest extends TestCase
 
         $response = $this->get('/en/projects/main');
 
-        $response->assertSee('Same category project');
-        $response->assertDontSee('Other category project');
+        $response->assertInertia(fn (AssertableInertia $page) => $page->has('related', 1)->where('related.0.title', 'Same category project'));
+        $response->assertPageDoesNotShow('Other category project');
     }
 
     public function test_slug_of_another_language_redirects(): void

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('{locale}')
     ->where(['locale' => app(Locales::class)->routePattern()])
-    ->middleware('site.locale')
+    ->middleware(['site.locale', 'site.inertia'])
     ->name('site.')
     ->group(function (): void {
         Route::get('contact', [ContactController::class, 'show'])->name('contact');

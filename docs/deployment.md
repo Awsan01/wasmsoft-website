@@ -8,7 +8,7 @@ The application has not been deployed yet. Nothing here assumes a particular hos
 
 | Need | Details |
 |---|---|
-| PHP 8.4 with PHP-FPM | Extensions: `gd` with JPEG, PNG and WebP support, `intl`, `mbstring`, `fileinfo`, `openssl`, `pdo` with the database driver, `tokenizer`, `xml`, `ctype`; optionally `exif` (photo orientation). Enable OPcache. Set `expose_php = Off`. |
+| PHP 8.4 with PHP-FPM | Extensions: `gd` with JPEG, PNG and WebP support, `intl`, `mbstring`, `fileinfo`, `openssl`, `pdo` with the database driver, `tokenizer`, `xml`, `ctype`; optionally `exif` (photo orientation), and `curl` when server-side rendering is used. Enable OPcache. Set `expose_php = Off`. |
 | Upload limits | `upload_max_filesize = 16M` and `post_max_size = 20M` in PHP, `client_max_body_size 20m;` in nginx (documents may be up to 15 MB, images 8 MB; see `MEDIA_MAX_*`). |
 | Web server | nginx (or Apache) serving `public/` over HTTPS, with gzip or brotli compression (example below). |
 | Database | MySQL, MariaDB or PostgreSQL as supported by Laravel 13. SQLite also works for a small single-server site. |
@@ -16,6 +16,7 @@ The application has not been deployed yet. Nothing here assumes a particular hos
 | Queue worker | A long-running `php artisan queue:work` process (supervisor or systemd). Without it, password reset emails, invitations and new-inquiry alerts are never sent. |
 | Outgoing HTTPS | To the mail provider and to `api.pwnedpasswords.com` (see section 10). |
 | Build tools | Composer 2, and Node.js 22 with npm where the assets are built (the server or a CI job). |
+| Node.js 22 on the server | Only for [server-side rendering](#server-side-rendering), which is optional but recommended. |
 
 The automated tests run on SQLite. The migrations only use portable column types and indexes, but the suite has not yet been run against MySQL, MariaDB or PostgreSQL. Do that once on the chosen engine before going live: create an empty test database, then run for example `DB_CONNECTION=mysql DB_DATABASE=wasmsoft_test DB_USERNAME=… DB_PASSWORD=… php artisan test`. On PostgreSQL, searches in the dashboard and on the project list are case-sensitive (its `LIKE` is); on MySQL, MariaDB and SQLite they are not.
 
@@ -49,7 +50,7 @@ On the server, in the release directory:
 
 ```sh
 composer install --no-dev --optimize-autoloader --no-interaction
-npm ci && npm run build          # or copy public/build from a CI build
+npm ci && npm run build          # or copy public/build (and bootstrap/ssr) from a CI build
 cp .env.example .env             # then fill in the production values
 php artisan key:generate         # first installation only
 php artisan migrate --force
@@ -97,6 +98,31 @@ stdout_logfile=/var/www/wasmsoft/shared/storage/logs/worker.log
 ```
 
 Run `php artisan queue:restart` after every deployment so the worker loads the new code. Failed jobs are listed with `php artisan queue:failed`.
+
+### Server-side rendering
+
+Optional, and recommended for production. With it, every public page arrives with its content already in the HTML, so it appears before the JavaScript has loaded and run: on the slow phone profile of `npm run measure:performance`, the first paint came 1.4 to 1.8 seconds earlier ([project status](project-status.md)). Crawlers that do not run JavaScript then read the full text too. Without it, pages are drawn in the browser; their titles, descriptions and other `<head>` metadata are in the HTML either way.
+
+It needs Node.js 22 on the server and a long-running process next to PHP-FPM:
+
+1. `npm run build` builds the bundle the process runs (`bootstrap/ssr/ssr.mjs`) together with the assets.
+2. Set `INERTIA_SSR_ENABLED=true` in `.env`, then run `php artisan optimize` again.
+3. Keep the rendering service running, for example with supervisor (`/etc/supervisor/conf.d/wasmsoft-ssr.conf`):
+
+   ```ini
+   [program:wasmsoft-ssr]
+   command=php /var/www/wasmsoft/current/artisan inertia:start-ssr
+   user=www-data
+   autostart=true
+   autorestart=true
+   stopwaitsecs=10
+   redirect_stderr=true
+   stdout_logfile=/var/www/wasmsoft/shared/storage/logs/ssr.log
+   ```
+
+4. After every deployment, run `php artisan inertia:stop-ssr`: supervisor starts the service again with the new bundle.
+
+The service listens on `127.0.0.1:13714` (`INERTIA_SSR_URL`) and must not be reachable from outside. If it stops, pages are drawn in the browser until it is back; nothing else breaks.
 
 ## 5. Web server
 
@@ -160,7 +186,9 @@ server {
 
 The application sends its own security headers (Content-Security-Policy, HSTS over HTTPS, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`). Do not add a second Content-Security-Policy in the web server: browsers would apply both.
 
-Compression matters: the home page HTML is about 67 kB raw and 7 kB compressed, the stylesheet 52 kB raw and about 10 kB compressed.
+A public address answers with an HTML page, or with the same page's data as JSON when the site itself asks for it while a visitor moves between pages (requests with an `X-Inertia` header). The responses say so in their `Vary` header; a CDN or caching proxy in front of the site must respect it, or cache only requests without an `X-Inertia` header.
+
+Compression matters: the home page HTML is about 33 kB raw and 7 kB compressed (more with server-side rendering), the stylesheet about 74 kB raw and 13 kB compressed, and the JavaScript of a page, mostly React and Inertia shared by all pages, about 370 kB raw and 120 kB compressed.
 
 ## 6. File permissions
 
@@ -188,6 +216,7 @@ php artisan optimize
 ln -sfn /var/www/wasmsoft/releases/<release> /var/www/wasmsoft/current
 sudo systemctl reload php8.4-fpm
 php artisan queue:restart
+php artisan inertia:stop-ssr     # only with server-side rendering: supervisor restarts it with the new bundle
 ```
 
 When a release contains migrations that change existing tables, put the site in maintenance mode around the migration: `php artisan down --render="errors::503"` and afterwards `php artisan up`. The maintenance page needs neither the database nor the session.
@@ -205,6 +234,7 @@ When a release contains migrations that change existing tables, put the site in 
 - [ ] HTTPS certificate valid; HTTP redirects to HTTPS.
 - [ ] Compression enabled (check a response for `Content-Encoding: gzip` or `br`).
 - [ ] `composer install --no-dev`, `npm run build`, `php artisan optimize` done.
+- [ ] If server-side rendering is on: the rendering service runs, is restarted after each deployment, and the HTML of a page (for example `curl https://example.com/en`) contains its main heading.
 - [ ] Migrations ran; `php artisan storage:link` done (or `MEDIA_DISK=s3` configured).
 - [ ] Cron entry for the scheduler and a running queue worker.
 - [ ] Mail works: send yourself a password reset from `/admin/forgot-password`.

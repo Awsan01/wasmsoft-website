@@ -5,14 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Content\ContentBlock;
 use App\Content\ContentCache;
 use App\Content\ContentWriter;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
-use Illuminate\Contracts\View\View;
+use App\Http\Presenters\AdminPresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Inertia\Response;
 
 /**
  * Shared management of the small items shown on the home and about pages
@@ -24,9 +26,12 @@ use Illuminate\Validation\Rule;
  */
 abstract class BlockController extends Controller
 {
+    use RendersAdminPages;
+
     public function __construct(
         protected readonly ContentWriter $writer,
         protected readonly ContentCache $cache,
+        protected readonly AdminPresenter $present,
     ) {}
 
     /**
@@ -40,12 +45,15 @@ abstract class BlockController extends Controller
     /** Translation group of the page texts, e.g. "admin.highlights". */
     abstract protected function texts(): string;
 
+    /** The React page of this item type's form, e.g. "highlights/form". */
+    abstract protected function formComponent(): string;
+
     /**
-     * The form of this item type, e.g. "admin.highlights.form".
+     * The form's initial values and choices.
      *
-     * @return view-string
+     * @return array<string, mixed>
      */
-    abstract protected function formView(): string;
+    abstract protected function formProps(Model&ContentBlock $block): array;
 
     /** Whether editors order the items (otherwise the list query orders them). */
     protected function sortable(): bool
@@ -71,14 +79,10 @@ abstract class BlockController extends Controller
         return [];
     }
 
-    /**
-     * Extra data for the form.
-     *
-     * @return array<string, mixed>
-     */
-    protected function formData(Model&ContentBlock $block): array
+    /** Where the list of an item is (subclasses add filters, e.g. its group). */
+    protected function listUrl(Model&ContentBlock $block): string
     {
-        return [];
+        return route($this->routes().'.index');
     }
 
     /**
@@ -89,26 +93,45 @@ abstract class BlockController extends Controller
         return new ($this->model());
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', $this->model());
 
-        return view('admin.blocks.index', [
-            ...$this->shared(),
+        $title = __($this->texts().'.title');
+
+        return $this->adminPage('blocks/index', $title, [
+            'description' => __($this->texts().'.description'),
+            'texts' => [
+                'new' => __($this->texts().'.new'),
+                'item' => __($this->texts().'.item'),
+                'empty_title' => __($this->texts().'.empty_title'),
+                'empty_text' => __($this->texts().'.empty_text'),
+            ],
+            'createUrl' => Gate::allows('create', $this->model()) ? route($this->routes().'.create') : null,
+            'groups' => null,
             ...$this->listData($request),
-            'blocks' => $this->listQuery($request)->get(),
+            'blocks' => $this->listQuery($request)->get()->map(fn (Model&ContentBlock $block): array => [
+                'id' => (int) $block->getKey(),
+                'label' => $block->blockLabel() ?? __($this->texts().'.untitled'),
+                'detail' => $block->blockDetail(),
+                'imageUrl' => $block->blockImage()?->urlForWidth(480),
+                'locales' => $this->present->locales($block),
+                'visible' => $block->isVisible(),
+                'editUrl' => route($this->routes().'.edit', $block),
+                'moveUrl' => $this->sortable() ? route($this->routes().'.move', $block) : null,
+            ])->values()->all(),
             'canReorder' => $this->sortable() && Gate::allows('reorder', $this->model()),
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         Gate::authorize('create', $this->model());
 
         return $this->form($this->newBlock($request));
     }
 
-    public function edit(string $block): View
+    public function edit(string $block): Response
     {
         $model = $this->find($block);
 
@@ -161,20 +184,21 @@ abstract class BlockController extends Controller
         return $this->model()::query()->findOrFail($id);
     }
 
-    private function form(Model&ContentBlock $block): View
+    private function form(Model&ContentBlock $block): Response
     {
-        return view($this->formView(), [...$this->shared(), ...$this->formData($block), 'block' => $block]);
-    }
+        $isNew = ! $block->exists;
+        $title = $isNew ? __($this->texts().'.new') : ($block->blockLabel() ?? __($this->texts().'.untitled'));
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function shared(): array
-    {
-        return [
-            'routes' => $this->routes(),
-            'texts' => $this->texts(),
-            'modelClass' => $this->model(),
-        ];
+        return $this->adminPage($this->formComponent(), $title, [
+            ...$this->formProps($block),
+            'canEdit' => $isNew ? Gate::allows('create', $this->model()) : Gate::allows('update', $block),
+            'submit' => $this->present->formAction($block, $this->routes()),
+            'destroy' => ! $isNew && Gate::allows('delete', $block)
+                ? $this->present->deletion(route($this->routes().'.destroy', $block), $title, __('admin.blocks.delete_text'))
+                : null,
+        ], [
+            ['label' => __($this->texts().'.title'), 'url' => $this->listUrl($block)],
+            ['label' => $title, 'url' => null],
+        ]);
     }
 }

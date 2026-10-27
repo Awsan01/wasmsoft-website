@@ -21,6 +21,7 @@ use App\Support\SocialNetwork;
 use Database\Seeders\DemoContentSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class DemoContentSeederTest extends TestCase
@@ -49,9 +50,9 @@ class DemoContentSeederTest extends TestCase
             $this->assertMatchesRegularExpression('/^(Sample: |نموذج: |Örnek: )/u', $translation->title);
         }
 
-        $this->get('/en')->assertOk()->assertSee('Sample: Web application development');
-        $this->get('/ar/'.rawurlencode('من-نحن'))->assertOk()->assertSee('نموذج: من نحن');
-        $this->get('/tr/projects')->assertOk()->assertSee('Örnek: Rezervasyon yönetim portalı');
+        $this->get('/en')->assertOk()->assertPageShows('Sample: Web application development');
+        $this->get('/ar/'.rawurlencode('من-نحن'))->assertOk()->assertPageShows('نموذج: من نحن');
+        $this->get('/tr/projects')->assertOk()->assertPageShows('Örnek: Rezervasyon yönetim portalı');
     }
 
     public function test_every_section_of_the_home_about_and_contact_pages_shows_samples(): void
@@ -59,23 +60,27 @@ class DemoContentSeederTest extends TestCase
         $this->seed();
 
         $this->get('/en')->assertOk()
-            ->assertSee('Sample: Software and digital products')
-            ->assertSee('Sample: Clear communication')
-            ->assertSee('Sample: Projects delivered')
-            ->assertSee('Dhaman')
-            ->assertSee('Sample client A')
-            ->assertSee('Sample: Sixth sample article')
-            ->assertSee('hello@wasmsoft.test');
+            ->assertPageShows(
+                'Sample: Software and digital products',
+                'Sample: Clear communication',
+                'Sample: Projects delivered',
+                'Dhaman',
+                'Sample client A',
+                'Sample: Sixth sample article',
+            )
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('footer.contact.email', 'hello@wasmsoft.test'));
 
         $this->get('/en/about')->assertOk()
-            ->assertSee('Sample: Quality')
-            ->assertSee('Sample person A')
-            ->assertSee('Sample: First milestone');
+            ->assertPageShows('Sample: Quality', 'Sample person A', 'Sample: First milestone');
+
+        $this->get('/en/partnerships')->assertOk()
+            ->assertPageShows('Sample: Partnerships', 'Sample: Technology partners');
 
         $this->get('/en/contact')->assertOk()
-            ->assertSee('+90 000 000 00 00')
-            ->assertSee('Sample: Monday to Friday, 09:00–18:00')
-            ->assertSee('https://www.linkedin.com/');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('footer.contact.phone', '+90 000 000 00 00')
+                ->where('footer.contact.hours', 'Sample: Monday to Friday, 09:00–18:00')
+                ->where('footer.contact.social.0.url', 'https://www.linkedin.com/'));
     }
 
     public function test_the_products_in_development_are_listed_by_name_with_a_placeholder_description(): void
@@ -83,11 +88,9 @@ class DemoContentSeederTest extends TestCase
         $this->seed();
 
         $this->get('/en/projects')->assertOk()
-            ->assertSee('Dhaman')
-            ->assertSee('Fantastic')
-            ->assertSee('A Wasmsoft product in development. Its description will be added in the dashboard.');
+            ->assertPageShows('Dhaman', 'Fantastic', 'A Wasmsoft product in development. Its description will be added in the dashboard.');
 
-        $this->get('/ar/projects')->assertOk()->assertSee('ضمان');
+        $this->get('/ar/projects')->assertOk()->assertPageShows('ضمان');
     }
 
     public function test_samples_standing_in_for_company_information_are_labelled_in_every_language(): void
@@ -96,11 +99,13 @@ class DemoContentSeederTest extends TestCase
 
         $settings = app(SiteSettings::class);
         $metrics = Highlight::query()->where('group', HighlightGroup::Metric)->get();
+        $partnerships = Highlight::query()->where('group', HighlightGroup::Partnership)->get();
 
         $this->assertSame(3, Testimonial::query()->count());
         $this->assertSame(3, TeamMember::query()->count());
         $this->assertSame(3, Milestone::query()->count());
         $this->assertCount(4, $metrics);
+        $this->assertCount(3, $partnerships);
 
         foreach (array_keys(self::SAMPLE) as $locale) {
             foreach (Testimonial::all() as $testimonial) {
@@ -116,8 +121,8 @@ class DemoContentSeederTest extends TestCase
                 $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $milestone->localized('title', $locale));
             }
 
-            foreach ($metrics as $metric) {
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $metric->localized('title', $locale));
+            foreach ($metrics->merge($partnerships) as $highlight) {
+                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $highlight->localized('title', $locale));
             }
 
             foreach ([SettingKey::SiteTagline, SettingKey::SiteDescription, SettingKey::ContactAddress, SettingKey::ContactHours, SettingKey::FooterNote] as $key) {

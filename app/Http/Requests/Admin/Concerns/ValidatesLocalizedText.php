@@ -6,8 +6,8 @@ use App\Localization\Locales;
 use Illuminate\Validation\Validator;
 
 /**
- * Validation of locale => text maps edited with <x-admin.localized-input>
- * (fields named `{field}[{locale}]`).
+ * Validation of locale => text maps, sent as `{field}.{locale}` by the
+ * dashboard's LocalizedInput (resources/js/components/admin/localized-input.tsx).
  */
 trait ValidatesLocalizedText
 {

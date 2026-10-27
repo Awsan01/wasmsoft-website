@@ -1,6 +1,6 @@
 # 0001 — A server-rendered Laravel application, without a front-end framework
 
-Status: accepted (2026-10-25)
+Status: replaced by [0008](0008-react-pages-with-inertia.md): for the public site on 2026-10-27, for the dashboard on 2026-10-28.
 
 ## Context
 

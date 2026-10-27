@@ -7,6 +7,7 @@ use App\Auth\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ProfileControllerTest extends TestCase
@@ -17,7 +18,11 @@ class ProfileControllerTest extends TestCase
     {
         $this->actingAs(User::factory()->role(Role::Viewer)->create(['name' => 'Vera Viewer']))->get(route('admin.profile.edit'))
             ->assertOk()
-            ->assertSee('Vera Viewer');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/profile/edit')
+                ->where('form.name', 'Vera Viewer')
+                ->where('account.role', Role::Viewer->label())
+            );
     }
 
     public function test_the_name_and_language_can_be_changed_but_not_the_email_or_role(): void

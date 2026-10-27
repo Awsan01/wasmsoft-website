@@ -6,18 +6,20 @@ use App\Audit\AuditEvent;
 use App\Audit\AuditLogger;
 use App\Auth\Invitations;
 use App\Auth\Role;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
+use App\Http\Presenters\AdminPresenter;
 use App\Http\Requests\Admin\UserRequest;
 use App\Localization\Locales;
 use App\Models\User;
 use App\Support\Search;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Inertia\Response;
 
 /**
  * Dashboard accounts (administrators only). New users are invited by
@@ -26,14 +28,17 @@ use Illuminate\Support\Str;
  */
 class UserController extends Controller
 {
+    use RendersAdminPages;
+
     private const STATUSES = ['active', 'inactive', 'invited'];
 
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly Invitations $invitations,
+        private readonly AdminPresenter $present,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', User::class);
 
@@ -52,15 +57,42 @@ class UserController extends Controller
             ->paginate((int) config('wasmsoft.pagination.admin'))
             ->withQueryString();
 
-        return view('admin.users.index', [
-            'users' => $users,
-            'role' => $role,
-            'status' => $status,
-            'search' => $search,
+        $statuses = [];
+
+        foreach (self::STATUSES as $key) {
+            $statuses[$key] = __('admin.users.status.'.$key);
+        }
+
+        return $this->adminPage('users/index', __('admin.users.title'), [
+            'description' => __('admin.users.description'),
+            'createUrl' => Gate::allows('create', User::class) ? route('admin.users.create') : null,
+            'users' => $users->getCollection()->map(function (User $account) use ($request): array {
+                [$status, $tone] = match (true) {
+                    ! $account->is_active => ['inactive', 'neutral'],
+                    $account->email_verified_at === null => ['invited', 'warning'],
+                    default => ['active', 'success'],
+                };
+
+                return [
+                    'id' => $account->id,
+                    'name' => $account->name,
+                    'email' => $account->email,
+                    'role' => $account->role->label(),
+                    'status' => ['label' => __('admin.users.status.'.$status), 'tone' => $tone],
+                    'lastLogin' => $this->present->time($account->last_login_at),
+                    'isSelf' => $account->is($request->user()),
+                    'editUrl' => route('admin.users.edit', $account),
+                ];
+            })->values()->all(),
+            'pagination' => $this->present->pagination($users),
+            'filters' => ['q' => $search, 'role' => $role->value ?? '', 'status' => $status ?? ''],
+            'roleOptions' => $this->present->options($this->roleOptions()),
+            'statusOptions' => $this->present->options($statuses),
+            'indexUrl' => route('admin.users.index'),
         ]);
     }
 
-    public function create(): View
+    public function create(): Response
     {
         Gate::authorize('create', User::class);
 
@@ -85,7 +117,7 @@ class UserController extends Controller
         return redirect()->route('admin.users.edit', $user)->with('status', __('admin.users.created'));
     }
 
-    public function edit(User $user): View
+    public function edit(User $user): Response
     {
         Gate::authorize('view', $user);
 
@@ -162,17 +194,53 @@ class UserController extends Controller
             : redirect()->route('admin.users.edit', $user)->with('warning', __('admin.users.invitation_throttled'));
     }
 
-    private function form(User $user): View
+    private function form(User $user): Response
     {
         $locales = app(Locales::class);
+        $isNew = ! $user->exists;
+        $isSelf = ! $isNew && $user->is(request()->user());
+        $title = $isNew ? __('admin.users.new') : $user->name;
 
-        return view('admin.users.form', [
-            'user' => $user,
-            'roles' => collect(Role::cases())->mapWithKeys(fn (Role $role): array => [$role->value => $role->label()])->all(),
-            'languages' => array_combine($locales->supported(), array_map($locales->nativeName(...), $locales->supported())),
-            'isSelf' => $user->exists && $user->is(auth()->user()),
-            'pendingInvitation' => $user->exists && $this->invitations->isPending($user),
+        return $this->adminPage('users/form', $title, [
+            'description' => $isNew ? __('admin.users.invite_hint') : null,
+            'isSelf' => $isSelf,
+            'submit' => $this->present->formAction($user, 'admin.users'),
+            'form' => [
+                'name' => (string) $user->name,
+                'email' => (string) $user->email,
+                'locale' => (string) $user->locale,
+                'role' => $user->role->value ?? Role::Viewer->value,
+                // New accounts are active; your own account stays active.
+                ...($isNew ? [] : ['is_active' => $user->is_active]),
+            ],
+            'roles' => array_map(fn (Role $role): array => [
+                'value' => $role->value,
+                'label' => $role->label(),
+                'description' => $role->description(),
+            ], Role::cases()),
+            'languageOptions' => $this->present->options(array_combine($locales->supported(), array_map($locales->nativeName(...), $locales->supported()))),
+            'inviteUrl' => ! $isNew && $user->is_active && $this->invitations->isPending($user) ? route('admin.users.invite', $user) : null,
+            'destroy' => ! $isNew && Gate::allows('delete', $user)
+                ? $this->present->deletion(route('admin.users.destroy', $user), $user->name, __('admin.users.delete_text'))
+                : null,
+        ], [
+            ['label' => __('admin.users.title'), 'url' => route('admin.users.index')],
+            ['label' => $title, 'url' => null],
         ]);
+    }
+
+    /**
+     * @return array<string, string> role => name
+     */
+    private function roleOptions(): array
+    {
+        $roles = [];
+
+        foreach (Role::cases() as $role) {
+            $roles[$role->value] = $role->label();
+        }
+
+        return $roles;
     }
 
     /**

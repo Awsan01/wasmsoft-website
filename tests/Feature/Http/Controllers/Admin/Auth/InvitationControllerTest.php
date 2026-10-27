@@ -9,6 +9,7 @@ use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class InvitationControllerTest extends TestCase
@@ -40,7 +41,12 @@ class InvitationControllerTest extends TestCase
 
         $this->get(route('admin.invitation.show', ['token' => $token, 'email' => $user->email]))
             ->assertOk()
-            ->assertSee(__('admin.auth.invitation_title'));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/auth/new-password')
+                ->where('title', __('admin.auth.invitation_title'))
+                ->where('purpose', 'invitation')
+                ->where('email', $user->email)
+            );
 
         $this->post(route('admin.invitation.store'), $this->acceptance($user, $token))
             ->assertRedirect(route('admin.login'))

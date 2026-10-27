@@ -9,12 +9,26 @@ use App\Models\AuditLog;
 use App\Models\Inquiry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 class InquiryControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    /**
+     * The senders of the listed inquiries.
+     *
+     * @param  TestResponse<Response>  $response
+     * @return list<string>
+     */
+    private function senders(TestResponse $response): array
+    {
+        return array_column($response->inertiaProps('inquiries'), 'name');
+    }
 
     public function test_spam_is_only_listed_when_asked_for(): void
     {
@@ -22,14 +36,12 @@ class InquiryControllerTest extends TestCase
         Inquiry::factory()->spam()->create(['name' => 'Cheap Pills']);
         $editor = User::factory()->editor()->create();
 
-        $this->actingAs($editor)->get(route('admin.inquiries.index'))
-            ->assertOk()
-            ->assertSee('Real Person')
-            ->assertDontSee('Cheap Pills');
+        $inbox = $this->actingAs($editor)->get(route('admin.inquiries.index'));
+        $inbox->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('admin/inquiries/index'));
+        $this->assertSame(['Real Person'], $this->senders($inbox));
 
-        $this->actingAs($editor)->get(route('admin.inquiries.index', ['status' => 'spam']))
-            ->assertSee('Cheap Pills')
-            ->assertDontSee('Real Person');
+        $spam = $this->actingAs($editor)->get(route('admin.inquiries.index', ['status' => 'spam']));
+        $this->assertSame(['Cheap Pills'], $this->senders($spam));
     }
 
     public function test_search_looks_at_name_email_company_and_message(): void
@@ -37,9 +49,10 @@ class InquiryControllerTest extends TestCase
         Inquiry::factory()->create(['name' => 'Omar', 'message' => 'We need a booking platform for our clinics.']);
         Inquiry::factory()->create(['name' => 'Selin', 'message' => 'Question about hosting.']);
 
-        $this->actingAs(User::factory()->editor()->create())->get(route('admin.inquiries.index', ['q' => 'clinics']))
-            ->assertSee('Omar')
-            ->assertDontSee('Selin');
+        $response = $this->actingAs(User::factory()->editor()->create())->get(route('admin.inquiries.index', ['q' => 'clinics']));
+
+        $this->assertSame(['Omar'], $this->senders($response));
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('filters.q', 'clinics'));
     }
 
     /**
@@ -108,9 +121,13 @@ class InquiryControllerTest extends TestCase
         Inquiry::factory()->count(3)->create();
         Inquiry::factory()->status(InquiryStatus::Closed)->create();
 
-        $html = $this->actingAs(User::factory()->editor()->create())->get(route('admin.dashboard'))->assertOk()->getContent() ?: '';
+        $response = $this->actingAs(User::factory()->editor()->create())->get(route('admin.dashboard'))->assertOk();
 
-        $this->assertMatchesRegularExpression('#href="'.preg_quote(route('admin.inquiries.index'), '#').'".*?>\s*3\s*<#s', $html);
+        $link = collect($response->inertiaProps('navigation'))
+            ->flatMap(fn (array $group): array => $group['links'])
+            ->firstWhere('url', route('admin.inquiries.index'));
+
+        $this->assertSame(['count' => 3, 'label' => '3'], $link['badge'] ?? null);
     }
 
     public function test_the_reply_link_cannot_be_turned_into_extra_recipients(): void
@@ -119,7 +136,11 @@ class InquiryControllerTest extends TestCase
 
         $this->actingAs(User::factory()->editor()->create())->get(route('admin.inquiries.show', $inquiry))
             ->assertOk()
-            ->assertSee('href="mailto:odd%3Fbcc=someone@example.com"', false)
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/inquiries/show')
+                ->where('inquiry.emailUrl', 'mailto:odd%3Fbcc=someone@example.com')
+                ->where('replyUrl', fn (string $url): bool => str_starts_with($url, 'mailto:odd%3Fbcc=someone@example.com?subject='))
+            )
             ->assertDontSee('mailto:odd?bcc', false);
     }
 
@@ -127,9 +148,10 @@ class InquiryControllerTest extends TestCase
     {
         $inquiry = Inquiry::factory()->create(['message' => '<script>alert(1)</script>']);
 
+        // The page data is JSON-encoded in the document (no markup), and React shows the message as text.
         $this->actingAs(User::factory()->editor()->create())->get(route('admin.inquiries.show', $inquiry))
             ->assertOk()
             ->assertDontSee('<script>alert(1)</script>', false)
-            ->assertSee('&lt;script&gt;', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('inquiry.message', '<script>alert(1)</script>'));
     }
 }

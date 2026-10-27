@@ -148,6 +148,28 @@
     transform: rotate(-55deg);
 }
 
+/* Items in a row divided by the logo's slash (figures); use with a breakpoint, e.g. lg:slash-dividers. */
+@utility slash-dividers {
+    & > * + * {
+        position: relative;
+    }
+
+    & > * + *::before {
+        content: '';
+        position: absolute;
+        inset-block: 0.5rem;
+        inset-inline-start: calc(var(--slash-gap, 2.5rem) / -2);
+        inline-size: 2px;
+        border-radius: var(--radius-full);
+        background-color: var(--color-accent);
+        transform: skewX(-18deg);
+    }
+
+    &:dir(rtl) > * + *::before {
+        transform: skewX(18deg);
+    }
+}
+
 /* ----------------------------------------------------------------------
  * Interaction helpers
  * ---------------------------------------------------------------------- */

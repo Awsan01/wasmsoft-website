@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class AuthenticatedSessionControllerTest extends TestCase
@@ -20,7 +21,11 @@ class AuthenticatedSessionControllerTest extends TestCase
         $response = $this->get(route('admin.login'));
 
         $response->assertOk();
-        $response->assertSee('name="email"', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/auth/login')
+            ->where('urls.store', route('admin.login.store'))
+            ->where('auth', null)
+        );
         $response->assertSee('<meta name="robots" content="noindex, nofollow">', false);
         $response->assertHeader('Cache-Control', 'no-store, private');
     }

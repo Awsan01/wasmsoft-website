@@ -170,6 +170,12 @@ return [
         'history_eyebrow' => 'Hikâyemiz',
         'history_title' => 'Kilometre taşları',
     ],
+    'partnerships' => [
+        'models_title' => 'Ortaklık biçimleri',
+        'cta_title' => 'Birlikte çalışmak ister misiniz?',
+        'cta_text' => 'Bize şirketinizden ve aklınızdaki iş birliğinden bahsedin.',
+        'cta_button' => 'Ortaklık için bize yazın',
+    ],
     'errors' => [
         'code' => 'Hata :code',
         'home' => 'Ana sayfaya git',

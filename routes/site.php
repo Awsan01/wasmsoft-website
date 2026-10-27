@@ -5,9 +5,10 @@
 | Public site routes (session-less "site" middleware group)
 |--------------------------------------------------------------------------
 |
-| Every page lives under a locale prefix (/en, /ar, /tr). Routes that need a
-| session — the contact form — are registered in routes/web.php instead.
-| The custom page catch-all must stay last.
+| Every page lives under a locale prefix (/en, /ar, /tr) and is an Inertia
+| page (site.inertia, after the locale is set). Routes that need a session —
+| the contact form — are registered in routes/web.php instead. The custom
+| page catch-all must stay last.
 |
 */
 
@@ -19,6 +20,7 @@ use App\Http\Controllers\Site\ProjectController;
 use App\Http\Controllers\Site\RobotsController;
 use App\Http\Controllers\Site\ServiceController;
 use App\Http\Controllers\Site\SitemapController;
+use App\Http\Controllers\Site\StyleguideController;
 use App\Localization\Locales;
 use Illuminate\Support\Facades\Route;
 
@@ -28,13 +30,13 @@ Route::get('robots.txt', RobotsController::class)->name('site.robots');
 
 Route::prefix('{locale}')
     ->where(['locale' => app(Locales::class)->routePattern()])
-    ->middleware(['site.locale', 'site.cache'])
+    ->middleware(['site.locale', 'site.cache', 'site.inertia'])
     ->name('site.')
     ->group(function (): void {
         Route::get('/', HomeController::class)->name('home');
 
         if (app()->isLocal()) {
-            Route::view('_styleguide', 'site.styleguide')->name('styleguide');
+            Route::get('_styleguide', StyleguideController::class)->name('styleguide');
         }
 
         Route::get('services', [ServiceController::class, 'index'])->name('services.index');

@@ -8,7 +8,9 @@ use App\Models\Media;
 use App\Models\User;
 use App\Settings\SettingKey;
 use App\Settings\SiteSettings;
+use App\Support\SocialNetwork;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class SettingsControllerTest extends TestCase
@@ -151,7 +153,7 @@ class SettingsControllerTest extends TestCase
         ]));
 
         $this->get('/tr')->assertNotFound();
-        $this->get('/en')->assertOk()->assertDontSee('hreflang="tr"', false);
+        $this->get('/en')->assertOk()->assertHeadMissing('hreflang="tr"');
     }
 
     public function test_saved_contact_details_and_logo_appear_on_the_website(): void
@@ -165,8 +167,9 @@ class SettingsControllerTest extends TestCase
 
         $this->get('/en/contact')
             ->assertOk()
-            ->assertSee('href="mailto:hello@wasmsoft.example"', false)
-            ->assertSee('src="'.$logo->urlForWidth(480).'"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('footer.contact.emailHref', 'mailto:hello@wasmsoft.example')
+                ->where('site.logoUrl', $logo->urlForWidth(480)));
     }
 
     public function test_the_form_shows_the_saved_values(): void
@@ -175,7 +178,13 @@ class SettingsControllerTest extends TestCase
 
         $this->actingAs(User::factory()->administrator()->create())->get(route('admin.settings.edit'))
             ->assertOk()
-            ->assertSee('value="+90 212 000 00 00"', false)
-            ->assertSee('name="site_name[ar]"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/settings/edit')
+                ->where('form.contact_phone', '+90 212 000 00 00')
+                // Every supported language is listed, so texts can be prepared before a language is enabled.
+                ->has('form.site_name', 3)
+                ->has('form.site_name.ar')
+                ->has('form.social', count(SocialNetwork::cases()))
+            );
     }
 }

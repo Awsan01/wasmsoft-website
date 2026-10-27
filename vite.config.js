@@ -1,12 +1,16 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import { fontsource } from 'laravel-vite-plugin/fonts';
+import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/site.js', 'resources/js/admin.js'],
+            // The public site and the dashboard are two Inertia apps (React + TypeScript).
+            input: ['resources/css/app.css', 'resources/js/site.tsx', 'resources/js/admin.tsx'],
+            // Server-side rendering of the public site (optional, see docs/deployment.md).
+            ssr: 'resources/js/ssr.tsx',
             refresh: true,
             // Fonts are resolved from version-pinned npm packages and emitted
             // into the build, so visitors never contact a third-party font CDN.
@@ -25,6 +29,7 @@ export default defineConfig({
                 }),
             ],
         }),
+        react(),
         tailwindcss(),
     ],
     server: {

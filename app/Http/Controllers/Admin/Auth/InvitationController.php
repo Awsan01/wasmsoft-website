@@ -5,26 +5,31 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Audit\AuditEvent;
 use App\Audit\AuditLogger;
 use App\Auth\Invitations;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Contracts\Auth\PasswordBroker;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Response;
 
 /**
  * Accepting an invitation: the new user chooses their first password.
  */
 class InvitationController extends Controller
 {
-    public function show(Request $request, string $token): View
+    use RendersAdminPages;
+
+    public function show(Request $request, string $token): Response
     {
-        return view('admin.auth.invitation', [
+        return $this->adminPage('auth/new-password', __('admin.auth.invitation_title'), [
+            'purpose' => 'invitation',
             'token' => $token,
             'email' => $request->string('email')->toString(),
+            'urls' => ['store' => route('admin.invitation.store')],
         ]);
     }
 

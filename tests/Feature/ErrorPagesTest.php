@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Auth\Role;
 use App\Models\User;
+use App\Navigation\SiteNavigation;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\TestWith;
 use RuntimeException;
 use Tests\TestCase;
@@ -25,16 +27,50 @@ class ErrorPagesTest extends TestCase
 
         $response->assertNotFound();
         $response->assertSee('<html lang="'.$locale.'" dir="'.$direction.'">', false);
-        $response->assertSee(__('site.errors.404.title', [], $locale));
-        $response->assertSee('href="'.url("/{$locale}").'"', false);
-        $response->assertSee('<meta name="robots" content="noindex, nofollow">', false);
+        $response->assertSee('<meta data-inertia="robots" name="robots" content="noindex, nofollow">', false);
+        // A page of the site, with its menus: what happened, and the way home.
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/error')
+            ->where('status', 404)
+            ->where('title', __('site.errors.404.title', [], $locale))
+            ->where('message', __('site.errors.404.message', [], $locale))
+            ->where('site.homeUrl', url("/{$locale}"))
+            ->has('navigation.header', 3));
     }
 
     public function test_without_a_language_in_the_url_the_browser_language_is_used(): void
     {
         $this->get('/no-such-page', ['Accept-Language' => 'tr-TR,tr;q=0.9'])
             ->assertNotFound()
-            ->assertSee(__('site.errors.404.title', [], 'tr'));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('title', __('site.errors.404.title', [], 'tr'))
+                ->where('locale.code', 'tr'));
+    }
+
+    public function test_a_link_to_a_missing_page_inside_the_site_shows_the_error_page(): void
+    {
+        $version = $this->get('/en')->inertiaPage()['version'];
+
+        $this->get('/en/no-such-page', ['X-Inertia' => 'true', 'X-Inertia-Version' => $version, 'X-Requested-With' => 'XMLHttpRequest'])
+            ->assertNotFound()
+            ->assertHeader('X-Inertia', 'true')
+            ->assertJsonPath('component', 'site/error')
+            ->assertJsonPath('props.status', 404);
+    }
+
+    public function test_a_page_that_fails_to_build_falls_back_to_the_self_contained_error_page(): void
+    {
+        config(['app.debug' => false]);
+        // A broken shared setting makes the site's own error page fail to build; the plain one remains.
+        $this->mock(SiteNavigation::class, function ($mock): void {
+            $mock->shouldReceive('header')->andThrow(new RuntimeException('navigation unavailable'));
+        });
+
+        $this->get('/en/no-such-page')
+            ->assertNotFound()
+            ->assertSee(__('site.errors.404.title'))
+            ->assertSee('<meta name="robots" content="noindex, nofollow">', false)
+            ->assertDontSee('navigation unavailable');
     }
 
     public function test_dashboard_errors_lead_back_to_the_dashboard(): void

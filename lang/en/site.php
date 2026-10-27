@@ -170,6 +170,12 @@ return [
         'history_eyebrow' => 'Our story',
         'history_title' => 'Milestones',
     ],
+    'partnerships' => [
+        'models_title' => 'Ways to partner',
+        'cta_title' => 'Interested in working together?',
+        'cta_text' => 'Tell us about your company and the partnership you have in mind.',
+        'cta_button' => 'Talk to us about a partnership',
+    ],
     'errors' => [
         'code' => 'Error :code',
         'home' => 'Go to the home page',

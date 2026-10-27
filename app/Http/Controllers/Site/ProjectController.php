@@ -7,7 +7,9 @@ use App\Content\Markdown;
 use App\Content\SystemPage;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Site\Concerns\ResolvesTranslatedContent;
+use App\Http\Presenters\SitePresenter;
 use App\Localization\Locales;
+use App\Models\Media;
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\ProjectCategory;
@@ -15,12 +17,12 @@ use App\Seo\SeoMeta;
 use App\Seo\StructuredData;
 use App\Support\Brand;
 use App\Support\Search;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class ProjectController extends Controller
 {
@@ -29,13 +31,14 @@ class ProjectController extends Controller
     public function __construct(
         private readonly Locales $locales,
         private readonly Brand $brand,
+        private readonly SitePresenter $presenter,
     ) {}
 
     /**
      * Portfolio listing, filterable by category (?category={slug}) and
      * searchable (?q=); filters survive pagination.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $locale = app()->getLocale();
         $intro = Page::query()->system(SystemPage::Projects)->published()->withTranslation($locale)->first()?->translation($locale);
@@ -73,27 +76,44 @@ class ProjectController extends Controller
 
         $canonical = route('site.projects.index', array_filter(['category' => $categorySlug, 'page' => $projects->currentPage() > 1 ? $projects->currentPage() : null]));
 
-        return view('site.projects.index', [
+        $filters = $categories->isEmpty() ? [] : [
+            ['label' => __('ui.all'), 'url' => route('site.projects.index', array_filter(['q' => $search])), 'current' => $category === null],
+            ...$categories->map(fn (ProjectCategory $item): array => [
+                'label' => (string) $item->translation($locale)?->name,
+                'url' => route('site.projects.index', array_filter(['category' => $item->translation($locale)?->slug, 'q' => $search])),
+                'current' => (bool) $category?->is($item),
+            ])->all(),
+        ];
+
+        return $this->sitePage('site/projects/index', [
             'title' => $title,
             'lead' => $intro?->summary,
-            'categories' => $categories,
-            'activeCategory' => $category,
-            'search' => $search,
-            'projects' => $projects,
-            'seo' => new SeoMeta(
-                title: ($intro?->meta_title ?: $title).($category ? ' · '.$category->translation($locale)?->name : '').' · '.$this->brand->name(),
-                description: $intro?->meta_description
-                    ?: Markdown::toText($intro?->summary)
-                    ?: __('site.projects.description', ['name' => $this->brand->name()]),
-                canonical: $canonical,
-                alternates: $category === null ? Alternates::route('site.projects.index', $this->locales) : [],
-                // Search results are not worth indexing; categories and pages are.
-                indexable: $search === '',
-            ),
-        ]);
+            'breadcrumbs' => [
+                ['label' => __('site.nav.home'), 'url' => route('site.home')],
+                ['label' => __('site.nav.projects'), 'url' => null],
+            ],
+            'filters' => $filters,
+            'search' => [
+                'value' => $search,
+                'action' => route('site.projects.index'),
+                'category' => $category?->translation($locale)?->slug,
+            ],
+            'projects' => array_map(fn (Project $project): array => $this->presenter->project($project, $locale), $projects->items()),
+            'pagination' => $this->presenter->pagination($projects),
+            'filtered' => $search !== '' || $category !== null,
+        ], new SeoMeta(
+            title: ($intro?->meta_title ?: $title).($category ? ' · '.$category->translation($locale)?->name : '').' · '.$this->brand->name(),
+            description: $intro?->meta_description
+                ?: Markdown::toText($intro?->summary)
+                ?: __('site.projects.description', ['name' => $this->brand->name()]),
+            canonical: $canonical,
+            alternates: $category === null ? Alternates::route('site.projects.index', $this->locales) : [],
+            // Search results are not worth indexing; categories and pages are.
+            indexable: $search === '',
+        ));
     }
 
-    public function show(string $slug): View|Response|RedirectResponse
+    public function show(string $slug): Response|SymfonyResponse|RedirectResponse
     {
         $project = $this->findTranslated(Project::query()->published()->with(['cover', 'gallery', 'category.translations']), $slug);
 
@@ -107,7 +127,7 @@ class ProjectController extends Controller
     /**
      * Render a project in $locale; also used for dashboard previews.
      */
-    public function render(Project $project, string $locale, bool $preview = false): View
+    public function render(Project $project, string $locale, bool $preview = false): Response
     {
         $translation = $project->translation($locale);
         $breadcrumbs = [
@@ -127,24 +147,33 @@ class ProjectController extends Controller
             ->limit(3)
             ->get();
 
-        return view('site.projects.show', [
-            'project' => $project,
-            'translation' => $translation,
-            'category' => $project->category?->translation($locale),
+        return $this->sitePage('site/projects/show', [
+            'project' => [
+                'title' => (string) $translation?->title,
+                'summary' => $translation?->summary,
+                'body' => Markdown::toHtml($translation?->body)->toHtml(),
+                'cover' => $this->presenter->image($project->cover, $locale, width: 1600),
+                'gallery' => array_values($project->gallery->filter(fn (Media $image): bool => $image->isImage())->map(fn (Media $image): array => [
+                    'image' => $this->presenter->image($image, $locale),
+                    'url' => $image->url(),
+                ])->all()),
+                'category' => $project->category?->translation($locale)?->name,
+                'client' => $project->client_name,
+                'completedOn' => $this->presenter->date($project->completed_on, $locale),
+                'technologies' => $project->technologies ?? [],
+                'website' => $project->project_url,
+            ],
             'breadcrumbs' => $breadcrumbs,
-            'body' => Markdown::toHtml($translation?->body),
-            'related' => $related,
-            'preview' => $preview,
-            'seo' => new SeoMeta(
-                title: ($translation?->meta_title ?: $translation?->title).' · '.$this->brand->name(),
-                description: $translation?->meta_description ?: Markdown::toText($translation?->summary ?: $translation?->body),
-                canonical: $preview ? null : $project->publicUrl($locale),
-                alternates: $preview ? [] : Alternates::of($project, $this->locales),
-                image: $project->cover?->urlForWidth(1200),
-                imageAlt: $project->cover?->altText($locale),
-                indexable: ! $preview,
-                structuredData: [StructuredData::breadcrumbs($breadcrumbs, $project->publicUrl($locale))],
-            ),
-        ]);
+            'related' => $related->map(fn (Project $item): array => $this->presenter->project($item, $locale))->values()->all(),
+        ], new SeoMeta(
+            title: ($translation?->meta_title ?: $translation?->title).' · '.$this->brand->name(),
+            description: $translation?->meta_description ?: Markdown::toText($translation?->summary ?: $translation?->body),
+            canonical: $preview ? null : $project->publicUrl($locale),
+            alternates: $preview ? [] : Alternates::of($project, $this->locales),
+            image: $project->cover?->urlForWidth(1200),
+            imageAlt: $project->cover?->altText($locale),
+            indexable: ! $preview,
+            structuredData: [StructuredData::breadcrumbs($breadcrumbs, $project->publicUrl($locale))],
+        ), preview: $preview);
     }
 }

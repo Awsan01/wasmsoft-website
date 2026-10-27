@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers\Admin;
 use App\Models\Milestone;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class MilestoneControllerTest extends TestCase
@@ -23,10 +24,14 @@ class MilestoneControllerTest extends TestCase
             'is_visible' => '1',
         ])->assertSessionHasNoErrors();
 
-        $this->actingAs($editor)->get(route('admin.milestones.index'))
-            ->assertOk()
-            ->assertSeeInOrder(['2019 · Company founded', '2024 · First product launch'])
-            ->assertDontSee(__('admin.content.reorder_hint'));
+        $response = $this->actingAs($editor)->get(route('admin.milestones.index'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/blocks/index')
+            ->where('canReorder', false)
+            ->where('blocks.0.moveUrl', null)
+        );
+        $this->assertSame(['2019 · Company founded', '2024 · First product launch'], array_column($response->inertiaProps('blocks'), 'label'));
 
         $this->assertFalse(app('router')->has('admin.milestones.move'));
     }

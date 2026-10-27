@@ -12,6 +12,7 @@ use App\Settings\SiteSettings;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -205,8 +206,7 @@ class MediaControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('admin.media.index', ['q' => 'report_2026']));
 
         $response->assertOk();
-        $response->assertSee('report_2026.pdf');
-        $response->assertDontSee('reportX2026.pdf');
+        $this->assertSame(['report_2026.pdf'], array_column($response->inertiaProps('items'), 'name'));
     }
 
     public function test_file_names_are_escaped_in_the_library(): void
@@ -215,8 +215,12 @@ class MediaControllerTest extends TestCase
 
         $response = $this->actingAs(User::factory()->create())->get(route('admin.media.index'));
 
-        $response->assertSee('&lt;img src=x onerror=alert(1)&gt;.jpg', false);
+        // The page data is JSON-encoded in the document (no markup), and React shows the name as text.
         $response->assertDontSee('<img src=x onerror=alert(1)>', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/media/index')
+            ->where('items.0.name', '<img src=x onerror=alert(1)>.jpg')
+        );
     }
 
     public function test_picker_lists_images_only(): void
@@ -224,11 +228,31 @@ class MediaControllerTest extends TestCase
         Media::factory()->create(['original_name' => 'team-photo.jpg']);
         Media::factory()->document()->create(['original_name' => 'price-list.pdf']);
 
-        $response = $this->actingAs(User::factory()->create())->get(route('admin.media.picker'));
+        $response = $this->actingAs(User::factory()->create())->getJson(route('admin.media.picker'));
 
         $response->assertOk();
-        $response->assertSee('team-photo.jpg');
-        $response->assertDontSee('price-list.pdf');
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.name', 'team-photo.jpg');
+        $response->assertJsonPath('previousUrl', null);
+        $response->assertJsonPath('nextUrl', null);
+    }
+
+    public function test_picker_searches_and_pages_through_the_images(): void
+    {
+        Media::factory()->count(19)->create(['original_name' => 'office.jpg']);
+        Media::factory()->create(['original_name' => 'team-photo.jpg']);
+        $user = User::factory()->create();
+
+        $search = $this->actingAs($user)->getJson(route('admin.media.picker', ['q' => 'team']));
+        $search->assertJsonCount(1, 'data')->assertJsonPath('search', 'team');
+
+        $first = $this->actingAs($user)->getJson(route('admin.media.picker'));
+        $first->assertJsonCount(18, 'data');
+        $this->assertStringContainsString('page=2', (string) $first->json('nextUrl'));
+
+        $this->actingAs($user)->getJson((string) $first->json('nextUrl'))
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('nextUrl', null);
     }
 
     public function test_picker_upload_answers_with_json(): void

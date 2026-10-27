@@ -9,6 +9,7 @@ enum PageTemplate: string
 {
     case Default = 'default';
     case About = 'about';
+    case Partnerships = 'partnerships';
 
     public function label(): string
     {

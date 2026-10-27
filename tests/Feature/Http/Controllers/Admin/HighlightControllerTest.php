@@ -9,6 +9,7 @@ use App\Content\HighlightGroup;
 use App\Models\Highlight;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class HighlightControllerTest extends TestCase
@@ -81,14 +82,16 @@ class HighlightControllerTest extends TestCase
         $second = Highlight::factory()->create(['title' => ['en' => 'Second reason']]);
         Highlight::factory()->group(HighlightGroup::Value)->create(['title' => ['en' => 'Honesty']]);
 
-        $this->actingAs($editor)->get(route('admin.highlights.index'))
-            ->assertOk()
-            ->assertSeeInOrder(['First reason', 'Second reason'])
-            ->assertDontSee('Honesty');
+        $differentiators = $this->actingAs($editor)->get(route('admin.highlights.index'));
+        $differentiators->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/blocks/index')
+            ->where('groups.links.0.current', true)
+            ->where('createUrl', route('admin.highlights.create', ['group' => HighlightGroup::Differentiator->value]))
+        );
+        $this->assertSame(['First reason', 'Second reason'], array_column($differentiators->inertiaProps('blocks'), 'label'));
 
-        $this->actingAs($editor)->get(route('admin.highlights.index', ['group' => 'value']))
-            ->assertSee('Honesty')
-            ->assertDontSee('First reason');
+        $values = $this->actingAs($editor)->get(route('admin.highlights.index', ['group' => 'value']));
+        $this->assertSame(['Honesty'], array_column($values->inertiaProps('blocks'), 'label'));
 
         $this->actingAs($editor)->patch(route('admin.highlights.move', $second), ['direction' => 'up']);
 

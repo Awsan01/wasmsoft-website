@@ -4,15 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Audit\AuditEvent;
 use App\Audit\AuditLogger;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
+use App\Http\Presenters\AdminPresenter;
 use App\Localization\Locales;
 use App\Models\User;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Response;
 use LogicException;
 
 /**
@@ -21,15 +23,20 @@ use LogicException;
  */
 class ProfileController extends Controller
 {
+    use RendersAdminPages;
+
     public function __construct(private readonly AuditLogger $audit) {}
 
-    public function edit(Request $request): View
+    public function edit(Request $request, Locales $locales, AdminPresenter $present): Response
     {
-        $locales = app(Locales::class);
+        $user = $this->authenticated($request);
 
-        return view('admin.profile.edit', [
-            'user' => $this->authenticated($request),
-            'languages' => array_combine($locales->supported(), array_map($locales->nativeName(...), $locales->supported())),
+        return $this->adminPage('profile/edit', __('admin.profile.title'), [
+            'account' => ['email' => $user->email, 'role' => $user->role->label()],
+            'form' => ['name' => $user->name, 'locale' => (string) $user->locale],
+            'languageOptions' => $present->options(array_combine($locales->supported(), array_map($locales->nativeName(...), $locales->supported()))),
+            'submit' => ['url' => route('admin.profile.update'), 'method' => 'put'],
+            'passwordSubmit' => ['url' => route('admin.profile.password'), 'method' => 'put'],
         ]);
     }
 

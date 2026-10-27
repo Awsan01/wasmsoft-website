@@ -537,6 +537,10 @@ return [
                 'label' => 'Figures',
                 'description' => 'Real figures about your company, shown on the home page. Leave this empty until you have figures you can verify.',
             ],
+            'partnership' => [
+                'label' => 'Ways to partner',
+                'description' => 'How other companies can work with yours. Shown on the partnerships page.',
+            ],
         ],
         'fields' => [
             'group' => 'Group',
@@ -698,6 +702,7 @@ return [
         'templates' => [
             'default' => 'Standard page',
             'about' => 'About page (with values, team and milestones)',
+            'partnerships' => 'Partnerships page (with the ways to partner)',
         ],
         'system' => [
             'home' => 'Home page',

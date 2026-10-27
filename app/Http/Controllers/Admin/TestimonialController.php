@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Content\ContentBlock;
 use App\Http\Requests\Admin\TestimonialRequest;
 use App\Models\Testimonial;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -38,13 +40,30 @@ class TestimonialController extends BlockController
         return 'admin.testimonials';
     }
 
-    protected function formView(): string
+    protected function formComponent(): string
     {
-        return 'admin.testimonials.form';
+        return 'testimonials/form';
     }
 
     protected function listQuery(Request $request): Builder
     {
         return Testimonial::query()->with('photo')->ordered();
+    }
+
+    protected function formProps(Model&ContentBlock $block): array
+    {
+        $testimonial = $block instanceof Testimonial ? $block->loadMissing('photo') : new Testimonial;
+
+        return [
+            'form' => [
+                'quote' => $this->present->localized($testimonial->quote),
+                'author_name' => (string) $testimonial->author_name,
+                'company' => (string) $testimonial->company,
+                'author_role' => $this->present->localized($testimonial->author_role),
+                'has_consent' => $testimonial->has_consent,
+                'is_visible' => $testimonial->is_visible,
+                'photo' => $this->present->media($testimonial->photo),
+            ],
+        ];
     }
 }

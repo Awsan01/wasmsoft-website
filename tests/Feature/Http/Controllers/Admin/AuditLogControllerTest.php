@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Lang;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 class AuditLogControllerTest extends TestCase
@@ -24,11 +27,14 @@ class AuditLogControllerTest extends TestCase
     }
 
     /**
-     * An event as shown in the table (the filter's <option>s carry the same labels).
+     * The events of the listed entries, in the order shown.
+     *
+     * @param  TestResponse<Response>  $response
+     * @return list<string>
      */
-    private function row(AuditEvent $event): string
+    private function events(TestResponse $response): array
     {
-        return '<span class="font-semibold">'.e($event->label()).'</span>';
+        return array_column($response->inertiaProps('entries'), 'event');
     }
 
     public function test_administrators_read_the_log_newest_first_with_readable_details(): void
@@ -41,12 +47,17 @@ class AuditLogControllerTest extends TestCase
         $this->travelTo(Carbon::parse('2026-10-21 09:00'));
         $this->audit()->record(AuditEvent::SettingsUpdated, properties: ['changed' => ['contact.email', 'site.name']], actor: $admin);
 
-        $this->actingAs($admin)->get(route('admin.audit.index'))
-            ->assertOk()
-            ->assertSeeInOrder([$this->row(AuditEvent::SettingsUpdated), $this->row(AuditEvent::UserRoleChanged)], false)
-            ->assertSee(__('admin.audit.details.changed', ['fields' => 'contact.email, site.name']))
-            ->assertSee('editor → author')
-            ->assertSee(__('admin.audit.security'));
+        $response = $this->actingAs($admin)->get(route('admin.audit.index'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/audit/index')
+            ->where('entries.0.event', AuditEvent::SettingsUpdated->label())
+            ->where('entries.0.details', [__('admin.audit.details.changed', ['fields' => 'contact.email, site.name'])])
+            ->where('entries.1.event', AuditEvent::UserRoleChanged->label())
+            ->where('entries.1.security', true)
+            ->where('entries.1.who', 'Ada Admin')
+            ->where('entries.1.details.0', fn (string $line): bool => str_contains($line, 'editor → author'))
+        );
     }
 
     /**
@@ -73,27 +84,29 @@ class AuditLogControllerTest extends TestCase
         $this->travelTo(Carbon::parse('2026-10-15 12:00'));
         $this->audit()->record(AuditEvent::SettingsUpdated, properties: ['changed' => ['footer.note']], actor: $admin);
 
-        $this->actingAs($admin)->get(route('admin.audit.index', ['event' => AuditEvent::Login->value]))
-            ->assertSee($this->row(AuditEvent::Login), false)
-            ->assertDontSee($this->row(AuditEvent::SettingsUpdated), false);
+        $byEvent = $this->actingAs($admin)->get(route('admin.audit.index', ['event' => AuditEvent::Login->value]));
+        $this->assertSame([AuditEvent::Login->label()], $this->events($byEvent));
+        $byEvent->assertInertia(fn (AssertableInertia $page) => $page->where('filters.event', AuditEvent::Login->value));
 
-        $this->actingAs($admin)->get(route('admin.audit.index', ['user' => $admin->id]))
-            ->assertSee($this->row(AuditEvent::SettingsUpdated), false)
-            ->assertDontSee($this->row(AuditEvent::Login), false);
+        $byPerson = $this->actingAs($admin)->get(route('admin.audit.index', ['user' => $admin->id]));
+        $this->assertSame([AuditEvent::SettingsUpdated->label()], $this->events($byPerson));
 
-        $this->actingAs($admin)->get(route('admin.audit.index', ['from' => '2026-10-10', 'until' => '2026-10-31']))
-            ->assertSee($this->row(AuditEvent::SettingsUpdated), false)
-            ->assertDontSee($this->row(AuditEvent::Login), false);
+        $byDate = $this->actingAs($admin)->get(route('admin.audit.index', ['from' => '2026-10-10', 'until' => '2026-10-31']));
+        $this->assertSame([AuditEvent::SettingsUpdated->label()], $this->events($byDate));
+        $byDate->assertInertia(fn (AssertableInertia $page) => $page->where('filters.from', '2026-10-10')->where('filters.until', '2026-10-31'));
     }
 
     public function test_attempted_sign_in_addresses_are_shown_escaped(): void
     {
         $this->audit()->record(AuditEvent::LoginFailed, properties: ['email' => '<script>alert(1)</script>']);
 
-        $this->actingAs(User::factory()->administrator()->create())->get(route('admin.audit.index'))
-            ->assertOk()
+        $response = $this->actingAs(User::factory()->administrator()->create())->get(route('admin.audit.index'));
+
+        // The page data is JSON-encoded in the document, and React shows it as text.
+        $response->assertOk()
             ->assertDontSee('<script>alert(1)</script>', false)
-            ->assertSee(__('admin.audit.anonymous'));
+            ->assertPageShows('<script>alert(1)</script>')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('entries.0.who', null));
     }
 
     public function test_every_event_and_item_type_has_a_name_in_every_language(): void
@@ -117,12 +130,14 @@ class AuditLogControllerTest extends TestCase
         $this->audit()->record(AuditEvent::ContentUpdated, $post, actor: $admin);
 
         $this->actingAs($admin)->get(route('admin.audit.index'))
-            ->assertSee('href="'.route('admin.posts.edit', $post).'"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('entries.0.subject.url', route('admin.posts.edit', $post)));
 
         $post->delete();
 
         $this->actingAs($admin)->get(route('admin.audit.index'))
-            ->assertSee('Quarterly update')
-            ->assertDontSee('href="'.route('admin.posts.edit', $post).'"', false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('entries.0.subject.label', 'Quarterly update')
+                ->where('entries.0.subject.url', null)
+            );
     }
 }

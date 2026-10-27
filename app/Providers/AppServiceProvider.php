@@ -31,7 +31,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -95,9 +94,6 @@ class AppServiceProvider extends ServiceProvider
             // Checks the Have I Been Pwned range API (k-anonymity); network access required.
             return $this->app->isProduction() ? $rule->uncompromised() : $rule;
         });
-
-        Paginator::defaultView('pagination.default');
-        Paginator::defaultSimpleView('pagination.simple');
 
         // Vite remembers which assets a response already preloaded. Reset that
         // after every request so long-lived workers (and tests) render each

@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Middleware;
 use App\Settings\SettingKey;
 use App\Settings\SiteSettings;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -21,6 +22,7 @@ class SetSiteLocaleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee("<html lang=\"{$locale}\" dir=\"{$direction}\">", false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('locale.code', $locale)->where('locale.dir', $direction));
     }
 
     #[TestWith(['ar', 'الخدمات', 'Services'])]
@@ -30,16 +32,21 @@ class SetSiteLocaleTest extends TestCase
     {
         $response = $this->get("/{$locale}");
 
-        $response->assertSee(">{$expected}</a>", false);
-        $response->assertDontSee(">{$otherLanguage}</a>", false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            // The menu and the interface strings the page translates in the browser.
+            ->where('navigation.header.0.label', $expected)
+            ->where('translations.site.nav.services', $expected));
+        $this->assertNotSame($otherLanguage, $response->inertiaProps('translations.site.nav.services'));
     }
 
     public function test_generated_links_stay_in_the_current_language(): void
     {
         $response = $this->get('/tr');
 
-        $response->assertSee('href="'.url('/tr/services').'"', false);
-        $response->assertDontSee('href="'.url('/en/services').'"', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('navigation.header.0.url', url('/tr/services'))
+            ->where('site.urls.contact', url('/tr/contact')));
+        $this->assertStringNotContainsString(url('/en/services'), (string) json_encode($response->inertiaPage()['props'], JSON_UNESCAPED_SLASHES));
     }
 
     public function test_disabled_language_returns_not_found(): void

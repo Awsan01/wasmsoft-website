@@ -4,15 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Audit\AuditEvent;
 use App\Auth\Permission;
+use App\Http\Controllers\Admin\Concerns\RendersAdminPages;
 use App\Http\Controllers\Controller;
+use App\Http\Presenters\AdminPresenter;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\Search;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Response;
 use Throwable;
 
 /**
@@ -21,9 +23,11 @@ use Throwable;
  */
 class AuditLogController extends Controller
 {
+    use RendersAdminPages;
+
     private const PER_PAGE = 50;
 
-    public function index(Request $request): View
+    public function index(Request $request, AdminPresenter $present): Response
     {
         Gate::authorize(Permission::ViewAuditLog->value);
 
@@ -53,15 +57,34 @@ class AuditLogController extends Controller
 
         asort($events);
 
-        return view('admin.audit.index', [
-            'entries' => $entries,
-            'events' => $events,
-            'users' => User::query()->orderBy('name')->pluck('name', 'id')->all(),
-            'event' => $event,
-            'userId' => $userId,
-            'from' => $from?->format('Y-m-d'),
-            'until' => $until?->format('Y-m-d'),
-            'search' => $search,
+        return $this->adminPage('audit/index', __('admin.audit.title'), [
+            'description' => __('admin.audit.description', ['days' => $present->number((int) config('wasmsoft.audit.retention_days'))]),
+            'entries' => $entries->getCollection()->map(fn (AuditLog $entry): array => [
+                'id' => $entry->id,
+                'at' => $present->time($entry->created_at, 'datetime', 'short'),
+                'who' => $entry->user?->name,
+                'event' => $entry->event->label(),
+                'security' => $entry->event->isSecurityEvent(),
+                'subject' => $entry->subject_type ? [
+                    'type' => __('admin.audit.subjects.'.$entry->subject_type),
+                    'label' => (string) $entry->subject_label,
+                    'url' => $entry->subjectUrl(),
+                ] : null,
+                'details' => $entry->details(),
+                'ip' => $entry->ip_address,
+                'userAgent' => $entry->user_agent,
+            ])->values()->all(),
+            'pagination' => $present->pagination($entries),
+            'filters' => [
+                'q' => $search,
+                'event' => $event->value ?? '',
+                'user' => (string) ($userId ?? ''),
+                'from' => $from?->format('Y-m-d') ?? '',
+                'until' => $until?->format('Y-m-d') ?? '',
+            ],
+            'eventOptions' => $present->options($events),
+            'userOptions' => $present->options(User::query()->orderBy('name')->pluck('name', 'id')->all()),
+            'indexUrl' => route('admin.audit.index'),
         ]);
     }
 

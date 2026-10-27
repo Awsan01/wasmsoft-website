@@ -15,7 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
  * (the Vite bundles) plus the inline style blocks the page registered by
  * hash (App\Security\InlineStyles — the web font rules). Inline scripts,
  * event handlers, style attributes and third-party code are blocked.
- * JSON-LD blocks are data, not script, so the policy does not apply to them.
+ * JSON-LD blocks and Inertia's page data are data, not script, so the
+ * policy does not apply to them.
  */
 class SecurityHeaders
 {
@@ -23,6 +24,13 @@ class SecurityHeaders
 
     public function handle(Request $request, Closure $next): Response
     {
+        // Development only: the Vite dev server's React refresh preamble is an
+        // inline script, allowed by a per-request nonce (cached pages never
+        // come from the dev server, so a changing nonce costs nothing there).
+        if (Vite::isRunningHot()) {
+            Vite::useCspNonce();
+        }
+
         $response = $next($request);
 
         // Sent by PHP itself (expose_php); it only advertises the PHP version.
@@ -57,6 +65,7 @@ class SecurityHeaders
         // (Browsers ignore 'unsafe-inline' next to hashes, so hashes are dropped.)
         if (Vite::isRunningHot() && ($devServer = $this->devServerOrigin()) !== null) {
             $script[] = $devServer;
+            $script[] = "'nonce-".Vite::cspNonce()."'";
             $style = [$self, $devServer, "'unsafe-inline'"];
             $font[] = $devServer;
             $img[] = $devServer;

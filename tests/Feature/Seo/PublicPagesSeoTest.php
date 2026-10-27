@@ -18,9 +18,12 @@ use Tests\TestCase;
 
 /**
  * Crawls the public site from each language's home page, as a search
- * engine would, and checks what every page must carry: its language and
- * direction, a title, a description, a canonical URL, one main heading,
- * social metadata, valid structured data and matching hreflang links.
+ * engine would, and checks what every page must carry in the HTML Laravel
+ * sends: its language and direction, a title, a description, a canonical
+ * URL, social metadata, valid structured data and matching hreflang links.
+ * Links are followed through the page data the browser renders them from;
+ * the rendered pages themselves (one main heading each) are checked by the
+ * browser tests (tests/Browser).
  */
 class PublicPagesSeoTest extends TestCase
 {
@@ -46,7 +49,7 @@ class PublicPagesSeoTest extends TestCase
             $this->assertNotSame('', $page['description'], "{$url}: description");
             $this->assertSame($url, $page['canonical'], "{$url}: canonical");
             $this->assertNull($page['robots'], "{$url}: robots");
-            $this->assertSame(1, $page['h1'], "{$url}: one h1");
+            $this->assertNotSame('', $page['component'], "{$url}: page component");
             $this->assertSame($page['title'], $page['og']['og:title'] ?? null, "{$url}: og:title");
             $this->assertSame($url, $page['og']['og:url'] ?? null, "{$url}: og:url");
             $this->assertSame(self::OPEN_GRAPH_LOCALES[$locale], $page['og']['og:locale'] ?? null, "{$url}: og:locale");
@@ -135,7 +138,7 @@ class PublicPagesSeoTest extends TestCase
     /**
      * Every page reachable through links, keyed by absolute URL.
      *
-     * @return array<string, array{lang: string, dir: string, title: string, description: string, canonical: ?string, robots: ?string, h1: int, og: array<string, string>, alternates: array<string, string>, jsonLd: list<string>, linksToDashboard: bool}>
+     * @return array<string, array{lang: string, dir: string, title: string, description: string, canonical: ?string, robots: ?string, og: array<string, string>, alternates: array<string, string>, jsonLd: list<string>, component: string, linksToDashboard: bool}>
      */
     private function crawl(): array
     {
@@ -152,10 +155,12 @@ class PublicPagesSeoTest extends TestCase
             $document = new DOMDocument;
             $document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
             $xpath = new DOMXPath($document);
-            $pages[$url] = $this->metadata($xpath);
+            $page = $response->inertiaPage();
+            $links = $this->linksIn(array_diff_key($page['props'], ['head' => true, 'translations' => true]));
+            $pages[$url] = [...$this->metadata($xpath), 'component' => (string) $page['component'], 'linksToDashboard' => $this->linksToDashboard($links)];
 
-            foreach ($this->elements($xpath, '//a[@href]') as $link) {
-                $href = strtok($link->getAttribute('href'), '#');
+            foreach ($links as $link) {
+                $href = strtok($link, '#');
 
                 if (is_string($href) && $this->isPublicPage($href) && ! isset($pages[$href])) {
                     $queue[] = $href;
@@ -167,7 +172,40 @@ class PublicPagesSeoTest extends TestCase
     }
 
     /**
-     * @return array{lang: string, dir: string, title: string, description: string, canonical: ?string, robots: ?string, h1: int, og: array<string, string>, alternates: array<string, string>, jsonLd: list<string>, linksToDashboard: bool}
+     * Every link the page renders: the URLs in its data.
+     *
+     * @param  array<array-key, mixed>  $data
+     * @return list<string>
+     */
+    private function linksIn(array $data): array
+    {
+        $links = [];
+
+        array_walk_recursive($data, function (mixed $value) use (&$links): void {
+            if (is_string($value) && str_starts_with($value, url('/'))) {
+                $links[] = $value;
+            }
+        });
+
+        return array_values(array_unique($links));
+    }
+
+    /**
+     * @param  list<string>  $links
+     */
+    private function linksToDashboard(array $links): bool
+    {
+        foreach ($links as $link) {
+            if (str_starts_with($link, url('/admin'))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array{lang: string, dir: string, title: string, description: string, canonical: ?string, robots: ?string, og: array<string, string>, alternates: array<string, string>, jsonLd: list<string>}
      */
     private function metadata(DOMXPath $xpath): array
     {
@@ -186,11 +224,6 @@ class PublicPagesSeoTest extends TestCase
             $jsonLd[] = $script->textContent;
         }
 
-        $linksToDashboard = false;
-        foreach ($this->elements($xpath, '//a[@href]') as $link) {
-            $linksToDashboard = $linksToDashboard || str_starts_with($link->getAttribute('href'), url('/admin'));
-        }
-
         $first = fn (string $query): ?string => ($this->elements($xpath, $query)[0] ?? null)?->getAttribute('content');
         $canonical = $this->elements($xpath, '//link[@rel="canonical"]')[0] ?? null;
 
@@ -201,11 +234,9 @@ class PublicPagesSeoTest extends TestCase
             'description' => trim((string) $first('//meta[@name="description"]')),
             'canonical' => $canonical?->getAttribute('href'),
             'robots' => $first('//meta[@name="robots"]'),
-            'h1' => count($this->elements($xpath, '//h1')),
             'og' => $og,
             'alternates' => $alternates,
             'jsonLd' => $jsonLd,
-            'linksToDashboard' => $linksToDashboard,
         ];
     }
 

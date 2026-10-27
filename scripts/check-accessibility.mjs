@@ -75,13 +75,18 @@ async function checkPage(page, url) {
 /**
  * Sends a form empty (the browser's own required-field checks are skipped)
  * and checks the page that shows the server's validation errors. These
- * forms always reject an empty submission, so nothing is saved.
+ * forms always reject an empty submission, so nothing is saved. Forms of
+ * the public site and of the dashboard are sent without leaving the page
+ * (Inertia), so the check waits for the server's answer to appear in it
+ * (`inPlace`); a form that loads a new page is checked once that has loaded.
  */
-async function checkErrors(page, url, form) {
+async function checkErrors(page, url, form, { inPlace = false } = {}) {
     await page.setViewportSize(DESKTOP);
     await page.goto(url, { waitUntil: 'networkidle' });
     const [response] = await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        inPlace
+            ? page.waitForResponse((answer) => answer.request().method() === 'POST')
+            : page.waitForNavigation({ waitUntil: 'networkidle' }),
         page.$eval(form, (element) => {
             element.noValidate = true;
             element.requestSubmit();
@@ -92,6 +97,15 @@ async function checkErrors(page, url, form) {
     if (response?.status() === 429) {
         console.log(`skip 429 ${label}: rate limited, try again later`);
         return;
+    }
+
+    if (inPlace) {
+        await page
+            .locator('[aria-invalid="true"]')
+            .first()
+            .waitFor({ timeout: 10_000 })
+            .catch(() => {});
+        await page.waitForLoadState('networkidle');
     }
 
     if ((await page.locator('[aria-invalid="true"]').count()) === 0) {
@@ -184,7 +198,7 @@ try {
     }
 
     // One contact attempt per run: the form is rate limited per visitor.
-    await checkErrors(page, new URL('/ar/contact', base).href, 'form[action$="/contact"]');
+    await checkErrors(page, new URL('/ar/contact', base).href, 'form[action$="/contact"]', { inPlace: true });
 
     console.log('\nSign-in pages');
     await checkPage(page, new URL('/admin/forgot-password', base).href);
@@ -193,15 +207,21 @@ try {
     await page.setViewportSize(DESKTOP);
     await page.fill('input[name=email]', email);
     await page.fill('input[name=password]', password);
-    await Promise.all([page.waitForURL((url) => !url.pathname.endsWith('/login')), page.click('form[action$="/admin/login"] button[type=submit]')]);
+    await Promise.all([page.waitForURL((url) => !url.pathname.endsWith('/login')), page.click('main form button[type=submit]')]);
 
-    // The dashboard language is saved on the account: put it back afterwards.
+    // The dashboard language is saved on the account: put it back afterwards. The
+    // language menu in the top bar is the one whose button shows the current language.
     const switchLanguage = async (code) => {
-        await page.goto(new URL('/admin', base).href);
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.$eval(`form[action$="/admin/locale"]:has(input[value="${code}"])`, (form) => form.requestSubmit()),
-        ]);
+        await page.goto(new URL('/admin', base).href, { waitUntil: 'networkidle' });
+
+        if ((await page.getAttribute('html', 'lang')) === code) {
+            return;
+        }
+
+        await page.click('header button:has(> span[lang])');
+        await page.click(`header button[lang="${code}"]`);
+        await page.waitForFunction((lang) => document.documentElement.lang === lang, code).catch(() => {});
+        await page.waitForLoadState('networkidle');
     };
     const accountLanguage = await page.getAttribute('html', 'lang');
 
@@ -215,7 +235,7 @@ try {
         }
 
         await crawl(page, [new URL('/admin', base).href], (path) => path === '/admin' || path.startsWith('/admin/'), { byShape: true });
-        await checkErrors(page, new URL('/admin/users/create', base).href, 'form[action$="/admin/users"]');
+        await checkErrors(page, new URL('/admin/users/create', base).href, 'main form', { inPlace: true });
     }
 
     await switchLanguage(accountLanguage ?? 'en');

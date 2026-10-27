@@ -9,14 +9,14 @@ The full brief is in [docs/specification.md](docs/specification.md). What is fin
 
 ## Technology
 
-Laravel 13 (PHP 8.4) with Blade templates, Tailwind CSS 4 and a few small JavaScript modules built by Vite 8. There is no front-end framework and no third-party script, font or tracking service: fonts are self-hosted and the Content-Security-Policy only allows the site's own files. Decisions that shape the code are recorded in [docs/adr](docs/adr/).
+Laravel 13 (PHP 8.4) and Inertia.js 3: the pages of the public site and of the dashboard are React 19 components written in TypeScript, styled with Tailwind CSS 4 and built by Vite 8, while Laravel keeps the routing, validation, authorization and data (there is no separate API). There is no third-party script, font or tracking service: fonts are self-hosted and the Content-Security-Policy only allows the site's own files. Decisions that shape the code are recorded in [docs/adr](docs/adr/), the move to React in [ADR 0008](docs/adr/0008-react-pages-with-inertia.md).
 
 ## Requirements
 
 - PHP 8.4 (Composer allows 8.3; development and tests use 8.4) with the extensions `gd` (with JPEG, PNG and WebP support), `intl`, `mbstring`, `fileinfo`, `openssl`, `pdo_sqlite` (development) or the driver of the production database, and optionally `exif` (corrects photo orientation).
 - Composer 2.
-- Node.js 22 LTS and npm (assets are built with Vite).
-- Google Chrome, only for the browser checks (`npm run check:a11y`, `npm run measure:performance`).
+- Node.js 22 LTS and npm (assets are built with Vite; on the server only if server-side rendering is turned on).
+- Google Chrome, only for the browser tests and checks (`npm run test:browser`, `npm run check:a11y`, `npm run measure:performance`).
 
 ## Local development
 
@@ -42,7 +42,9 @@ The sample content fills every section of the site, so it can be previewed in al
 
 On a database that already has content, `php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder` adds only the samples each section is short of. It never changes or removes existing content, and never overwrites a setting that has been filled in.
 
-Built assets are served from `public/build`; after changing views, CSS or JavaScript without `composer run dev`, run `npm run build`.
+Built assets are served from `public/build`; after changing pages, views, CSS or JavaScript without `composer run dev`, run `npm run build` (it also builds the server-side rendering bundle in `bootstrap/ssr`).
+
+An existing copy needs `composer install`, `npm install` and `npm run build` once after updating to the React pages, which brought new packages (`inertiajs/inertia-laravel`, React, TypeScript). Commit the updated `package-lock.json` that `npm install` writes.
 
 ## Checks
 
@@ -51,12 +53,14 @@ Built assets are served from `public/build`; after changing views, CSS or JavaSc
 | `php artisan test --compact` | Feature and unit tests (PHPUnit), on an in-memory SQLite database |
 | `vendor/bin/pint` | Formats PHP code (Laravel style) |
 | `vendor/bin/phpstan analyse` | Static analysis (Larastan, level 8) |
+| `npm run typecheck` | TypeScript check of the React pages and components (strict) |
+| `npm run test:browser` | Browser tests (Playwright, `tests/Browser`): every public page in each language, navigation, keyboard use, menus, language switch, contact form, error pages. They start their own copy of the site with its own database of demo content; run `npm run build` first |
 | `npm run check:contrast` | WCAG 2.2 contrast of every colour pair the design tokens use |
 | `npm run check:a11y` | Crawls the site and dashboard with axe-core (WCAG 2.2 AA) and checks reflow at 320 px |
 | `npm run measure:performance` | Time to first byte, FCP, LCP, CLS and page weight in Chrome |
 | `composer audit` / `npm audit` | Known vulnerabilities in dependencies |
 
-The two browser checks need a running site (`BASE=http://127.0.0.1:8000` by default) and, for the dashboard part of `check:a11y`, the demo administrator or the account in `A11Y_EMAIL` / `A11Y_PASSWORD`.
+The two browser checks need a running site (`BASE=http://127.0.0.1:8000` by default) and, for the dashboard part of `check:a11y`, the demo administrator or the account in `A11Y_EMAIL` / `A11Y_PASSWORD`. The browser tests need no running site: they serve one on port 8123 with a database, storage folder and caches of their own in the system's temporary folder, so the development database is never touched (see `playwright.config.ts` for running them against another server).
 
 ## How the code is organised
 
@@ -64,6 +68,7 @@ The two browser checks need a running site (`BASE=http://127.0.0.1:8000` by defa
 |---|---|
 | `routes/site.php`, `routes/web.php`, `routes/admin.php` | Public pages (no session), the contact form (session) and the dashboard |
 | `app/Http/Controllers/Site`, `app/Http/Controllers/Admin` | Thin controllers; validation in `app/Http/Requests`, authorization in `app/Policies` |
+| `app/Http/Presenters`, `app/Http/Middleware/Handle{Site,Admin}InertiaRequests.php` | The data each page receives (`SitePresenter`, `AdminPresenter`), and what every page of the site or the dashboard shares (language, menus or sidebar, signed-in account, interface texts) |
 | `app/Auth` | Roles and permissions (`Role`, `Permission`), invitations |
 | `app/Content` | Saving content (`ContentWriter`: transaction, audit entry, cache refresh), the public content cache, slugs, Markdown |
 | `app/Models` | Eloquent models; translations live in `*_translations` tables (`HasTranslations`) |
@@ -71,8 +76,11 @@ The two browser checks need a running site (`BASE=http://127.0.0.1:8000` by defa
 | `app/Media` | Uploads: type checks, generated names, re-encoded images and WebP sizes |
 | `app/Seo`, `app/Navigation`, `app/Settings`, `app/Security`, `app/Audit` | Metadata and sitemap, menus, site settings, security headers and spam checks, audit log |
 | `resources/css/tokens.css` | Design tokens (colours, type, spacing) used by every component |
-| `resources/views/components/{ui,site,admin}` | Shared, public-site and dashboard components |
-| `scripts/` | The browser checks above |
+| `resources/js/pages/{site,admin}`, `resources/js/components/{ui,site,admin}`, `resources/js/layouts` | The public site and the dashboard in React and TypeScript: one file per page, shared components (form fields, the translation editor, the image picker…) and the layouts around every page |
+| `resources/js/site.tsx`, `resources/js/admin.tsx`, `resources/js/ssr.tsx`, `resources/views/app` | Start of the public site and of the dashboard in the browser, server-side rendering of the site, and the HTML pages they start from |
+| `resources/views/errors`, `resources/views/mail`, `resources/views/components/ui` | Blade, still: the self-contained server error pages and the emails |
+| `tests/Browser` | Browser tests (Playwright) and the server they start |
+| `scripts/` | The browser checks above, the contrast check and the icon generator (`npm run icons`) |
 
 ## Languages
 

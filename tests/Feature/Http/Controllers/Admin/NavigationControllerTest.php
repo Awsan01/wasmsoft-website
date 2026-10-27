@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Navigation\MenuLinkType;
 use App\Navigation\MenuLocation;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -38,9 +39,11 @@ class NavigationControllerTest extends TestCase
 
     public function test_editors_see_both_menus_with_the_default_links(): void
     {
-        $this->actingAs(User::factory()->editor()->create())->get(route('admin.navigation.index'))
-            ->assertOk()
-            ->assertSeeInOrder([__('admin.navigation.menus.header'), __('site.nav.services'), __('admin.navigation.menus.footer'), __('site.footer.company')]);
+        $response = $this->actingAs(User::factory()->editor()->create())->get(route('admin.navigation.index'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('admin/navigation/index')->where('canReorder', true));
+        $this->assertContains(__('site.nav.services'), array_column($response->inertiaProps('header.links'), 'label'));
+        $this->assertContains(__('site.footer.company'), array_column($response->inertiaProps('footer.groups'), 'label'));
     }
 
     public function test_a_header_link_to_a_custom_page_is_added_and_audited(): void

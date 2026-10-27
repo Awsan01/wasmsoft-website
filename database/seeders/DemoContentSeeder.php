@@ -92,6 +92,7 @@ class DemoContentSeeder extends Seeder
 
         $this->homePage();
         $this->aboutPage();
+        $this->partnershipsPage();
         $this->siteSettings();
         $this->services();
         $this->products($editor);
@@ -158,6 +159,53 @@ class DemoContentSeeder extends Seeder
         ]);
 
         $this->menus($about);
+    }
+
+    /**
+     * A partnerships page (its ways to partner are highlights), linked at the
+     * end of the header and of the footer's first column, unless the site
+     * already has one (or its addresses are taken).
+     */
+    private function partnershipsPage(): void
+    {
+        $slugs = ['ar' => 'الشراكات', 'en' => 'partnerships', 'tr' => 'is-ortakliklari'];
+
+        if (Page::query()->where('template', PageTemplate::Partnerships)->exists() || PageTranslation::query()->whereIn('slug', $slugs)->exists()) {
+            return;
+        }
+
+        $page = new Page(['template' => PageTemplate::Partnerships]);
+        $page->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subMonth()])->save();
+
+        $page->syncTranslations([
+            'ar' => [
+                'title' => self::SAMPLE['ar'].'الشراكات',
+                'slug' => $slugs['ar'],
+                'summary' => self::PLACEHOLDER['ar'],
+                'body' => "## العمل مع Wasmsoft\n\n".self::PLACEHOLDER['ar'],
+            ],
+            'en' => [
+                'title' => self::SAMPLE['en'].'Partnerships',
+                'slug' => $slugs['en'],
+                'summary' => self::PLACEHOLDER['en'],
+                'body' => "## Working with Wasmsoft\n\n".self::PLACEHOLDER['en'],
+            ],
+            'tr' => [
+                'title' => self::SAMPLE['tr'].'İş ortaklıkları',
+                'slug' => $slugs['tr'],
+                'summary' => self::PLACEHOLDER['tr'],
+                'body' => "## Wasmsoft ile çalışmak\n\n".self::PLACEHOLDER['tr'],
+            ],
+        ]);
+
+        // New menu items go last (Sortable).
+        MenuItem::query()->create(['menu' => MenuLocation::Header, 'type' => MenuLinkType::Page, 'page_id' => $page->id]);
+
+        $column = MenuItem::query()->where('menu', MenuLocation::Footer)->where('type', MenuLinkType::Group)->ordered()->first();
+
+        if ($column !== null) {
+            MenuItem::query()->create(['menu' => MenuLocation::Footer, 'parent_id' => $column->id, 'type' => MenuLinkType::Page, 'page_id' => $page->id]);
+        }
     }
 
     /**
@@ -348,7 +396,8 @@ class DemoContentSeeder extends Seeder
 
     /**
      * Differentiators and figures for the home page, values for the about
-     * page. Figures are shown with their label only, without a description.
+     * page, ways to partner for the partnerships page. Figures are shown
+     * with their label only, without a description.
      */
     private function highlights(): void
     {
@@ -368,6 +417,11 @@ class DemoContentSeeder extends Seeder
                 ['icon' => null, 'figure' => '3', 'title' => ['ar' => 'لغات مدعومة', 'en' => 'Languages supported', 'tr' => 'Desteklenen diller']],
                 ['icon' => null, 'figure' => '2', 'title' => ['ar' => 'منتجات قيد التطوير', 'en' => 'Products in development', 'tr' => 'Geliştirilen ürünler']],
                 ['icon' => null, 'figure' => '10+', 'title' => ['ar' => 'تقنيات نعمل بها', 'en' => 'Technologies we work with', 'tr' => 'Kullandığımız teknolojiler']],
+            ]],
+            [HighlightGroup::Partnership, [
+                ['icon' => ContentIcon::Code, 'figure' => null, 'title' => ['ar' => 'شركاء التقنية', 'en' => 'Technology partners', 'tr' => 'Teknoloji ortakları']],
+                ['icon' => ContentIcon::Communication, 'figure' => null, 'title' => ['ar' => 'شركاء الإحالة', 'en' => 'Referral partners', 'tr' => 'Yönlendirme ortakları']],
+                ['icon' => ContentIcon::Team, 'figure' => null, 'title' => ['ar' => 'شركاء التنفيذ', 'en' => 'Delivery partners', 'tr' => 'Uygulama ortakları']],
             ]],
         ];
 
@@ -510,11 +564,8 @@ class DemoContentSeeder extends Seeder
      * The sample category or tag with these names, created the first time
      * it is needed.
      *
-     * @template TTaxonomy of PostCategory|ProjectCategory|Tag
-     *
-     * @param  class-string<TTaxonomy>  $model
+     * @param  class-string<PostCategory|ProjectCategory|Tag>  $model
      * @param  array<string, string>  $names  locale => name, without the sample marker
-     * @return TTaxonomy
      */
     private function sampleTaxonomy(string $model, array $names): PostCategory|ProjectCategory|Tag
     {

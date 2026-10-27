@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class NewPasswordControllerTest extends TestCase
@@ -20,8 +21,13 @@ class NewPasswordControllerTest extends TestCase
         $response = $this->get(route('admin.password.reset', ['token' => 'abc123', 'email' => 'editor@example.com']));
 
         $response->assertOk();
-        $response->assertSee('value="abc123"', false);
-        $response->assertSee('value="editor@example.com"', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/auth/new-password')
+            ->where('purpose', 'reset')
+            ->where('token', 'abc123')
+            ->where('email', 'editor@example.com')
+            ->where('urls.store', route('admin.password.store'))
+        );
     }
 
     public function test_valid_token_sets_the_new_password_and_signs_out_remembered_sessions(): void

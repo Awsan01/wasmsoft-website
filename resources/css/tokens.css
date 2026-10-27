@@ -34,6 +34,13 @@
     --color-logo-start: #3a1467;
     --color-logo-end: #4f1468;
 
+    /*
+     * Saffron accent, for small decorative details only (the diagonal bar
+     * motif, figure separators). Never for text on light surfaces.
+     */
+    --color-accent: #f4b740;
+    --color-accent-soft: #fdf1d6;
+
     /* ------------------------------------------------------------------
      * Colour — semantic roles (use these in templates)
      * ------------------------------------------------------------------ */

@@ -6,6 +6,7 @@ use App\Models\Media;
 use App\Models\Testimonial;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class TestimonialControllerTest extends TestCase
@@ -86,7 +87,10 @@ class TestimonialControllerTest extends TestCase
 
         $this->actingAs(User::factory()->create())->get(route('admin.testimonials.index'))
             ->assertOk()
-            ->assertSee('Pending Person')
-            ->assertSee(__('admin.blocks.hidden'));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('admin/blocks/index')
+                ->where('blocks.0.label', 'Pending Person')
+                ->where('blocks.0.visible', false)
+            );
     }
 }

@@ -6,12 +6,14 @@ use App\Content\HighlightGroup;
 use App\Content\SystemPage;
 use App\Models\Highlight;
 use App\Models\Page;
+use App\Models\Post;
 use App\Models\Project;
 use App\Models\Service;
 use App\Models\Testimonial;
 use App\Settings\SettingKey;
 use App\Settings\SiteSettings;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class HomeControllerTest extends TestCase
@@ -20,25 +22,30 @@ class HomeControllerTest extends TestCase
 
     public function test_without_content_the_page_shows_the_hero_and_no_empty_sections(): void
     {
-        $response = $this->get('/en');
-
-        $response->assertOk();
-        $response->assertSee(__('site.home.hero_title'));
-
-        // (Section names such as "Services" also appear in the navigation.)
-        foreach (['home-services', 'home-why', 'home-figures', 'home-projects', 'home-testimonials', 'home-news'] as $section) {
-            $response->assertDontSee('id="'.$section.'"', false);
-        }
+        // Each section of the page is left out while its list is empty.
+        $this->get('/en')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('site/home')
+                ->where('hero.title', __('site.home.hero_title'))
+                ->where('hero.lead', __('site.home.hero_lead'))
+                ->where('hero.tagline', null)
+                ->where('intro', '')
+                ->has('services', 0)
+                ->has('projects', 0)
+                ->has('posts', 0)
+                ->has('differentiators', 0)
+                ->has('figures', 0)
+                ->has('testimonials', 0));
     }
 
     public function test_the_hero_uses_the_home_page_written_in_the_dashboard(): void
     {
         Page::factory()->system(SystemPage::Home)->translated(['en'], ['en' => ['title' => 'Apps that ship', 'summary' => 'From idea to launch.']])->create();
 
-        $this->get('/en')
-            ->assertSee('Apps that ship')
-            ->assertSee('From idea to launch.')
-            ->assertDontSee(__('site.home.hero_title'));
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('hero.title', 'Apps that ship')
+            ->where('hero.lead', 'From idea to launch.'));
     }
 
     public function test_featured_services_and_projects_come_first(): void
@@ -48,9 +55,19 @@ class HomeControllerTest extends TestCase
         Project::factory()->published()->translated(['en'], ['en' => ['title' => 'Recent project']])->create();
         Project::factory()->published()->featured()->translated(['en'], ['en' => ['title' => 'Featured project']])->create(['published_at' => now()->subYear()]);
 
-        $this->get('/en')
-            ->assertSeeInOrder(['Featured service', 'Regular service'])
-            ->assertSeeInOrder(['Featured project', 'Recent project']);
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('services.0.title', 'Featured service')
+            ->where('services.1.title', 'Regular service')
+            ->where('projects.0.title', 'Featured project')
+            ->where('projects.1.title', 'Recent project'));
+    }
+
+    public function test_the_page_shows_at_most_five_projects_and_three_articles(): void
+    {
+        Project::factory()->count(6)->published()->translated(['en'])->create();
+        Post::factory()->count(4)->published()->translated(['en'])->create();
+
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('projects', 5)->has('posts', 3));
     }
 
     public function test_highlights_and_figures_appear_only_in_the_languages_they_are_written_in(): void
@@ -60,14 +77,14 @@ class HomeControllerTest extends TestCase
         Highlight::factory()->hidden()->create(['title' => ['en' => 'Hidden reason']]);
 
         $this->get('/en')
-            ->assertSee(__('site.home.why_title'))
-            ->assertSee('Clear communication')
-            ->assertSeeInOrder(['Years in business', '12'])
-            ->assertDontSee('Hidden reason');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('differentiators', 1)
+                ->where('differentiators.0.title', 'Clear communication')
+                ->where('figures.0.title', 'Years in business')
+                ->where('figures.0.figure', '12'))
+            ->assertPageDoesNotShow('Hidden reason');
 
-        $this->get('/ar')
-            ->assertDontSee('Clear communication')
-            ->assertDontSee(__('site.home.why_title', [], 'ar'));
+        $this->get('/ar')->assertInertia(fn (AssertableInertia $page) => $page->has('differentiators', 0)->has('figures', 0));
     }
 
     public function test_only_consented_testimonials_are_quoted(): void
@@ -77,9 +94,11 @@ class HomeControllerTest extends TestCase
         Testimonial::factory()->create(['quote' => ['en' => 'Unapproved words.'], 'is_visible' => true, 'has_consent' => false]);
 
         $this->get('/en')
-            ->assertSee('A team you can rely on.')
-            ->assertSee('Selin Kaya')
-            ->assertDontSee('Unapproved words.');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('testimonials', 1)
+                ->where('testimonials.0.quote', 'A team you can rely on.')
+                ->where('testimonials.0.author', 'Selin Kaya'))
+            ->assertPageDoesNotShow('Unapproved words.');
     }
 
     public function test_the_organization_is_described_with_the_configured_details_only(): void

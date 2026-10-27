@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Content\ContentBlock;
 use App\Http\Requests\Admin\MilestoneRequest;
 use App\Models\Milestone;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -40,9 +42,9 @@ class MilestoneController extends BlockController
         return 'admin.milestones';
     }
 
-    protected function formView(): string
+    protected function formComponent(): string
     {
-        return 'admin.milestones.form';
+        return 'milestones/form';
     }
 
     protected function sortable(): bool
@@ -53,5 +55,20 @@ class MilestoneController extends BlockController
     protected function listQuery(Request $request): Builder
     {
         return Milestone::query()->chronological();
+    }
+
+    protected function formProps(Model&ContentBlock $block): array
+    {
+        $milestone = $block instanceof Milestone ? $block : new Milestone;
+
+        return [
+            'form' => [
+                'year' => $milestone->exists ? (string) $milestone->year : '',
+                'title' => $this->present->localized($milestone->title),
+                'description' => $this->present->localized($milestone->description),
+                'is_visible' => $milestone->is_visible,
+            ],
+            'maxYear' => now()->year + 1,
+        ];
     }
 }

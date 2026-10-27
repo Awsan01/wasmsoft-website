@@ -6,6 +6,7 @@ use App\Content\Alternates;
 use App\Content\Markdown;
 use App\Content\SystemPage;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Site\Concerns\RendersSitePages;
 use App\Http\Requests\Site\ContactRequest;
 use App\Inquiries\InquiryStatus;
 use App\Localization\Locales;
@@ -15,20 +16,24 @@ use App\Models\Service;
 use App\Notifications\InquiryReceived;
 use App\Security\SpamGuard;
 use App\Seo\SeoMeta;
-use App\Settings\ContactDetails;
 use App\Settings\SettingKey;
 use App\Settings\SiteSettings;
 use App\Support\Brand;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Response;
 
 /**
- * The contact page and its form (session-backed routes: CSRF, old input).
+ * The contact page and its form (session-backed routes: CSRF, validation
+ * errors). The contact details themselves reach the page with the shared
+ * footer data.
  */
 class ContactController extends Controller
 {
+    use RendersSitePages;
+
     public function __construct(
         private readonly SiteSettings $settings,
         private readonly Locales $locales,
@@ -36,7 +41,7 @@ class ContactController extends Controller
         private readonly SpamGuard $guard,
     ) {}
 
-    public function show(): View
+    public function show(Request $request): Response
     {
         $locale = app()->getLocale();
         $intro = Page::query()->system(SystemPage::Contact)->published()->withTranslation($locale)->first()?->translation($locale);
@@ -48,22 +53,37 @@ class ContactController extends Controller
             ->withTranslation($locale)
             ->ordered()
             ->get()
-            ->mapWithKeys(fn (Service $service): array => [$service->id => (string) $service->translation($locale)?->title])
+            ->map(fn (Service $service): array => ['value' => (string) $service->id, 'label' => (string) $service->translation($locale)?->title])
+            ->values()
             ->all();
 
-        return view('site.contact', [
+        // A service page links here with ?service={id}: that topic is chosen in advance.
+        $requested = $request->string('service')->toString();
+        $selected = collect($services)->firstWhere('value', $requested) !== null ? $requested : '';
+
+        return $this->sitePage('site/contact', [
             'title' => $title,
             'lead' => $intro?->summary ?: __('site.contact.lead'),
-            'contact' => ContactDetails::from($this->settings, $locale),
+            'breadcrumbs' => [
+                ['label' => __('site.nav.home'), 'url' => route('site.home')],
+                ['label' => __('site.nav.contact'), 'url' => null],
+            ],
             'services' => $services,
-            'token' => $this->guard->tokenFor(old(SpamGuard::TOKEN)),
-            'seo' => new SeoMeta(
-                title: ($intro?->meta_title ?: $title).' · '.$this->brand->name(),
-                description: $intro?->meta_description ?: Markdown::toText($intro?->summary) ?: __('site.contact.lead'),
-                canonical: route('site.contact'),
-                alternates: Alternates::route('site.contact', $this->locales),
-            ),
-        ]);
+            'form' => [
+                'action' => route('site.contact.store'),
+                'token' => $this->guard->tokenFor(old(SpamGuard::TOKEN)),
+                'tokenField' => SpamGuard::TOKEN,
+                'honeypotField' => SpamGuard::HONEYPOT,
+                'service' => $selected,
+                'messageMax' => ContactRequest::MESSAGE_MAX,
+            ],
+            'sent' => (bool) $request->session()->get('contact_sent', false),
+        ], new SeoMeta(
+            title: ($intro?->meta_title ?: $title).' · '.$this->brand->name(),
+            description: $intro?->meta_description ?: Markdown::toText($intro?->summary) ?: __('site.contact.lead'),
+            canonical: route('site.contact'),
+            alternates: Alternates::route('site.contact', $this->locales),
+        ));
     }
 
     public function store(ContactRequest $request): RedirectResponse

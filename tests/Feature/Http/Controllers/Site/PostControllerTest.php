@@ -7,6 +7,7 @@ use App\Models\PostCategory;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class PostControllerTest extends TestCase
@@ -24,10 +25,13 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news');
 
         $response->assertOk();
-        $response->assertSeeInOrder(['Newer article', 'Older article']);
-        $response->assertDontSee('Draft article');
-        $response->assertDontSee('Scheduled article');
-        $response->assertDontSee('Yalnızca Türkçe yazı');
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/news/index')
+            ->has('posts', 2)
+            ->where('posts.0.title', 'Newer article')
+            ->where('posts.1.title', 'Older article')
+            ->where('featureFirst', true));
+        $response->assertPageDoesNotShow('Draft article', 'Scheduled article', 'Yalnızca Türkçe yazı');
     }
 
     public function test_later_pages_have_their_own_canonical_url(): void
@@ -38,7 +42,12 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news?page=2');
 
         $response->assertOk();
-        $response->assertSee('<link rel="canonical" href="'.url('/en/news?page=2').'">', false);
+        $response->assertSee('<link data-inertia="canonical" rel="canonical" href="'.url('/en/news?page=2').'">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('featureFirst', false)
+            ->where('pagination.total', 2)
+            ->where('pagination.previousUrl', url('/en/news?page=1'))
+            ->where('pagination.nextUrl', null));
     }
 
     public function test_a_scheduled_article_appears_once_its_time_has_come(): void
@@ -66,12 +75,15 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news/accessible-by-default');
 
         $response->assertOk();
-        $response->assertSee('Lina Haddad');
-        $response->assertSee('3 min read');
-        $response->assertSee('href="'.url('/en/news/category/company-news').'"', false);
-        $response->assertSee('href="'.url('/en/news/tag/accessibility').'"', false);
-        $response->assertSee('<meta property="og:type" content="article">', false);
-        $response->assertSee('<meta property="article:published_time" content="'.$post->published_at?->toAtomString().'">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/news/show')
+            ->where('post.author', 'Lina Haddad')
+            ->where('post.readingTime', '3 min read')
+            ->where('post.publishedAt.iso', $post->published_at?->toAtomString())
+            ->where('post.category.url', url('/en/news/category/company-news'))
+            ->where('post.tags.0.url', url('/en/news/tag/accessibility')));
+        $response->assertSee('<meta data-inertia="og:type" property="og:type" content="article">', false);
+        $response->assertSee('<meta data-inertia="article:published_time" property="article:published_time" content="'.$post->published_at?->toAtomString().'">', false);
         $response->assertSee('"@type":"Article"', false);
         $response->assertSee('"author":{"@type":"Person","name":"Lina Haddad"}', false);
     }
@@ -95,6 +107,10 @@ class PostControllerTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('<script>alert(1)</script>', false);
         $response->assertDontSee('<img src=x onerror=alert(1)>', false);
+        // The title reaches the page as text (React escapes it); the body as HTML rendered from Markdown with tags escaped.
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('post.title', '<script>alert(1)</script>')
+            ->where('post.body', fn (string $body): bool => str_contains($body, '&lt;img src=x onerror=alert(1)&gt;') && ! str_contains($body, '<img')));
     }
 
     public function test_category_page_lists_its_articles_and_redirects_slugs_of_other_languages(): void
@@ -109,9 +125,13 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news/category/insights');
 
         $response->assertOk();
-        $response->assertSee('In the category');
-        $response->assertDontSee('Elsewhere');
-        $response->assertSee('<link rel="alternate" hreflang="ar" href="'.url('/ar/news/category/'.rawurlencode('رؤى')).'">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', 'Insights')
+            ->has('posts', 1)
+            ->where('posts.0.title', 'In the category')
+            ->where('filters.1.current', true));
+        $response->assertPageDoesNotShow('Elsewhere');
+        $response->assertSee('<link data-inertia="alternate-ar" rel="alternate" hreflang="ar" href="'.url('/ar/news/category/'.rawurlencode('رؤى')).'">', false);
 
         $this->get('/ar/news/category/insights')->assertRedirect('/ar/news/category/'.rawurlencode('رؤى'));
     }
@@ -123,8 +143,8 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news/category/empty');
 
         $response->assertOk();
-        $response->assertSee(__('site.news.empty'));
-        $response->assertSee('<meta name="robots" content="noindex, nofollow">', false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page->has('posts', 0)->where('showAllUrl', url('/en/news')));
+        $response->assertSee('<meta data-inertia="robots" name="robots" content="noindex, nofollow">', false);
     }
 
     public function test_tag_page_lists_the_articles_with_that_tag(): void
@@ -137,8 +157,11 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news/tag/laravel');
 
         $response->assertOk();
-        $response->assertSee('Upgrading to Laravel 13');
-        $response->assertDontSee('Untagged article');
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', 'Laravel')
+            ->has('posts', 1)
+            ->where('posts.0.title', 'Upgrading to Laravel 13'));
+        $response->assertPageDoesNotShow('Untagged article');
     }
 
     public function test_unknown_category_and_tag_are_not_found(): void
@@ -156,8 +179,8 @@ class PostControllerTest extends TestCase
 
         $response = $this->get('/en/news/main');
 
-        $response->assertSee('Same category article');
-        $response->assertDontSee('Other article');
+        $response->assertInertia(fn (AssertableInertia $page) => $page->has('related', 1)->where('related.0.title', 'Same category article'));
+        $response->assertPageDoesNotShow('Other article');
     }
 
     public function test_article_only_in_another_language_lists_its_languages(): void
@@ -167,6 +190,8 @@ class PostControllerTest extends TestCase
         $response = $this->get('/en/news/'.rawurlencode('خبر'));
 
         $response->assertNotFound();
-        $response->assertSee(url('/ar/news/'.rawurlencode('خبر')), false);
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('site/translation-missing')
+            ->where('available.0.url', url('/ar/news/'.rawurlencode('خبر'))));
     }
 }

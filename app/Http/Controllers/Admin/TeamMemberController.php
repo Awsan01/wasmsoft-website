@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Content\ContentBlock;
 use App\Http\Requests\Admin\TeamMemberRequest;
 use App\Models\TeamMember;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -38,13 +40,29 @@ class TeamMemberController extends BlockController
         return 'admin.team';
     }
 
-    protected function formView(): string
+    protected function formComponent(): string
     {
-        return 'admin.team-members.form';
+        return 'team-members/form';
     }
 
     protected function listQuery(Request $request): Builder
     {
         return TeamMember::query()->with('photo')->ordered();
+    }
+
+    protected function formProps(Model&ContentBlock $block): array
+    {
+        $member = $block instanceof TeamMember ? $block->loadMissing('photo') : new TeamMember;
+
+        return [
+            'description' => __('admin.team.consent_note'),
+            'form' => [
+                'name' => (string) $member->name,
+                'role' => $this->present->localized($member->role),
+                'bio' => $this->present->localized($member->bio),
+                'is_visible' => $member->is_visible,
+                'photo' => $this->present->media($member->photo),
+            ],
+        ];
     }
 }

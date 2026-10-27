@@ -112,9 +112,10 @@ class MenuItem extends Model implements Auditable
      * What this item shows in $locale, or null when it has nothing to show
      * there: a page not published in that language, or a link or group
      * without a label in that language. `activeRoute` is the route pattern
-     * under which the link is the current page (null: compared by URL).
+     * under which the link is the current page (null: compared by URL);
+     * `system` names the fixed page a link points to.
      *
-     * @return array{label: string, url: ?string, newTab: bool, activeRoute: ?string}|null
+     * @return array{label: string, url: ?string, newTab: bool, activeRoute: ?string, system: ?string}|null
      */
     public function resolve(string $locale): ?array
     {
@@ -127,6 +128,7 @@ class MenuItem extends Model implements Auditable
                     'url' => route($this->system_page->routeName(), ['locale' => $locale]),
                     'newTab' => false,
                     'activeRoute' => $this->system_page->activePattern(),
+                    'system' => $this->system_page->value,
                 ];
 
             case MenuLinkType::Page:
@@ -137,6 +139,7 @@ class MenuItem extends Model implements Auditable
                     'url' => $url,
                     'newTab' => false,
                     'activeRoute' => null,
+                    'system' => null,
                 ];
 
             case MenuLinkType::Url:
@@ -145,10 +148,11 @@ class MenuItem extends Model implements Auditable
                     'url' => $this->url,
                     'newTab' => $this->opens_in_new_tab,
                     'activeRoute' => null,
+                    'system' => null,
                 ];
 
             case MenuLinkType::Group:
-                return $label === null ? null : ['label' => $label, 'url' => null, 'newTab' => false, 'activeRoute' => null];
+                return $label === null ? null : ['label' => $label, 'url' => null, 'newTab' => false, 'activeRoute' => null, 'system' => null];
         }
     }
 

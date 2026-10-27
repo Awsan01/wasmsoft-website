@@ -537,6 +537,10 @@ return [
                 'label' => 'Rakamlar',
                 'description' => 'Şirketiniz hakkında ana sayfada gösterilen gerçek rakamlar. Doğrulayabileceğiniz rakamlarınız olana kadar boş bırakın.',
             ],
+            'partnership' => [
+                'label' => 'Ortaklık biçimleri',
+                'description' => 'Diğer şirketlerin sizinle nasıl çalışabileceği; iş ortaklıkları sayfasında gösterilir.',
+            ],
         ],
         'fields' => [
             'group' => 'Grup',
@@ -698,6 +702,7 @@ return [
         'templates' => [
             'default' => 'Standart sayfa',
             'about' => 'Hakkımızda sayfası (değerler, ekip ve kilometre taşlarıyla)',
+            'partnerships' => 'İş ortaklıkları sayfası (ortaklık biçimleriyle)',
         ],
         'system' => [
             'home' => 'Ana sayfa',

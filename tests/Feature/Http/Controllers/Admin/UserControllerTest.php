@@ -11,6 +11,7 @@ use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class UserControllerTest extends TestCase
@@ -183,13 +184,12 @@ class UserControllerTest extends TestCase
         User::factory()->editor()->create(['name' => 'Eda Editor']);
         User::factory()->author()->unverified()->create(['name' => 'Ivo Invited']);
 
-        $this->actingAs($admin)->get(route('admin.users.index', ['role' => 'editor']))
-            ->assertOk()
-            ->assertSee('Eda Editor')
-            ->assertDontSee('Ivo Invited');
+        $editors = $this->actingAs($admin)->get(route('admin.users.index', ['role' => 'editor']));
+        $editors->assertOk();
+        $this->assertSame(['Eda Editor'], array_column($editors->inertiaProps('users'), 'name'));
 
-        $this->actingAs($admin)->get(route('admin.users.index', ['status' => 'invited']))
-            ->assertSee('Ivo Invited')
-            ->assertDontSee('Eda Editor');
+        $invited = $this->actingAs($admin)->get(route('admin.users.index', ['status' => 'invited']));
+        $this->assertSame(['Ivo Invited'], array_column($invited->inertiaProps('users'), 'name'));
+        $invited->assertInertia(fn (AssertableInertia $page) => $page->where('users.0.status.label', __('admin.users.status.invited')));
     }
 }
