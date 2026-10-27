@@ -43,6 +43,25 @@ State of the Wasmsoft website on 2026-10-26, measured against [the specification
 | Backup, restore and migration rollback | Verified on SQLite ([details](backup-and-restore.md#what-has-been-verified)) |
 | Fresh clone (acceptance) | `composer run setup`, `php artisan db:seed` and `php artisan storage:link` as in the README, then all 438 tests passed in the clone, every public page, the sitemap, robots.txt, an uploaded image and the dashboard (signed in as the demo administrator) answered correctly with no browser errors |
 
+## Changes after that verification (2026-10-26, evening)
+
+Not yet verified: the PHP tests could not be run in the session that made these changes (its sandbox could not install Composer packages or PHP 8.4). Run the commands below and record the results here.
+
+- **Sample content in every section** (requested by the company, to preview the full site): `DemoContentSeeder` now also seeds testimonials, figures, team members, milestones, the tagline, description and footer note, contact details and social links, and brings services, projects and published articles to two full rows each. Every sample stays labelled as one (see the README).
+- **Dhaman and Fantastic**, the company's products in development, appear in the portfolio by name with a placeholder description, as the newest projects.
+- **Safe to re-run:** the seeder now only adds what each section is short of, so it can fill an existing local database without changing or deleting its content or saved settings (previously it did nothing once services or articles existed).
+- **Tests:** `tests/Feature/Seeders/DemoContentSeederTest.php` updated. The test asserting that testimonials, team, history and figures are never seeded was replaced by one asserting that every such sample is labelled in all three languages; new tests cover the re-run and existing-content cases.
+
+To verify:
+
+```sh
+php artisan test --compact tests/Feature/Seeders/DemoContentSeederTest.php
+php artisan test --compact
+vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse
+php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder   # fills the local database
+```
+
 ## Known limitations
 
 - **Database engines:** tests run on SQLite only. MySQL, MariaDB and PostgreSQL should work (portable migrations and queries) but are untested here; on PostgreSQL, searches are case-sensitive.

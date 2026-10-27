@@ -38,7 +38,9 @@ The seeder creates one account per role, all with the password in `DEV_SEED_PASS
 | author@wasmsoft.test | Author: writes news articles (own drafts) and uploads media |
 | viewer@wasmsoft.test | Viewer: reads content in the dashboard, changes nothing |
 
-Every sample title starts with "Sample:" (نموذج: / Örnek:) and sample images are labelled. Testimonials, figures, team members, milestones and contact details are never seeded: only the company can supply them. The seeders refuse to run outside local environments.
+The sample content fills every section of the site, so it can be previewed in all three languages: services, projects, news, differentiators, figures, testimonials, values, team, history, contact details and social links. Nothing passes for real company information: every sample text starts with "Sample:" (نموذج: / Örnek:), sample people and companies are called "Sample person" or "Sample client", the contact email uses the reserved `.test` domain, social links point to the networks' home pages and sample images are labelled. Dhaman and Fantastic, the company's products in development, are listed by name with a placeholder description. The seeders refuse to run outside local environments.
+
+On a database that already has content, `php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder` adds only the samples each section is short of. It never changes or removes existing content, and never overwrites a setting that has been filled in.
 
 Built assets are served from `public/build`; after changing views, CSS or JavaScript without `composer run dev`, run `npm run build`.
 

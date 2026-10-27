@@ -11,32 +11,48 @@ use App\Media\MediaLibrary;
 use App\Models\Highlight;
 use App\Models\Media;
 use App\Models\MenuItem;
+use App\Models\Milestone;
 use App\Models\Page;
+use App\Models\PageTranslation;
 use App\Models\Post;
 use App\Models\PostCategory;
 use App\Models\Project;
 use App\Models\ProjectCategory;
+use App\Models\ProjectTranslation;
 use App\Models\Service;
 use App\Models\Tag;
+use App\Models\TeamMember;
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Navigation\MenuLinkType;
 use App\Navigation\MenuLocation;
+use App\Settings\SettingKey;
+use App\Settings\SiteSettings;
+use App\Support\SocialNetwork;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use RuntimeException;
 
 /**
- * Placeholder content for local development, so every page of the site can
- * be seen and tested. Every title is marked as a sample in its language,
- * and the images are plain generated graphics. Nothing here pretends to be
- * a real client, testimonial, figure, team member, company history or
- * contact detail: those stay empty until the company supplies them.
+ * Placeholder content for local development, so every section of every
+ * page can be seen with content in all three languages.
  *
- * Runs once: it does nothing when services or articles already exist.
+ * Nothing here passes for real company information: every sample text is
+ * marked as a sample in its language, people and companies are called
+ * "Sample person" or "Sample client", the contact email uses the reserved
+ * .test domain, social links point to the networks' home pages and the
+ * images are plain generated graphics. Dhaman and Fantastic are the
+ * company's products in development: their names are real, what they do
+ * is left for the company to describe.
+ *
+ * It can be run again on a database that already has content: each
+ * section only receives the samples it is short of, and existing content
+ * and saved settings are never changed or removed.
  */
 class DemoContentSeeder extends Seeder
 {
-    /** Marker put in front of every sample title. */
+    /** Marker put in front of every sample text. */
     private const SAMPLE = ['ar' => 'نموذج: ', 'en' => 'Sample: ', 'tr' => 'Örnek: '];
 
     private const PLACEHOLDER = [
@@ -45,7 +61,25 @@ class DemoContentSeeder extends Seeder
         'tr' => 'Örnek metin; yönetim panelinden değiştirilecek.',
     ];
 
-    public function __construct(private readonly MediaLibrary $library) {}
+    /** The company's products in development, by name in each language. */
+    private const PRODUCTS = [
+        ['ar' => 'ضمان', 'en' => 'Dhaman', 'tr' => 'Dhaman'],
+        ['ar' => 'Fantastic', 'en' => 'Fantastic', 'tr' => 'Fantastic'],
+    ];
+
+    private const IN_DEVELOPMENT = [
+        'ar' => 'منتج من منتجات Wasmsoft قيد التطوير. يُضاف وصفه لاحقًا من لوحة التحكم.',
+        'en' => 'A Wasmsoft product in development. Its description will be added in the dashboard.',
+        'tr' => 'Geliştirilmekte olan bir Wasmsoft ürünü. Açıklaması yönetim panelinden eklenecek.',
+    ];
+
+    /** Published projects that fill the portfolio (two rows), products included. */
+    private const FULL_PORTFOLIO = 6;
+
+    public function __construct(
+        private readonly MediaLibrary $library,
+        private readonly SiteSettings $settings,
+    ) {}
 
     public function run(): void
     {
@@ -53,27 +87,32 @@ class DemoContentSeeder extends Seeder
             throw new RuntimeException('Demo content must never be loaded outside local environments.');
         }
 
-        if (Service::query()->exists() || Post::query()->exists()) {
-            $this->command?->info('Content already exists; demo content skipped.');
-
-            return;
-        }
-
         $editor = User::query()->where('email', 'editor@wasmsoft.test')->first();
         $author = User::query()->where('email', 'author@wasmsoft.test')->first();
 
         $this->homePage();
-        $about = $this->aboutPage();
+        $this->aboutPage();
+        $this->siteSettings();
         $this->services();
+        $this->products($editor);
         $this->projects($editor);
         $this->news($editor, $author);
         $this->highlights();
-        $this->menus($about);
+        $this->testimonials();
+        $this->team();
+        $this->milestones();
     }
 
+    /**
+     * The home page headline and introduction, unless they have been written.
+     */
     private function homePage(): void
     {
         $home = Page::query()->system(SystemPage::Home)->first() ?? $this->systemPage(SystemPage::Home);
+
+        if ($home->translations()->exists()) {
+            return;
+        }
 
         $home->syncTranslations($this->texts([
             'ar' => ['title' => 'برمجيات تُبنى حول أعمالك', 'summary' => 'نخطط لتطبيقات الويب والجوال ونصممها ونبنيها ونتولى صيانتها.'],
@@ -82,33 +121,99 @@ class DemoContentSeeder extends Seeder
         ], withBody: true));
     }
 
-    private function aboutPage(): Page
+    /**
+     * An about page linked from the menus, unless the site already has one
+     * (or its addresses are taken).
+     */
+    private function aboutPage(): void
     {
+        $slugs = ['ar' => 'من-نحن', 'en' => 'about', 'tr' => 'hakkimizda'];
+
+        if (Page::query()->where('template', PageTemplate::About)->exists() || PageTranslation::query()->whereIn('slug', $slugs)->exists()) {
+            return;
+        }
+
         $about = new Page(['template' => PageTemplate::About]);
         $about->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subMonth()])->save();
 
         $about->syncTranslations([
             'ar' => [
                 'title' => self::SAMPLE['ar'].'من نحن',
-                'slug' => 'من-نحن',
+                'slug' => $slugs['ar'],
                 'summary' => self::PLACEHOLDER['ar'],
                 'body' => "## رسالتنا\n\n".self::PLACEHOLDER['ar']."\n\n## رؤيتنا\n\n".self::PLACEHOLDER['ar'],
             ],
             'en' => [
                 'title' => self::SAMPLE['en'].'About us',
-                'slug' => 'about',
+                'slug' => $slugs['en'],
                 'summary' => self::PLACEHOLDER['en'],
                 'body' => "## Our mission\n\n".self::PLACEHOLDER['en']."\n\n## Our vision\n\n".self::PLACEHOLDER['en'],
             ],
             'tr' => [
                 'title' => self::SAMPLE['tr'].'Hakkımızda',
-                'slug' => 'hakkimizda',
+                'slug' => $slugs['tr'],
                 'summary' => self::PLACEHOLDER['tr'],
                 'body' => "## Misyonumuz\n\n".self::PLACEHOLDER['tr']."\n\n## Vizyonumuz\n\n".self::PLACEHOLDER['tr'],
             ],
         ]);
 
-        return $about;
+        $this->menus($about);
+    }
+
+    /**
+     * Tagline, description, footer note, contact details and social links:
+     * each one that has not been filled in yet.
+     */
+    private function siteSettings(): void
+    {
+        $samples = [
+            SettingKey::SiteTagline->value => $this->marked([
+                'ar' => 'برمجيات ومنتجات رقمية',
+                'en' => 'Software and digital products',
+                'tr' => 'Yazılım ve dijital ürünler',
+            ]),
+            SettingKey::SiteDescription->value => $this->marked([
+                'ar' => 'وصف قصير لشركة Wasmsoft يظهر في تذييل الموقع وتستخدمه محركات البحث، ويُعدَّل من الإعدادات.',
+                'en' => 'A short description of Wasmsoft, shown in the footer and used by search engines. Edit it in Settings.',
+                'tr' => 'Alt bilgide görünen ve arama motorlarının kullandığı kısa bir Wasmsoft açıklaması. Ayarlar bölümünden düzenlenir.',
+            ]),
+            SettingKey::FooterNote->value => $this->marked([
+                'ar' => 'ملاحظة التذييل، مثل بيانات السجل التجاري للشركة.',
+                'en' => 'Footer note, for example the company registration details.',
+                'tr' => 'Alt bilgi notu, örneğin şirketin ticaret sicil bilgileri.',
+            ]),
+            SettingKey::ContactEmail->value => 'hello@wasmsoft.test',
+            SettingKey::ContactPhone->value => '+90 000 000 00 00',
+            SettingKey::ContactAddress->value => $this->marked([
+                'ar' => "الشارع ورقم المبنى\nالمدينة، الدولة",
+                'en' => "Street and building number\nCity, Country",
+                'tr' => "Cadde ve bina numarası\nŞehir, Ülke",
+            ]),
+            SettingKey::ContactHours->value => $this->marked([
+                'ar' => 'من الإثنين إلى الجمعة، 09:00–18:00',
+                'en' => 'Monday to Friday, 09:00–18:00',
+                'tr' => 'Pazartesi–Cuma, 09:00–18:00',
+            ]),
+            SettingKey::ContactMapUrl->value => 'https://www.openstreetmap.org/',
+            SettingKey::SocialLinks->value => [
+                ['network' => SocialNetwork::LinkedIn->value, 'url' => 'https://www.linkedin.com/'],
+                ['network' => SocialNetwork::GitHub->value, 'url' => 'https://github.com/'],
+                ['network' => SocialNetwork::X->value, 'url' => 'https://x.com/'],
+                ['network' => SocialNetwork::Instagram->value, 'url' => 'https://www.instagram.com/'],
+            ],
+        ];
+
+        $unset = [];
+
+        foreach ($samples as $key => $value) {
+            if (! $this->isFilled($this->settings->get(SettingKey::from($key)))) {
+                $unset[$key] = $value;
+            }
+        }
+
+        if ($unset !== []) {
+            $this->settings->put($unset);
+        }
     }
 
     private function services(): void
@@ -117,68 +222,117 @@ class DemoContentSeeder extends Seeder
             [ContentIcon::Code, ['ar' => 'تطوير تطبيقات الويب', 'en' => 'Web application development', 'tr' => 'Web uygulaması geliştirme']],
             [ContentIcon::Mobile, ['ar' => 'تطبيقات الجوال', 'en' => 'Mobile applications', 'tr' => 'Mobil uygulamalar']],
             [ContentIcon::Cloud, ['ar' => 'الاستضافة والصيانة', 'en' => 'Hosting and maintenance', 'tr' => 'Barındırma ve bakım']],
+            [ContentIcon::Design, ['ar' => 'تصميم الواجهات وتجربة المستخدم', 'en' => 'UI and UX design', 'tr' => 'Arayüz ve kullanıcı deneyimi tasarımı']],
+            [ContentIcon::Analytics, ['ar' => 'البيانات والتقارير', 'en' => 'Data and reporting', 'tr' => 'Veri ve raporlama']],
+            [ContentIcon::Support, ['ar' => 'الدعم الفني', 'en' => 'Technical support', 'tr' => 'Teknik destek']],
         ];
 
-        foreach ($services as $position => [$icon, $titles]) {
+        foreach ($this->stillMissing($services, Service::query()->published()->count()) as [$icon, $titles]) {
             $service = new Service(['icon' => $icon, 'is_featured' => true]);
-            $service->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subMonth(), 'position' => $position + 1])->save();
+            $service->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subMonth()])->save();
 
             $service->syncTranslations($this->texts(array_map(fn (string $title): array => ['title' => $title], $titles), withBody: true, benefits: true));
         }
     }
 
+    /**
+     * Dhaman and Fantastic, newest in the portfolio so they lead the home
+     * page. Their descriptions say they are in development and wait for the
+     * company's own text.
+     */
+    private function products(?User $uploader): void
+    {
+        $category = null;
+
+        foreach (self::PRODUCTS as $index => $names) {
+            if (ProjectTranslation::query()->where('locale', 'en')->where('title', $names['en'])->exists()) {
+                continue;
+            }
+
+            $category ??= $this->sampleTaxonomy(ProjectCategory::class, ['ar' => 'منتجاتنا', 'en' => 'Our products', 'tr' => 'Ürünlerimiz']);
+
+            $project = new Project([
+                'project_category_id' => $category->id,
+                'cover_id' => $this->sampleImage("product-{$index}", $uploader)->id,
+                'is_featured' => true,
+            ]);
+            $project->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subDays($index + 1)])->save();
+
+            $translations = [];
+
+            foreach ($names as $locale => $name) {
+                $translations[$locale] = [
+                    'title' => $name,
+                    'summary' => self::IN_DEVELOPMENT[$locale],
+                    'body' => self::IN_DEVELOPMENT[$locale]."\n\n".self::PLACEHOLDER[$locale],
+                ];
+            }
+
+            $project->syncTranslations($translations);
+        }
+    }
+
     private function projects(?User $uploader): void
     {
-        $category = new ProjectCategory;
-        $category->save();
-        $category->syncTranslations([
-            'ar' => ['name' => self::SAMPLE['ar'].'تطبيقات الويب'],
-            'en' => ['name' => self::SAMPLE['en'].'Web applications'],
-            'tr' => ['name' => self::SAMPLE['tr'].'Web uygulamaları'],
-        ]);
-
         $projects = [
             ['ar' => 'بوابة إدارة الحجوزات', 'en' => 'Booking management portal', 'tr' => 'Rezervasyon yönetim portalı'],
             ['ar' => 'تطبيق متابعة الطلبات', 'en' => 'Order tracking app', 'tr' => 'Sipariş takip uygulaması'],
             ['ar' => 'لوحة تقارير المبيعات', 'en' => 'Sales reporting dashboard', 'tr' => 'Satış raporlama paneli'],
+            ['ar' => 'بوابة دعم العملاء', 'en' => 'Customer support portal', 'tr' => 'Müşteri destek portalı'],
         ];
 
-        foreach ($projects as $index => $titles) {
+        $missing = $this->stillMissing($projects, Project::query()->published()->count(), self::FULL_PORTFOLIO);
+
+        if ($missing === []) {
+            return;
+        }
+
+        $category = $this->sampleTaxonomy(ProjectCategory::class, ['ar' => 'تطبيقات الويب', 'en' => 'Web applications', 'tr' => 'Web uygulamaları']);
+
+        foreach ($missing as $index => $titles) {
             $project = new Project([
                 'project_category_id' => $category->id,
                 'cover_id' => $this->sampleImage("project-{$index}", $uploader)->id,
                 'technologies' => ['Laravel', 'PostgreSQL'],
                 'is_featured' => true,
             ]);
-            $project->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subWeeks(3 - $index)])->save();
+            $project->forceFill(['status' => PublicationStatus::Published, 'published_at' => now()->subWeeks($index + 1)])->save();
             $project->syncTranslations($this->texts(array_map(fn (string $title): array => ['title' => $title], $titles), withBody: true));
         }
     }
 
+    /**
+     * Published articles; on an empty news section also a scheduled article
+     * and an author's draft, which show the dashboard's publishing states.
+     */
     private function news(?User $editor, ?User $author): void
     {
-        $category = new PostCategory;
-        $category->save();
-        $category->syncTranslations([
-            'ar' => ['name' => self::SAMPLE['ar'].'أخبار الشركة'],
-            'en' => ['name' => self::SAMPLE['en'].'Company news'],
-            'tr' => ['name' => self::SAMPLE['tr'].'Şirket haberleri'],
-        ]);
-
-        $tag = new Tag;
-        $tag->save();
-        $tag->syncTranslations([
-            'ar' => ['name' => self::SAMPLE['ar'].'تقنية'],
-            'en' => ['name' => self::SAMPLE['en'].'Technology'],
-            'tr' => ['name' => self::SAMPLE['tr'].'Teknoloji'],
-        ]);
-
-        $articles = [
-            [PublicationStatus::Published, now()->subDays(20), $editor, ['ar' => 'خبر تجريبي أول', 'en' => 'First sample article', 'tr' => 'Birinci örnek yazı']],
-            [PublicationStatus::Published, now()->subDays(8), $editor, ['ar' => 'خبر تجريبي ثانٍ', 'en' => 'Second sample article', 'tr' => 'İkinci örnek yazı']],
-            [PublicationStatus::Published, now()->addDays(5), $editor, ['ar' => 'خبر تجريبي مجدول', 'en' => 'Scheduled sample article', 'tr' => 'Zamanlanmış örnek yazı']],
-            [PublicationStatus::Draft, null, $author, ['ar' => 'مسودة تجريبية من الكاتب', 'en' => 'Sample draft by the author', 'tr' => 'Yazarın örnek taslağı']],
+        $published = [
+            ['ar' => 'خبر تجريبي أول', 'en' => 'First sample article', 'tr' => 'Birinci örnek yazı'],
+            ['ar' => 'خبر تجريبي ثانٍ', 'en' => 'Second sample article', 'tr' => 'İkinci örnek yazı'],
+            ['ar' => 'خبر تجريبي ثالث', 'en' => 'Third sample article', 'tr' => 'Üçüncü örnek yazı'],
+            ['ar' => 'خبر تجريبي رابع', 'en' => 'Fourth sample article', 'tr' => 'Dördüncü örnek yazı'],
+            ['ar' => 'خبر تجريبي خامس', 'en' => 'Fifth sample article', 'tr' => 'Beşinci örnek yazı'],
+            ['ar' => 'خبر تجريبي سادس', 'en' => 'Sixth sample article', 'tr' => 'Altıncı örnek yazı'],
         ];
+
+        $articles = [];
+
+        foreach ($this->stillMissing($published, Post::query()->published()->count()) as $index => $titles) {
+            $articles[] = [PublicationStatus::Published, now()->subDays(40 - 7 * $index), $editor, $titles];
+        }
+
+        if (Post::query()->doesntExist()) {
+            $articles[] = [PublicationStatus::Published, now()->addDays(5), $editor, ['ar' => 'خبر تجريبي مجدول', 'en' => 'Scheduled sample article', 'tr' => 'Zamanlanmış örnek yazı']];
+            $articles[] = [PublicationStatus::Draft, null, $author, ['ar' => 'مسودة تجريبية من الكاتب', 'en' => 'Sample draft by the author', 'tr' => 'Yazarın örnek taslağı']];
+        }
+
+        if ($articles === []) {
+            return;
+        }
+
+        $category = $this->sampleTaxonomy(PostCategory::class, ['ar' => 'أخبار الشركة', 'en' => 'Company news', 'tr' => 'Şirket haberleri']);
+        $tag = $this->sampleTaxonomy(Tag::class, ['ar' => 'تقنية', 'en' => 'Technology', 'tr' => 'Teknoloji']);
 
         foreach ($articles as $index => [$status, $date, $writer, $titles]) {
             $post = new Post([
@@ -192,28 +346,120 @@ class DemoContentSeeder extends Seeder
         }
     }
 
+    /**
+     * Differentiators and figures for the home page, values for the about
+     * page. Figures are shown with their label only, without a description.
+     */
     private function highlights(): void
     {
-        $items = [
-            [HighlightGroup::Differentiator, ContentIcon::Communication, ['ar' => 'تواصل واضح', 'en' => 'Clear communication', 'tr' => 'Açık iletişim']],
-            [HighlightGroup::Differentiator, ContentIcon::Security, ['ar' => 'الأمان أولًا', 'en' => 'Security first', 'tr' => 'Önce güvenlik']],
-            [HighlightGroup::Differentiator, ContentIcon::Global, ['ar' => 'بثلاث لغات', 'en' => 'In three languages', 'tr' => 'Üç dilde']],
-            [HighlightGroup::Value, ContentIcon::Quality, ['ar' => 'الجودة', 'en' => 'Quality', 'tr' => 'Kalite']],
-            [HighlightGroup::Value, ContentIcon::Care, ['ar' => 'الاهتمام', 'en' => 'Care', 'tr' => 'Özen']],
-            [HighlightGroup::Value, ContentIcon::Innovation, ['ar' => 'الابتكار', 'en' => 'Innovation', 'tr' => 'Yenilik']],
+        $groups = [
+            [HighlightGroup::Differentiator, [
+                ['icon' => ContentIcon::Communication, 'figure' => null, 'title' => ['ar' => 'تواصل واضح', 'en' => 'Clear communication', 'tr' => 'Açık iletişim']],
+                ['icon' => ContentIcon::Security, 'figure' => null, 'title' => ['ar' => 'الأمان أولًا', 'en' => 'Security first', 'tr' => 'Önce güvenlik']],
+                ['icon' => ContentIcon::Global, 'figure' => null, 'title' => ['ar' => 'بثلاث لغات', 'en' => 'In three languages', 'tr' => 'Üç dilde']],
+            ]],
+            [HighlightGroup::Value, [
+                ['icon' => ContentIcon::Quality, 'figure' => null, 'title' => ['ar' => 'الجودة', 'en' => 'Quality', 'tr' => 'Kalite']],
+                ['icon' => ContentIcon::Care, 'figure' => null, 'title' => ['ar' => 'الاهتمام', 'en' => 'Care', 'tr' => 'Özen']],
+                ['icon' => ContentIcon::Innovation, 'figure' => null, 'title' => ['ar' => 'الابتكار', 'en' => 'Innovation', 'tr' => 'Yenilik']],
+            ]],
+            [HighlightGroup::Metric, [
+                ['icon' => null, 'figure' => '6+', 'title' => ['ar' => 'مشاريع منجزة', 'en' => 'Projects delivered', 'tr' => 'Tamamlanan projeler']],
+                ['icon' => null, 'figure' => '3', 'title' => ['ar' => 'لغات مدعومة', 'en' => 'Languages supported', 'tr' => 'Desteklenen diller']],
+                ['icon' => null, 'figure' => '2', 'title' => ['ar' => 'منتجات قيد التطوير', 'en' => 'Products in development', 'tr' => 'Geliştirilen ürünler']],
+                ['icon' => null, 'figure' => '10+', 'title' => ['ar' => 'تقنيات نعمل بها', 'en' => 'Technologies we work with', 'tr' => 'Kullandığımız teknolojiler']],
+            ]],
         ];
 
-        foreach ($items as [$group, $icon, $titles]) {
-            $sampleTitles = [];
+        foreach ($groups as [$group, $samples]) {
+            $shown = Highlight::query()->where('group', $group)->where('is_visible', true)->count();
 
-            foreach ($titles as $locale => $title) {
-                $sampleTitles[$locale] = self::SAMPLE[$locale].$title;
+            foreach ($this->stillMissing($samples, $shown) as $sample) {
+                Highlight::query()->create([
+                    'group' => $group,
+                    'icon' => $sample['icon'],
+                    'figure' => $sample['figure'],
+                    'title' => $this->marked($sample['title']),
+                    'description' => $sample['figure'] === null ? self::PLACEHOLDER : null,
+                    'is_visible' => true,
+                ]);
             }
+        }
+    }
 
-            Highlight::query()->create([
-                'group' => $group,
-                'icon' => $icon,
-                'title' => $sampleTitles,
+    /**
+     * Sample quotes of different lengths. They are shown like quotes a client
+     * agreed to, so the section can be previewed.
+     */
+    private function testimonials(): void
+    {
+        $samples = [
+            ['Sample client A', ['ar' => 'مدير العمليات', 'en' => 'Operations manager', 'tr' => 'Operasyon müdürü'], [
+                'ar' => 'هنا يظهر اقتباس قصير من أحد العملاء عن العمل مع Wasmsoft، بعد موافقته على نشره باسمه.',
+                'en' => 'A short quote from a client about working with Wasmsoft appears here, once they agree to be quoted by name.',
+                'tr' => 'Bir müşterinin Wasmsoft ile çalışmaya dair kısa bir alıntısı, adıyla yayımlanmasına onay verdiğinde burada yer alır.',
+            ]],
+            ['Sample client B', ['ar' => 'مؤسس', 'en' => 'Founder', 'tr' => 'Kurucu'], [
+                'ar' => 'اقتباس أطول يبيّن شكل البطاقة عندما يتحدث العميل عن المشروع وما تغيّر بعد إطلاقه، في سطرين أو ثلاثة.',
+                'en' => 'A longer quote shows how the card looks when a client talks about the project and what changed after launch, over two or three lines.',
+                'tr' => 'Daha uzun bir alıntı, müşteri projeden ve yayına alındıktan sonra nelerin değiştiğinden iki üç satırda bahsettiğinde kartın nasıl göründüğünü gösterir.',
+            ]],
+            ['Sample client C', ['ar' => 'مدير تقنية المعلومات', 'en' => 'IT director', 'tr' => 'BT direktörü'], [
+                'ar' => 'اقتباس ثالث قصير.',
+                'en' => 'A third, short quote.',
+                'tr' => 'Üçüncü, kısa bir alıntı.',
+            ]],
+        ];
+
+        $shown = Testimonial::query()->where('is_visible', true)->where('has_consent', true)->count();
+
+        foreach ($this->stillMissing($samples, $shown) as [$name, $roles, $quotes]) {
+            Testimonial::query()->create([
+                'quote' => $this->marked($quotes),
+                'author_name' => $name,
+                'author_role' => $this->marked($roles),
+                'company' => 'Sample company',
+                'has_consent' => true,
+                'is_visible' => true,
+            ]);
+        }
+    }
+
+    private function team(): void
+    {
+        $samples = [
+            ['Sample person A', ['ar' => 'مهندس برمجيات', 'en' => 'Software engineer', 'tr' => 'Yazılım mühendisi']],
+            ['Sample person B', ['ar' => 'مصمم منتجات', 'en' => 'Product designer', 'tr' => 'Ürün tasarımcısı']],
+            ['Sample person C', ['ar' => 'مدير مشاريع', 'en' => 'Project manager', 'tr' => 'Proje yöneticisi']],
+        ];
+
+        foreach ($this->stillMissing($samples, TeamMember::query()->where('is_visible', true)->count()) as [$name, $roles]) {
+            TeamMember::query()->create([
+                'name' => $name,
+                'role' => $this->marked($roles),
+                'bio' => self::PLACEHOLDER,
+                'is_visible' => true,
+            ]);
+        }
+    }
+
+    /**
+     * Consecutive years ending with the current one.
+     */
+    private function milestones(): void
+    {
+        $samples = [
+            ['ar' => 'المحطة الأولى', 'en' => 'First milestone', 'tr' => 'Birinci kilometre taşı'],
+            ['ar' => 'المحطة الثانية', 'en' => 'Second milestone', 'tr' => 'İkinci kilometre taşı'],
+            ['ar' => 'المحطة الثالثة', 'en' => 'Third milestone', 'tr' => 'Üçüncü kilometre taşı'],
+        ];
+
+        $missing = $this->stillMissing($samples, Milestone::query()->where('is_visible', true)->count());
+
+        foreach ($missing as $index => $titles) {
+            Milestone::query()->create([
+                'year' => now()->year - count($missing) + 1 + $index,
+                'title' => $this->marked($titles),
                 'description' => self::PLACEHOLDER,
                 'is_visible' => true,
             ]);
@@ -244,6 +490,77 @@ class DemoContentSeeder extends Seeder
         $page->forceFill(['system_key' => $key, 'status' => PublicationStatus::Published, 'published_at' => now()])->save();
 
         return $page;
+    }
+
+    /**
+     * The samples a section still needs: as many as it is short of $full
+     * (by default, of the number of samples) while it shows $shown items.
+     *
+     * @template TSample
+     *
+     * @param  list<TSample>  $samples
+     * @return list<TSample>
+     */
+    private function stillMissing(array $samples, int $shown, ?int $full = null): array
+    {
+        return array_slice($samples, 0, max(0, ($full ?? count($samples)) - $shown));
+    }
+
+    /**
+     * The sample category or tag with these names, created the first time
+     * it is needed.
+     *
+     * @template TTaxonomy of PostCategory|ProjectCategory|Tag
+     *
+     * @param  class-string<TTaxonomy>  $model
+     * @param  array<string, string>  $names  locale => name, without the sample marker
+     * @return TTaxonomy
+     */
+    private function sampleTaxonomy(string $model, array $names): PostCategory|ProjectCategory|Tag
+    {
+        $names = $this->marked($names);
+
+        $existing = $model::query()
+            ->whereHas('translations', fn (Builder $translation) => $translation->where('locale', 'en')->where('name', $names['en']))
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $taxonomy = new $model;
+        $taxonomy->save();
+        $taxonomy->syncTranslations(array_map(fn (string $name): array => ['name' => $name], $names));
+
+        return $taxonomy;
+    }
+
+    /**
+     * Whether a setting has been filled in; a locale => text map counts once
+     * it is written in any language.
+     */
+    private function isFilled(mixed $value): bool
+    {
+        if (is_array($value)) {
+            return array_filter($value, fn (mixed $item): bool => filled($item)) !== [];
+        }
+
+        return filled($value);
+    }
+
+    /**
+     * The same texts with the sample marker of their language in front.
+     *
+     * @param  array<string, string>  $texts  locale => text
+     * @return array<string, string>
+     */
+    private function marked(array $texts): array
+    {
+        foreach ($texts as $locale => $text) {
+            $texts[$locale] = self::SAMPLE[$locale].$text;
+        }
+
+        return $texts;
     }
 
     /**
