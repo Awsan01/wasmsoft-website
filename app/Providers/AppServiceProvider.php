@@ -140,6 +140,9 @@ class AppServiceProvider extends ServiceProvider
             (int) config('wasmsoft.contact.max_per_hour'),
         )->by('contact|'.$request->ip()));
 
+        // Tokens for the home page's form: each starts a session, so their number is capped too.
+        RateLimiter::for('contact-token', fn (Request $request) => Limit::perMinute(10)->by('contact-token|'.$request->ip()));
+
         RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute(30)->by('uploads|'.$request->user()?->getAuthIdentifier()));
 
         RateLimiter::for('dashboard', fn (Request $request) => Limit::perMinute(300)->by('dashboard|'.($request->user()?->getAuthIdentifier() ?? $request->ip())));

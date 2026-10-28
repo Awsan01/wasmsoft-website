@@ -1,4 +1,7 @@
-import { CtaBand } from '@/components/site/cta-band';
+import { http, useHttp } from '@inertiajs/react';
+import { type FormEvent, type ReactNode, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { ContactForm, type ContactFormData, type ContactFormFields, ContactSent, type ContactTopic, contactFieldId, emptyContactForm } from '@/components/site/contact-form';
 import { PostCard } from '@/components/site/post-card';
 import { ProjectCard } from '@/components/site/project-card';
 import { SectionHeading } from '@/components/site/section-heading';
@@ -11,7 +14,13 @@ import { Prose } from '@/components/ui/prose';
 import { SmartLink } from '@/components/ui/smart-link';
 import { useSitePage, useTranslation } from '@/hooks/use-site';
 import { cn } from '@/lib/cn';
-import type { Highlight, PostCard as Post, ProjectCard as Project, ServiceCard as Service, Testimonial } from '@/types/site';
+import type { ContactDetails, Highlight, PostCard as Post, ProjectCard as Project, ServiceCard as Service, Testimonial } from '@/types/site';
+
+/** The form at the end of the page, and where it asks for its token. */
+type HomeContactForm = ContactFormFields & {
+    tokenUrl: string;
+    topics: ContactTopic[];
+};
 
 type HomeProps = {
     hero: { tagline: string | null; title: string; lead: string };
@@ -22,14 +31,19 @@ type HomeProps = {
     differentiators: Highlight[];
     figures: Highlight[];
     testimonials: Testimonial[];
+    contactForm: HomeContactForm;
 };
+
+/** The contact section at the end of the page; "Start a project" leads there. */
+const CONTACT_ANCHOR = '#contact';
 
 /**
  * The home page. Sections without published content in this language are
- * left out entirely (no empty states, no filler).
+ * left out entirely (no empty states, no filler); it always ends with the
+ * contact form.
  */
 export default function Home() {
-    const { hero, intro, services, projects, posts, differentiators, figures, testimonials, site } = useSitePage<HomeProps>();
+    const { hero, intro, services, projects, posts, differentiators, figures, testimonials, contactForm, site } = useSitePage<HomeProps>();
     const { t } = useTranslation();
     const [first, second, ...moreProjects] = projects;
 
@@ -50,7 +64,7 @@ export default function Home() {
                         <p className="max-w-xl text-lead text-muted">{hero.lead}</p>
 
                         <div className="flex flex-wrap gap-3 pt-1">
-                            <Button href={site.urls.contact} size="lg" iconEnd="arrow-right" prefetch>
+                            <Button href={CONTACT_ANCHOR} size="lg" iconEnd="arrow-down">
                                 {t('site.nav.cta')}
                             </Button>
                             {projects.length > 0 ? (
@@ -145,7 +159,7 @@ export default function Home() {
                                     <h2 id="home-why" className="text-h2">
                                         {t('site.home.why_title')}
                                     </h2>
-                                    <Button href={site.urls.contact} iconEnd="arrow-right" prefetch>
+                                    <Button href={CONTACT_ANCHOR} iconEnd="arrow-down">
                                         {t('site.nav.cta')}
                                     </Button>
                                 </div>
@@ -182,8 +196,248 @@ export default function Home() {
 
             {posts.length > 0 && <LatestNews posts={posts} newsUrl={site.urls.news} />}
 
-            <CtaBand />
+            <HomeContact settings={contactForm} />
         </>
+    );
+}
+
+type TokenResponse = { token: string };
+
+/**
+ * The closing section: what to expect, the direct contact details and the
+ * contact form itself. The page has no session (so it can be cached); the
+ * form asks for its token, which starts one, when the visitor first moves
+ * into it, and is sent without leaving the page.
+ */
+function HomeContact({ settings }: { settings: HomeContactForm }) {
+    const { footer } = useSitePage();
+    const { t } = useTranslation();
+    const contact = footer.contact;
+    const hasDetails = Boolean(contact.email || contact.phone || contact.address || contact.hours || contact.mapUrl || contact.social.length > 0);
+    const token = useRef<Promise<string> | null>(null);
+    const sending = useRef(false);
+    const [failure, setFailure] = useState<string | null>(null);
+    const [refusals, setRefusals] = useState(0);
+    const [sent, setSent] = useState(false);
+    const form = useHttp<ContactFormData, { sent: boolean }>(emptyContactForm(settings));
+
+    /** The token, asked for once (and again after an expired form or session). */
+    const requestToken = () => {
+        token.current ??= http
+            .getClient()
+            .request({ method: 'get', url: settings.tokenUrl, headers: { Accept: 'application/json' } })
+            .then((response) => (JSON.parse(response.data) as TokenResponse).token)
+            .catch((error: unknown) => {
+                token.current = null;
+
+                throw error;
+            });
+
+        return token.current;
+    };
+
+    /**
+     * A new token (and session) right away, while the visitor reads why the
+     * message was not sent: a form sent within seconds of its token is
+     * taken for a bot.
+     */
+    const renewToken = () => {
+        token.current = null;
+        void requestToken().catch(() => undefined);
+    };
+
+    const refused = () => setRefusals((count) => count + 1);
+
+    const showFailure = (message: string) => {
+        setFailure(message);
+        refused();
+    };
+
+    const submit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        // One message at a time, also while the token is still on its way.
+        if (sending.current) {
+            return;
+        }
+
+        sending.current = true;
+        setFailure(null);
+
+        let value: string;
+
+        try {
+            value = await requestToken();
+        } catch {
+            sending.current = false;
+            showFailure(t('site.errors.500.message'));
+
+            return;
+        }
+
+        form.transform((data) => ({ ...data, [settings.tokenField]: value }));
+
+        await form
+            .post(settings.action, {
+                onSuccess: () => {
+                    form.reset();
+                    form.clearErrors();
+                    setSent(true);
+                },
+                onError: (errors) => {
+                    if (errors[settings.tokenField]) {
+                        // The form was open for too long.
+                        renewToken();
+                    }
+
+                    refused();
+                },
+                onHttpException: (response) => {
+                    if (response.status === 419) {
+                        // The session ended while the form was open: a new one is started, what was typed stays.
+                        renewToken();
+                        showFailure(t('site.contact.errors.expired'));
+                    } else if (response.status === 429) {
+                        showFailure(t('site.errors.429.message'));
+                    } else {
+                        showFailure(t('site.errors.500.message'));
+                    }
+                },
+                onNetworkError: () => showFailure(t('site.errors.500.message')),
+            })
+            .catch(() => undefined);
+
+        sending.current = false;
+    };
+
+    const sendAnother = () => {
+        flushSync(() => setSent(false));
+        document.getElementById(contactFieldId('name'))?.focus();
+    };
+
+    return (
+        <section id="contact" aria-labelledby="home-contact" className="surface-dark relative isolate overflow-hidden bg-brand-gradient py-section">
+            <div className="bg-diagonal pointer-events-none absolute inset-0 -z-10 opacity-70" aria-hidden="true" />
+
+            <div className="container-page grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-16">
+                <div className="grid content-start gap-8">
+                    <div className="grid gap-4">
+                        <h2 id="home-contact" className="text-h2 text-white">
+                            {t('site.cta.title')}
+                        </h2>
+                        <p className="max-w-xl text-lead text-on-dark-muted">{t('site.cta.text')}</p>
+                    </div>
+
+                    {hasDetails && <ContactChannels contact={contact} />}
+                </div>
+
+                <div className="surface-light rounded-xl bg-surface p-7 shadow-lg sm:p-9">
+                    {sent ? (
+                        <ContactSent headingLevel={3}>
+                            <Button variant="outline" onClick={sendAnother}>
+                                {t('site.contact.send_another')}
+                            </Button>
+                        </ContactSent>
+                    ) : (
+                        <ContactForm
+                            fields={settings}
+                            topics={settings.topics}
+                            data={form.data}
+                            errors={form.errors as Partial<Record<string, string>>}
+                            failure={failure}
+                            processing={form.processing}
+                            refusals={refusals}
+                            headingLevel={3}
+                            onChange={(field, value) => form.setData(field, value)}
+                            onSubmit={(event) => void submit(event)}
+                            onFocus={() => void requestToken().catch(() => undefined)}
+                        />
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/** The direct ways to reach the company that have been filled in, on the dark section. */
+function ContactChannels({ contact }: { contact: ContactDetails }) {
+    const { t } = useTranslation();
+
+    return (
+        <div className="grid gap-6">
+            <h3 className="sr-only">{t('site.contact.details_title')}</h3>
+
+            <dl className="grid gap-5 text-sm">
+                {contact.email && contact.emailHref && (
+                    <Channel icon="mail" label={t('site.contact.email')}>
+                        <a href={contact.emailHref} className="font-semibold break-all text-white hover:underline" dir="ltr">
+                            {contact.email}
+                        </a>
+                    </Channel>
+                )}
+                {contact.phone && contact.phoneHref && (
+                    <Channel icon="phone" label={t('site.contact.phone')}>
+                        <a href={contact.phoneHref} className="font-semibold text-white hover:underline" dir="ltr">
+                            {contact.phone}
+                        </a>
+                    </Channel>
+                )}
+                {contact.address && (
+                    <Channel icon="map-pin" label={t('site.contact.address')}>
+                        <span className="font-semibold whitespace-pre-line text-white">{contact.address}</span>
+                    </Channel>
+                )}
+                {contact.hours && (
+                    <Channel icon="clock" label={t('site.contact.hours')}>
+                        <span className="font-semibold whitespace-pre-line text-white">{contact.hours}</span>
+                    </Channel>
+                )}
+            </dl>
+
+            {(contact.mapUrl || contact.social.length > 0) && (
+                <div className="flex flex-wrap items-center gap-3">
+                    {contact.mapUrl && (
+                        <Button href={contact.mapUrl} newTab variant="on-dark-outline" icon="map-pin" size="sm">
+                            {t('site.contact.map')}
+                            <span className="sr-only"> {t('ui.opens_in_new_tab')}</span>
+                        </Button>
+                    )}
+
+                    {contact.social.length > 0 && (
+                        <ul className="flex flex-wrap gap-1" aria-label={t('site.footer.social')}>
+                            {contact.social.map((social) => (
+                                <li key={social.url}>
+                                    <a
+                                        href={social.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={`${social.label} ${t('ui.opens_in_new_tab')}`}
+                                        title={social.label}
+                                        className="inline-grid size-control-md place-items-center rounded-md text-on-dark-muted transition-base hover:bg-white/10 hover:text-white"
+                                    >
+                                        <Icon name={social.icon} size={20} />
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function Channel({ icon, label, children }: { icon: 'mail' | 'phone' | 'map-pin' | 'clock'; label: string; children: ReactNode }) {
+    return (
+        <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-white/10 text-white">
+                <Icon name={icon} size={18} />
+            </span>
+            <div className="grid gap-0.5">
+                <dt className="text-on-dark-muted">{label}</dt>
+                <dd>{children}</dd>
+            </div>
+        </div>
     );
 }
 

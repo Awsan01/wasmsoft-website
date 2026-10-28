@@ -4,12 +4,14 @@ namespace Tests\Feature\Http\Controllers\Site;
 
 use App\Content\HighlightGroup;
 use App\Content\SystemPage;
+use App\Http\Requests\Site\ContactRequest;
 use App\Models\Highlight;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\Project;
 use App\Models\Service;
 use App\Models\Testimonial;
+use App\Security\SpamGuard;
 use App\Settings\SettingKey;
 use App\Settings\SiteSettings;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -114,5 +116,32 @@ class HomeControllerTest extends TestCase
             ->assertSee('"sameAs":["https://www.linkedin.com/company/example"]', false)
             ->assertDontSee('"telephone"', false)
             ->assertSee('"@type":"WebSite"', false);
+    }
+
+    public function test_the_page_ends_with_the_contact_form_without_starting_a_session(): void
+    {
+        $second = Service::factory()->published()->translated(['en'], ['en' => ['title' => 'Mobile apps']])->create(['position' => 2]);
+        $first = Service::factory()->published()->translated(['en'], ['en' => ['title' => 'Web apps']])->create(['position' => 1]);
+        Service::factory()->published()->translated(['tr'], ['tr' => ['title' => 'Yalnızca Türkçe']])->create();
+        Service::factory()->translated(['en'], ['en' => ['title' => 'Draft service']])->create();
+
+        $response = $this->get('/en');
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('contactForm.action', url('/en/contact'))
+            ->where('contactForm.tokenUrl', url('/en/contact/token'))
+            ->where('contactForm.tokenField', SpamGuard::TOKEN)
+            ->where('contactForm.honeypotField', SpamGuard::HONEYPOT)
+            ->where('contactForm.messageMax', ContactRequest::MESSAGE_MAX)
+            // Every published service in this language can be the topic, in their order.
+            ->where('contactForm.topics', [
+                ['value' => (string) $first->id, 'label' => 'Web apps'],
+                ['value' => (string) $second->id, 'label' => 'Mobile apps'],
+            ]));
+
+        // No token and no session: the page stays the same for every visitor, so it can be cached.
+        $response->assertHeader('Cache-Control', 'max-age=0, public, s-maxage=300');
+        $this->assertSame([], $response->headers->getCookies());
+        $this->assertStringNotContainsString('"'.SpamGuard::TOKEN.'":"', (string) $response->getContent());
     }
 }

@@ -142,4 +142,16 @@ test.describe('on a phone', () => {
         await expect(menu).toBeHidden();
         await expect(page.getByRole('button', { name: 'Open menu' })).toHaveAttribute('aria-expanded', 'false');
     });
+
+    test('on the home page, "Start a project" in the menu closes it and shows the contact form', async ({ page }) => {
+        await page.goto('/en');
+        const menu = page.locator('#site-mobile-nav');
+
+        await page.getByRole('button', { name: 'Open menu' }).click();
+        await menu.getByRole('link', { name: 'Start a project' }).click();
+
+        await expect(page).toHaveURL(/\/en#contact$/);
+        await expect(menu).toBeHidden();
+        await expect(page.locator('#contact').getByRole('heading', { name: 'Send us a message' })).toBeInViewport();
+    });
 });

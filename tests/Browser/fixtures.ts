@@ -11,15 +11,38 @@ export const LOCALES = [
 export const DESKTOP = { width: 1280, height: 900 };
 export const PHONE = { width: 390, height: 844 };
 
+/** Error answers a test causes on purpose, per page (see expectErrorResponse). */
+const expectedErrors = new WeakMap<Page, Array<{ status: number; path: RegExp }>>();
+
+/**
+ * Tells the error check below that the next answer with this status from an
+ * address matching `path` is intended, such as a form sent with mistakes
+ * (422).
+ */
+export function expectErrorResponse(page: Page, status: number, path: RegExp): void {
+    expectedErrors.set(page, [...(expectedErrors.get(page) ?? []), { status, path }]);
+}
+
 /**
  * Every test also fails when a page logs an error (a script error, a
  * Content Security Policy violation, a React warning) or a file it needs
- * (script, style, font, image, page data) cannot be loaded.
+ * (script, style, font, image, page data) cannot be loaded, unless the
+ * test said it expects that answer (expectErrorResponse).
  */
 export const test = base.extend<{ problems: string[] }>({
     problems: [
         async ({ page }, use) => {
             const problems: string[] = [];
+            const isExpected = (status: number, url: string): boolean => {
+                const expected = expectedErrors.get(page) ?? [];
+                const index = expected.findIndex((entry) => entry.status === status && entry.path.test(new URL(url).pathname));
+
+                if (index >= 0) {
+                    expected.splice(index, 1);
+                }
+
+                return index >= 0;
+            };
 
             page.on('console', (message) => {
                 // Error statuses are listed below, with the address that answered them.
@@ -30,7 +53,7 @@ export const test = base.extend<{ problems: string[] }>({
             page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`));
             page.on('response', (response) => {
                 // Pages themselves are checked by the tests (a missing page answers 404 on purpose).
-                if (response.status() >= 400 && response.request().resourceType() !== 'document') {
+                if (response.status() >= 400 && response.request().resourceType() !== 'document' && !isExpected(response.status(), response.url())) {
                     problems.push(`${response.status()}: ${response.url()}`);
                 }
             });

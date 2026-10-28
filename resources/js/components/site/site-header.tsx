@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { type FocusEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -22,6 +22,7 @@ const linkClasses =
 export function SiteHeader({ scrolled }: { scrolled: boolean }) {
     const { site, navigation } = useSitePage();
     const { t } = useTranslation();
+    const projectStart = useProjectStartUrl();
     const [mobileOpen, setMobileOpen] = useState(false);
     const toggleRef = useRef<HTMLButtonElement>(null);
     const mobileRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,7 @@ export function SiteHeader({ scrolled }: { scrolled: boolean }) {
 
                     {/* Visibility lives on a wrapper: utilities on the button itself would clash with its own display class. */}
                     <div className="hidden sm:block">
-                        <Button href={site.urls.contact} size="sm" iconEnd="arrow-right" prefetch>
+                        <Button href={projectStart} size="sm" iconEnd="arrow-right" prefetch>
                             {t('site.nav.cta')}
                         </Button>
                     </div>
@@ -81,7 +82,14 @@ export function SiteHeader({ scrolled }: { scrolled: boolean }) {
                 </div>
             </div>
 
-            <div ref={mobileRef} id="site-mobile-nav" hidden={!mobileOpen} className="max-h-[calc(100dvh-var(--spacing-header))] overflow-y-auto border-t border-border bg-surface lg:hidden">
+            {/* Links within the page (the home page's "Start a project") close the menu; other links close it when their page starts loading. */}
+            <div
+                ref={mobileRef}
+                id="site-mobile-nav"
+                hidden={!mobileOpen}
+                onClick={(event) => (event.target as Element).closest('a[href^="#"]') && setMobileOpen(false)}
+                className="max-h-[calc(100dvh-var(--spacing-header))] overflow-y-auto border-t border-border bg-surface lg:hidden"
+            >
                 <MobileNav links={navigation.header} panels={navigation.panels} />
             </div>
         </header>
@@ -273,8 +281,9 @@ function ProjectsPanel({ link, projects }: { link: NavLink; projects: NonNullabl
 }
 
 function MobileNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) {
-    const { site, languages } = useSitePage();
+    const { languages } = useSitePage();
     const { t } = useTranslation();
+    const projectStart = useProjectStartUrl();
 
     return (
         <div className="container-page grid gap-6 py-6">
@@ -335,9 +344,17 @@ function MobileNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) {
                 </div>
             )}
 
-            <Button href={site.urls.contact} iconEnd="arrow-right" block>
+            <Button href={projectStart} iconEnd="arrow-right" block>
                 {t('site.nav.cta')}
             </Button>
         </div>
     );
+}
+
+/** "Start a project" leads to the form at the end of the home page there, and to the contact page elsewhere. */
+function useProjectStartUrl(): string {
+    const { component } = usePage();
+    const { site } = useSitePage();
+
+    return component === 'site/home' ? '#contact' : site.urls.contact;
 }

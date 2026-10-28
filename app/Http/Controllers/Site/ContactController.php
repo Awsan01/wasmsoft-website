@@ -6,19 +6,20 @@ use App\Content\Alternates;
 use App\Content\Markdown;
 use App\Content\SystemPage;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Site\Concerns\PreparesContactForm;
 use App\Http\Controllers\Site\Concerns\RendersSitePages;
 use App\Http\Requests\Site\ContactRequest;
 use App\Inquiries\InquiryStatus;
 use App\Localization\Locales;
 use App\Models\Inquiry;
 use App\Models\Page;
-use App\Models\Service;
 use App\Notifications\InquiryReceived;
 use App\Security\SpamGuard;
 use App\Seo\SeoMeta;
 use App\Settings\SettingKey;
 use App\Settings\SiteSettings;
 use App\Support\Brand;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,9 +30,14 @@ use Inertia\Response;
  * The contact page and its form (session-backed routes: CSRF, validation
  * errors). The contact details themselves reach the page with the shared
  * footer data.
+ *
+ * The same form also ends the home page, which has no session so that it
+ * can be cached. There the form asks for its token (token()) when a visitor
+ * starts filling it in, and is sent as JSON.
  */
 class ContactController extends Controller
 {
+    use PreparesContactForm;
     use RendersSitePages;
 
     public function __construct(
@@ -47,15 +53,7 @@ class ContactController extends Controller
         $intro = Page::query()->system(SystemPage::Contact)->published()->withTranslation($locale)->first()?->translation($locale);
         $title = $intro?->title ?: __('site.contact.title');
 
-        $services = Service::query()
-            ->published()
-            ->translatedIn($locale)
-            ->withTranslation($locale)
-            ->ordered()
-            ->get()
-            ->map(fn (Service $service): array => ['value' => (string) $service->id, 'label' => (string) $service->translation($locale)?->title])
-            ->values()
-            ->all();
+        $services = $this->contactTopics($locale);
 
         // A service page links here with ?service={id}: that topic is chosen in advance.
         $requested = $request->string('service')->toString();
@@ -70,12 +68,9 @@ class ContactController extends Controller
             ],
             'services' => $services,
             'form' => [
-                'action' => route('site.contact.store'),
+                ...$this->contactFormFields(),
                 'token' => $this->guard->tokenFor(old(SpamGuard::TOKEN)),
-                'tokenField' => SpamGuard::TOKEN,
-                'honeypotField' => SpamGuard::HONEYPOT,
                 'service' => $selected,
-                'messageMax' => ContactRequest::MESSAGE_MAX,
             ],
             'sent' => (bool) $request->session()->get('contact_sent', false),
         ], new SeoMeta(
@@ -86,7 +81,18 @@ class ContactController extends Controller
         ));
     }
 
-    public function store(ContactRequest $request): RedirectResponse
+    /**
+     * A new spam-guard token for the form on the home page, which itself
+     * stays without a session. Asking for it starts the visitor's session:
+     * browsers that do not say where a request comes from (Sec-Fetch-Site)
+     * need its CSRF cookie to send the form.
+     */
+    public function token(): JsonResponse
+    {
+        return response()->json(['token' => $this->guard->token()]);
+    }
+
+    public function store(ContactRequest $request): RedirectResponse|JsonResponse
     {
         $suspicious = $this->guard->isSuspicious($request);
 
@@ -110,7 +116,12 @@ class ContactController extends Controller
             Log::info('Contact form submission stored as spam.', ['inquiry' => $inquiry->id]);
         }
 
-        // Visitors see the same confirmation either way.
+        // Visitors see the same confirmation either way: in place on the home
+        // page (JSON), on the contact page after it reloads.
+        if ($request->expectsJson()) {
+            return response()->json(['sent' => true]);
+        }
+
         return redirect()->route('site.contact')->with('contact_sent', true);
     }
 }

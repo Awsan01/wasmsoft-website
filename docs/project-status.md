@@ -1,6 +1,6 @@
 # Project status
 
-State of the Wasmsoft website on 2026-10-28, measured against [the specification](specification.md). The public site and the dashboard are complete, tested and documented, but the site has not been deployed and its content is still placeholder text. The public site was rebuilt in React with Inertia and given a new design on 2026-10-27 (stage 1), and the dashboard was rebuilt in React with Inertia on 2026-10-28 (stage 2), both below. Those changes are in the working copy and not yet committed.
+State of the Wasmsoft website on 2026-10-28, measured against [the specification](specification.md). The public site and the dashboard are complete, tested and documented, but the site has not been deployed and its content is still placeholder text. The public site was rebuilt in React with Inertia and given a new design on 2026-10-27 (stage 1), and the dashboard was rebuilt in React with Inertia on 2026-10-28 (stage 2), both below; both are on the main branch. The contact form was then added to the end of the home page (2026-10-28, below).
 
 ## Stage 1: the public site in React and Inertia (2026-10-27)
 
@@ -71,10 +71,33 @@ composer audit && npm audit
 | Production build, `composer audit`, `npm audit` | **Not run**, as in stage 1 (no npm or network access) |
 
 
+## The contact form on the home page (2026-10-28)
+
+Requested by the company: the home page should be a complete landing page, with the contact form on it.
+
+**What changed**
+- The home page now ends with the contact form, next to the contact details that have been filled in; it replaces the closing call to action there. Every "Start a project" button on the home page (also in the header and the phone menu) leads to it. Elsewhere they still lead to the contact page, which stays as it was (the menu and the service pages link to it).
+- The home page still has no session, so it can still be cached for everyone. The form asks for its spam-guard token when a visitor first moves into it (`/{locale}/contact/token`: starts the session, rate limited, never cached) and is sent as JSON to the same address as the contact page's form, so mistakes and the confirmation appear in place. After an expired form or session it gets a new token at once, and the message can be sent again with what was typed.
+- Both pages use one form component (`resources/js/components/site/contact-form.tsx`). On the contact page, a form left open past the token's two hours now uses the new token the page receives instead of being refused again.
+- Tests: feature tests for the token address (valid token, session and CSRF cookies, no caching, rate limit), for messages sent as JSON (stored and confirmed, mistakes answered field by field) and for the home page (the form's data, still no cookies and still publicly cacheable); browser tests for sending from the home page (mistakes, confirmation, another message), for an expired form and for "Start a project" in the phone menu. Browser tests can now expect an error answer on purpose (`expectErrorResponse` in `tests/Browser/fixtures.ts`).
+
+**Verification results (2026-10-28)**
+
+| Check | Result |
+|---|---|
+| `php artisan test` | 453 tests, 10,936 assertions, all passing (SQLite) |
+| `vendor/bin/phpstan analyse` (level 8) | No errors |
+| `vendor/bin/pint` | Code formatted |
+| TypeScript check (`resources/js`, browser tests) | No errors |
+| Browser tests (Playwright 1.63 with Chromium) | 29 tests passing, with no browser error, unexpected failed request or Content-Security-Policy violation |
+| Page structure check (home and contact pages in the three languages, at 1440 and 320 px) | No issues: fields labelled, controls named, no duplicate ids or broken references, one main heading, no skipped heading levels, no sideways scrolling |
+| `npm run check:contrast` | All 38 colour pairs meet WCAG 2.2 AA (no new colours) |
+| Production build, `npm run check:a11y`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access) |
+
 ## Implemented
 
 **Public site** (Arabic right to left, English, Turkish)
-- Home: hero, services, differentiators, figures, selected projects, testimonials, latest news and a call to action. Each section appears only when it has content.
+- Home: hero, services, differentiators, figures, selected projects, testimonials and latest news, each shown only when it has content, then the contact form with the contact details that have been filled in.
 - About (mission and vision text, values, team, milestones), partnerships (partnership models and a call to action), services and service pages, projects with category filter and search, news with categories, tags, related articles and reading time, contact form, and any page editors create.
 - Language in every address, language switcher limited to existing translations, no silent fallback; header and footer menus managed in the dashboard; localized error pages for every status code.
 - SEO: titles, descriptions, canonical and `hreflang` links, Open Graph, JSON-LD (organization, website, article, breadcrumbs) only where content supports it, XML sitemap, robots.txt (crawlers turned away outside production), `noindex` on the dashboard, errors and previews.
@@ -144,7 +167,7 @@ To fill an existing local database with the samples: `php artisan db:seed --clas
 
 ## Outstanding work (recommended)
 
-1. Run the commands that could not run in the sessions of stages 1 and 2 (above), including `npm run check:a11y` for the WCAG rules, then commit the result.
+1. Finish the checks that could not run in the sessions of stages 1 and 2 (above). On the development machine `npm run build` has completed and `npm run test:browser` has passed (2026-10-28); still to report: `php artisan test`, `npm run check:a11y` (the WCAG rules), `composer audit` and `npm audit`.
 2. Decide whether production runs server-side rendering (recommended, needs Node.js on the server).
 3. Run the test suite against the production database engine and test backups there ([deployment.md](deployment.md#1-what-the-server-needs)).
 4. Deploy to a staging server, then run `npm run check:a11y` and `npm run measure:performance` against it.

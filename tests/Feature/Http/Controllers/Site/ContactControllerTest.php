@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\HttpFoundation\Cookie;
 use Tests\TestCase;
 
 class ContactControllerTest extends TestCase
@@ -235,5 +236,58 @@ class ContactControllerTest extends TestCase
         $cacheControl = (string) $this->get('/en/contact')->headers->get('Cache-Control');
 
         $this->assertStringNotContainsString('public', $cacheControl);
+    }
+
+    public function test_the_home_page_form_gets_a_fresh_token_and_the_session_it_is_sent_with(): void
+    {
+        $response = $this->getJson('/en/contact/token');
+
+        $response->assertOk();
+        $this->assertTrue(app(SpamGuard::class)->isValid($response->json('token')));
+
+        // The session cookie and the CSRF cookie the form is sent with; never stored by any cache.
+        $cookies = array_map(fn (Cookie $cookie): string => $cookie->getName(), $response->headers->getCookies());
+        $this->assertContains((string) config('session.cookie'), $cookies);
+        $this->assertContains('XSRF-TOKEN', $cookies);
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
+    }
+
+    public function test_tokens_for_the_home_page_form_are_rate_limited(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $this->getJson('/en/contact/token')->assertOk();
+        }
+
+        $this->getJson('/en/contact/token')->assertTooManyRequests();
+    }
+
+    public function test_a_message_sent_from_the_home_page_is_stored_and_confirmed_in_place(): void
+    {
+        Notification::fake();
+        $this->configureInbox('team@wasmsoft.example');
+
+        $this->postJson('/en/contact', $this->submission())
+            ->assertOk()
+            ->assertExactJson(['sent' => true]);
+
+        $inquiry = Inquiry::query()->sole();
+        $this->assertSame('Layla Haddad', $inquiry->name);
+        $this->assertSame(InquiryStatus::New, $inquiry->status);
+        Notification::assertSentTo(new AnonymousNotifiable, InquiryReceived::class);
+    }
+
+    public function test_mistakes_in_a_message_from_the_home_page_are_answered_field_by_field(): void
+    {
+        $this->postJson('/en/contact', $this->submission(['email' => 'not-an-email', 'message' => '', 'consent' => '']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'email' => __('site.contact.errors.email_invalid'),
+                'message' => __('site.contact.errors.message_required'),
+                'consent' => __('site.contact.errors.consent'),
+            ])
+            ->assertJsonMissingValidationErrors(['name']);
+
+        $this->assertSame(0, Inquiry::query()->count());
     }
 }

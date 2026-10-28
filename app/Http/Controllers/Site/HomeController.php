@@ -7,6 +7,7 @@ use App\Content\HighlightGroup;
 use App\Content\Markdown;
 use App\Content\SystemPage;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Site\Concerns\PreparesContactForm;
 use App\Http\Controllers\Site\Concerns\RendersSitePages;
 use App\Http\Presenters\SitePresenter;
 use App\Localization\Locales;
@@ -28,10 +29,13 @@ use Inertia\Response;
 /**
  * The home page. Every section is built from published content in the
  * current language and is left out while it has nothing to show — no
- * filler statistics, clients or quotes.
+ * filler statistics, clients or quotes. It ends with the contact form,
+ * which gets its token only once a visitor starts filling it in, so the
+ * page itself stays without a session and can be cached.
  */
 class HomeController extends Controller
 {
+    use PreparesContactForm;
     use RendersSitePages;
 
     /** Projects on the home page: two featured side by side, then a row of three. */
@@ -76,6 +80,11 @@ class HomeController extends Controller
             'figures' => $this->highlights(HighlightGroup::Metric, $locale),
             'testimonials' => Testimonial::query()->shownIn($locale)->with('photo')->limit(6)->get()
                 ->map(fn (Testimonial $testimonial): array => $this->presenter->testimonial($testimonial, $locale))->values()->all(),
+            'contactForm' => [
+                ...$this->contactFormFields(),
+                'tokenUrl' => route('site.contact.token'),
+                'topics' => $this->contactTopics($locale),
+            ],
         ], new SeoMeta(
             title: $page?->meta_title ?: $name.' · '.($tagline ?: $page?->title ?: __('site.home.hero_title')),
             // Ends with the hero's own fallback lead, so the page is never described as nothing.

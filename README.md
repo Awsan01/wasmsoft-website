@@ -2,7 +2,7 @@
 
 The public website of Wasmsoft and the dashboard its staff use to manage it.
 
-- **Public site** in Arabic (right to left), English and Turkish: home, about, services, projects, news, contact and any other page editors create.
+- **Public site** in Arabic (right to left), English and Turkish: home, about, services, projects, news, contact and any other page editors create. The contact form is also at the end of the home page.
 - **Dashboard** at `/admin`: overview, pages, services, projects, news (categories, tags), home and about page items (highlights, testimonials, team, milestones), media library, navigation menus, contact inquiries, users and roles, settings and an audit log.
 
 The full brief is in [docs/specification.md](docs/specification.md). What is finished, what is not and what the company still has to supply is in [docs/project-status.md](docs/project-status.md).

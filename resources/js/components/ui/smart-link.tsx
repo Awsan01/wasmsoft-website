@@ -15,7 +15,8 @@ export type SmartLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href
 
 /**
  * A link that Inertia follows without a full page load when it leads to a
- * page of the site in the current language, and a normal link otherwise.
+ * page of the site in the current language, and a normal link otherwise
+ * (also a link to a part of the current page, such as "#contact").
  */
 export const SmartLink = forwardRef<HTMLAnchorElement, SmartLinkProps>(function SmartLink({ href, newTab = false, prefetch = false, preserveScroll = false, children, ...props }, ref) {
     const isSitePage = useIsInertiaPage();
@@ -28,7 +29,7 @@ export const SmartLink = forwardRef<HTMLAnchorElement, SmartLinkProps>(function 
         );
     }
 
-    if (isSitePage(href)) {
+    if (!href.startsWith('#') && isSitePage(href)) {
         return (
             <Link ref={ref} href={href} prefetch={prefetch} preserveScroll={preserveScroll} {...props}>
                 {children}

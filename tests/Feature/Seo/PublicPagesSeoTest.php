@@ -254,10 +254,12 @@ class PublicPagesSeoTest extends TestCase
     {
         $path = (string) parse_url($href, PHP_URL_PATH);
 
+        // The home page's contact form fetches its token from an address that answers with JSON, not a page.
         return str_starts_with($href, url('/'))
             && parse_url($href, PHP_URL_QUERY) === null
             && in_array($this->localeOf($href), self::LOCALES, true)
-            && ! str_starts_with($path, '/storage/');
+            && ! str_starts_with($path, '/storage/')
+            && ! str_ends_with($path, '/contact/token');
     }
 
     private function localeOf(string $url): string
