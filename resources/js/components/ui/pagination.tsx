@@ -1,16 +1,17 @@
+import { use } from 'react';
 import { useTranslation } from '@/hooks/use-site';
 import { cn } from '@/lib/cn';
 import type { Pagination as PaginationData } from '@/types/site';
+import { ButtonShapeContext } from './button';
 import { Icon } from './icon';
 import { SmartLink } from './smart-link';
 
-const item = 'inline-grid h-10 min-w-10 place-items-center rounded-md px-3 text-sm font-semibold transition-base';
-const link = cn(item, 'text-ink hover:bg-lavender hover:text-primary');
-const disabled = cn(item, 'text-border-strong');
-
-/** Page links of a listing ("Showing 1–9 of 24"). */
+/** Page links of a listing ("Showing 1–9 of 24"), shaped like the buttons around them. */
 export function Pagination({ pagination }: { pagination: PaginationData | null }) {
     const { t, formatNumber } = useTranslation();
+    const item = cn('inline-grid h-10 min-w-10 place-items-center px-3 text-sm font-semibold transition-base', use(ButtonShapeContext) === 'pill' ? 'rounded-full' : 'rounded-md');
+    const link = cn(item, 'text-ink hover:bg-lavender hover:text-primary');
+    const disabled = cn(item, 'text-border-strong');
 
     if (pagination === null) {
         return null;

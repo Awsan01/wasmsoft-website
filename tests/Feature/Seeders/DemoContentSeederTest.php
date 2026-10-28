@@ -4,11 +4,14 @@ namespace Tests\Feature\Seeders;
 
 use App\Content\HighlightGroup;
 use App\Models\Highlight;
+use App\Models\Media;
 use App\Models\MenuItem;
 use App\Models\Milestone;
 use App\Models\Page;
 use App\Models\Post;
+use App\Models\PostTranslation;
 use App\Models\Project;
+use App\Models\ProjectTranslation;
 use App\Models\Service;
 use App\Models\ServiceTranslation;
 use App\Models\Setting;
@@ -28,8 +31,6 @@ class DemoContentSeederTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    private const SAMPLE = ['ar' => 'نموذج: ', 'en' => 'Sample: ', 'tr' => 'Örnek: '];
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,7 +38,7 @@ class DemoContentSeederTest extends TestCase
         Storage::fake((string) config('wasmsoft.media.disk'));
     }
 
-    public function test_development_data_fills_the_site_with_clearly_marked_samples(): void
+    public function test_development_data_fills_the_site_with_the_company_services_and_example_work(): void
     {
         $this->seed();
 
@@ -46,92 +47,78 @@ class DemoContentSeederTest extends TestCase
         $this->assertSame(6, Project::query()->count());
         $this->assertSame(8, Post::query()->count());
 
-        foreach (ServiceTranslation::all() as $translation) {
-            $this->assertMatchesRegularExpression('/^(Sample: |نموذج: |Örnek: )/u', $translation->title);
-        }
+        $this->assertSame(
+            ['Web Development', 'Mobile App Development', 'AI & Machine Learning Solutions', 'ERP & Business Management Systems', 'Cloud & IT Infrastructure', 'IT Consulting & Digital Transformation'],
+            ServiceTranslation::query()->where('locale', 'en')->orderBy('id')->pluck('title')->all(),
+        );
 
-        $this->get('/en')->assertOk()->assertPageShows('Sample: Web application development');
-        $this->get('/ar/'.rawurlencode('من-نحن'))->assertOk()->assertPageShows('نموذج: من نحن');
-        $this->get('/tr/projects')->assertOk()->assertPageShows('Örnek: Rezervasyon yönetim portalı');
+        $this->get('/en')->assertOk()->assertPageShows('Web Development', 'Software that powers your business growth');
+        $this->get('/ar/'.rawurlencode('من-نحن'))->assertOk()->assertPageShows('من نحن');
+        $this->get('/tr/projects')->assertOk()->assertPageShows('Klinik randevu platformu');
     }
 
-    public function test_every_section_of_the_home_about_and_contact_pages_shows_samples(): void
+    public function test_every_section_of_the_home_about_and_partnerships_pages_has_content(): void
     {
         $this->seed();
 
         $this->get('/en')->assertOk()
             ->assertPageShows(
-                'Sample: Software and digital products',
-                'Sample: Clear communication',
-                'Sample: Projects delivered',
+                'Software development and digital solutions',
+                'One team from idea to launch',
+                'Core services',
                 'Dhaman',
-                'Sample client A',
-                'Sample: Sixth sample article',
+                'Welcome to the new Wasmsoft website',
             )
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('footer.contact.email', 'hello@wasmsoft.test'));
-
-        $this->get('/en/about')->assertOk()
-            ->assertPageShows('Sample: Quality', 'Sample person A', 'Sample: First milestone');
-
-        $this->get('/en/partnerships')->assertOk()
-            ->assertPageShows('Sample: Partnerships', 'Sample: Technology partners');
-
-        $this->get('/en/contact')->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('footer.contact.phone', '+90 000 000 00 00')
-                ->where('footer.contact.hours', 'Sample: Monday to Friday, 09:00–18:00')
-                ->where('footer.contact.social.0.url', 'https://www.linkedin.com/'));
+                ->has('services', 6)
+                ->has('projects', 6)
+                ->has('posts', 3)
+                ->has('differentiators', 3)
+                ->has('figures', 3)
+                ->where('footer.contact.email', 'hello@wasmsoft.test'));
+
+        $this->get('/en/about')->assertOk()->assertPageShows('Who we are', 'Quality');
+        $this->get('/en/partnerships')->assertOk()->assertPageShows('Partnerships', 'Technology partners');
     }
 
-    public function test_the_products_in_development_are_listed_by_name_with_a_placeholder_description(): void
+    public function test_no_text_is_marked_as_a_sample_in_any_language(): void
     {
         $this->seed();
 
-        $this->get('/en/projects')->assertOk()
-            ->assertPageShows('Dhaman', 'Fantastic', 'A Wasmsoft product in development. Its description will be added in the dashboard.');
+        foreach (['/ar', '/en', '/tr', '/en/services', '/en/projects', '/en/news', '/en/about', '/en/partnerships', '/en/contact'] as $path) {
+            $content = (string) $this->get($path)->assertOk()->getContent();
 
-        $this->get('/ar/projects')->assertOk()->assertPageShows('ضمان');
+            // The markers the earlier samples started with ("نموذج" alone also means "form" in Arabic).
+            foreach (['Sample', 'sample', 'نموذج: ', 'Örnek: '] as $marker) {
+                $this->assertStringNotContainsString($marker, $content, "{$path} contains \"{$marker}\".");
+            }
+        }
+
+        foreach (ServiceTranslation::all()->concat(ProjectTranslation::all())->concat(PostTranslation::all()) as $translation) {
+            $this->assertDoesNotMatchRegularExpression('/sample|placeholder/i', $translation->title.' '.$translation->summary.' '.$translation->body);
+        }
+
+        foreach (Media::all() as $media) {
+            $this->assertStringNotContainsStringIgnoringCase('sample', $media->original_name);
+        }
     }
 
-    public function test_samples_standing_in_for_company_information_are_labelled_in_every_language(): void
+    public function test_it_states_only_facts_the_company_gave(): void
     {
         $this->seed();
 
         $settings = app(SiteSettings::class);
-        $metrics = Highlight::query()->where('group', HighlightGroup::Metric)->get();
-        $partnerships = Highlight::query()->where('group', HighlightGroup::Partnership)->get();
 
-        $this->assertSame(3, Testimonial::query()->count());
-        $this->assertSame(3, TeamMember::query()->count());
-        $this->assertSame(3, Milestone::query()->count());
-        $this->assertCount(4, $metrics);
-        $this->assertCount(3, $partnerships);
+        // No invented clients, people, history or figures.
+        $this->assertSame(0, Testimonial::query()->count());
+        $this->assertSame(0, TeamMember::query()->count());
+        $this->assertSame(0, Milestone::query()->count());
+        $this->assertSame(['6', '3', '2'], Highlight::query()->where('group', HighlightGroup::Metric)->orderBy('id')->pluck('figure')->all());
+        $this->assertSame(0, Project::query()->whereNotNull('client_name')->orWhereNotNull('completed_on')->orWhereNotNull('project_url')->count());
 
-        foreach (array_keys(self::SAMPLE) as $locale) {
-            foreach (Testimonial::all() as $testimonial) {
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $testimonial->localized('quote', $locale));
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $testimonial->localized('author_role', $locale));
-            }
-
-            foreach (TeamMember::all() as $member) {
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $member->localized('role', $locale));
-            }
-
-            foreach (Milestone::all() as $milestone) {
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $milestone->localized('title', $locale));
-            }
-
-            foreach ($metrics->merge($partnerships) as $highlight) {
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $highlight->localized('title', $locale));
-            }
-
-            foreach ([SettingKey::SiteTagline, SettingKey::SiteDescription, SettingKey::ContactAddress, SettingKey::ContactHours, SettingKey::FooterNote] as $key) {
-                $this->assertStringStartsWith(self::SAMPLE[$locale], (string) $settings->localized($key, $locale));
-            }
-        }
-
-        foreach (Testimonial::query()->pluck('author_name')->merge(TeamMember::query()->pluck('name')) as $name) {
-            $this->assertStringStartsWith('Sample ', $name);
+        // No invented contact details: a reserved address and the networks' home pages until real ones are entered.
+        foreach ([SettingKey::ContactPhone, SettingKey::ContactAddress, SettingKey::ContactHours, SettingKey::ContactMapUrl, SettingKey::FooterNote] as $key) {
+            $this->assertNull($settings->get($key), "{$key->value} should stay empty.");
         }
 
         $this->assertStringEndsWith('@wasmsoft.test', (string) $settings->get(SettingKey::ContactEmail));
@@ -141,6 +128,29 @@ class DemoContentSeederTest extends TestCase
 
         foreach ($socialLinks as $link) {
             $this->assertSame('/', parse_url($link['url'], PHP_URL_PATH));
+        }
+    }
+
+    public function test_the_products_in_development_are_listed_by_name_and_said_to_be_in_development(): void
+    {
+        $this->seed();
+
+        $this->get('/en/projects')->assertOk()
+            ->assertPageShows('Dhaman', 'Fantastic', 'A Wasmsoft product, currently in development.');
+
+        $this->get('/ar/projects')->assertOk()->assertPageShows('ضمان');
+    }
+
+    public function test_every_cover_is_a_drawn_picture_of_the_same_size(): void
+    {
+        $this->seed();
+
+        $covers = Media::all();
+
+        $this->assertCount(Project::query()->count() + Post::query()->count(), $covers);
+
+        foreach ($covers as $cover) {
+            $this->assertSame([1600, 1000], [$cover->width, $cover->height]);
         }
     }
 
@@ -154,9 +164,7 @@ class DemoContentSeederTest extends TestCase
             Page::query()->count(),
             MenuItem::query()->count(),
             Highlight::query()->count(),
-            Testimonial::query()->count(),
-            TeamMember::query()->count(),
-            Milestone::query()->count(),
+            Media::query()->count(),
             Setting::query()->count(),
         ];
         $before = $counts();
@@ -176,8 +184,9 @@ class DemoContentSeederTest extends TestCase
 
         $this->assertSame('Website care plans', $service->fresh(['translations'])?->translation('en')?->title);
         $this->assertSame(6, Service::query()->published()->count());
+        $this->assertFalse(ServiceTranslation::query()->where('title', 'IT Consulting & Digital Transformation')->exists(), 'The last service is the one the site was short of.');
 
         $this->assertSame('hello@example.com', $settings->get(SettingKey::ContactEmail));
-        $this->assertSame('Sample: Monday to Friday, 09:00–18:00', $settings->localized(SettingKey::ContactHours, 'en'));
+        $this->assertSame('Software development and digital solutions', $settings->localized(SettingKey::SiteTagline, 'en'));
     }
 }

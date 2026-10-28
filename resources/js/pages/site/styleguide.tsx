@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from 'react';
+import { ServiceArt } from '@/components/site/art/service-art';
 import { PageHero } from '@/components/site/page-hero';
 import { ServiceList } from '@/components/site/service-list';
 import { Alert } from '@/components/ui/alert';
@@ -6,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Checkbox, Select, Textarea, TextInput } from '@/components/ui/field';
-import { Icon } from '@/components/ui/icon';
 import { useSitePage } from '@/hooks/use-site';
 import type { Crumb } from '@/types/site';
 
@@ -26,12 +26,15 @@ const swatches: Array<[string, string, string]> = [
     ['bg-muted', 'muted', '#6F6578'],
     ['bg-border', 'border', '#E8E1ED'],
     ['bg-border-strong', 'border-strong', '#8E8299'],
-    ['bg-purple-950', 'purple-950', '#2A0B3D'],
+    ['bg-night', 'night', '#160C20'],
+    ['bg-violet', 'violet', '#7B35B8'],
+    ['bg-orchid', 'orchid (decorative)', '#C86BB8'],
     ['bg-accent', 'accent (decorative)', '#F4B740'],
     ['bg-success', 'success', '#15803D'],
     ['bg-warning', 'warning', '#B45309'],
     ['bg-error', 'error', '#B42318'],
     ['bg-brand-gradient', 'logo gradient', '#3A1467 → #4F1468'],
+    ['bg-violet-band', 'call to action band', '#4C1A78 → #7B35B8'],
 ];
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -73,9 +76,10 @@ export default function Styleguide() {
                 <Section id="sg-type" title="Typography">
                     <div className="grid gap-4">
                         <p className="text-display">Software, engineered with care</p>
-                        <p className="text-h1">Heading one — العربية Türkçe</p>
-                        <p className="text-h2">Heading two</p>
-                        <p className="text-h3">Heading three</p>
+                        <p className="text-h1">Page title — العربية Türkçe</p>
+                        <p className="text-section">Section heading</p>
+                        <p className="text-title">Card title</p>
+                        <p className="text-eyebrow text-secondary">Eyebrow</p>
                         <p className="text-lead text-muted">Lead paragraph for introductions. Ağ geliştirme, şeffaf iletişim, İstanbul.</p>
                         <p lang="ar" dir="rtl" className="text-h3">
                             نص عربي بخط IBM Plex Sans Arabic
@@ -100,11 +104,16 @@ export default function Styleguide() {
                             Large
                         </Button>
                     </div>
-                    <div className="surface-dark flex flex-wrap gap-3 rounded-xl bg-purple-950 p-6">
+                    <div className="surface-dark flex flex-wrap gap-3 rounded-3xl bg-night-glow p-6">
                         <Button variant="on-dark" iconEnd="arrow-right">
                             On dark
                         </Button>
                         <Button variant="on-dark-outline">On dark outline</Button>
+                    </div>
+                    <div className="surface-dark flex flex-wrap gap-3 rounded-3xl bg-violet-band p-6">
+                        <Button variant="night" iconEnd="arrow-right">
+                            Night
+                        </Button>
                     </div>
                 </Section>
 
@@ -152,40 +161,38 @@ export default function Styleguide() {
                     </EmptyState>
                 </Section>
 
-                <Section id="sg-lists" title="Lists">
+                <Section id="sg-lists" title="Cards">
                     <ServiceList
                         services={[
-                            { id: 1, title: 'Web applications', summary: 'A ruled list instead of boxed cards.', icon: 'code', url: null },
-                            { id: 2, title: 'Mobile applications', summary: 'Icon, name and summary on one row.', icon: 'smartphone', url: null },
+                            { id: 1, title: 'Web Development', summary: 'Each service icon has its own picture.', icon: 'code', url: null },
+                            { id: 2, title: 'Mobile App Development', summary: 'The picture zooms a little on hover.', icon: 'smartphone', url: null },
+                            { id: 3, title: 'Other icons', summary: 'Icons without a picture show the icon itself.', icon: 'heart', url: null },
                         ]}
                     />
                 </Section>
 
-                <Section id="sg-motifs" title="Motifs">
+                <Section id="sg-motifs" title="Illustrations and surfaces">
+                    <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        {(['sparkles', 'layers', 'cloud', 'trending-up', 'code', 'smartphone'] as const).map((icon) => (
+                            <li key={icon} className="grid gap-2">
+                                <ServiceArt icon={icon} />
+                                <p className="text-sm text-muted" dir="ltr">
+                                    ServiceArt icon=&quot;{icon}&quot;
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
                     <div className="grid gap-6 md:grid-cols-3">
-                        <div className="grid place-items-center gap-3 rounded-xl border border-border p-8">
-                            <span className="notch-corner grid size-14 place-items-center rounded-lg bg-lavender text-primary">
-                                <Icon name="sparkles" size={26} />
-                            </span>
-                            <p className="text-sm text-muted">notch-corner</p>
+                        <div className="grid place-items-center rounded-3xl bg-art p-8">
+                            <p className="text-sm text-muted">bg-art</p>
                         </div>
-                        <div className="relative grid place-items-center overflow-hidden rounded-xl border border-border bg-lavender p-8">
-                            <div className="bg-grid absolute inset-0" aria-hidden="true" />
-                            <p className="relative text-sm text-muted">bg-grid</p>
+                        <div className="surface-dark grid place-items-center rounded-3xl bg-night-glow p-8">
+                            <p className="text-sm">bg-night-glow</p>
                         </div>
-                        <div className="surface-dark relative grid place-items-center overflow-hidden rounded-xl bg-purple-950 p-8">
-                            <div className="bg-diagonal absolute inset-0" aria-hidden="true" />
-                            <p className="relative text-sm">bg-diagonal</p>
+                        <div className="surface-dark grid place-items-center rounded-3xl bg-violet-band p-8">
+                            <p className="text-sm">bg-violet-band</p>
                         </div>
                     </div>
-                    <dl className="grid grid-cols-2 gap-x-10 gap-y-6 lg:slash-dividers lg:grid-flow-col lg:auto-cols-fr lg:grid-cols-none">
-                        {['12', '3', '24/7'].map((figure) => (
-                            <div key={figure} className="grid gap-1">
-                                <dt className="order-2 text-sm text-muted">slash-dividers</dt>
-                                <dd className="order-1 text-h1 text-primary">{figure}</dd>
-                            </div>
-                        ))}
-                    </dl>
                 </Section>
             </div>
         </>

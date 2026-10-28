@@ -59,7 +59,7 @@ export default function PostShow() {
 
             <div className="container-page py-section">
                 <div className="mx-auto grid w-full max-w-3xl min-w-0 gap-10">
-                    {post.cover && <ResponsiveImage image={post.cover} sizes="(min-width: 48rem) 48rem, 100vw" eager className="w-full rounded-2xl border border-border object-cover" />}
+                    {post.cover && <ResponsiveImage image={post.cover} sizes="(min-width: 48rem) 48rem, 100vw" eager className="w-full rounded-3xl bg-art object-cover" />}
 
                     {post.body !== '' && <Prose html={post.body} />}
 
@@ -89,7 +89,7 @@ export default function PostShow() {
                                                 <li key={tag.url}>
                                                     <SmartLink
                                                         href={tag.url}
-                                                        className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-lavender px-3 py-1 font-semibold text-primary transition-base hover:border-primary hover:underline"
+                                                        className="inline-flex items-center gap-1.5 rounded-full bg-lavender px-3.5 py-1.5 font-semibold text-primary transition-base hover:bg-lavender-strong"
                                                     >
                                                         <Icon name="tag" size={14} />
                                                         {tag.name}
@@ -106,12 +106,12 @@ export default function PostShow() {
             </div>
 
             {related.length > 0 && (
-                <section aria-labelledby="related-posts" className="border-t border-border bg-canvas py-section">
-                    <div className="container-page grid gap-8">
-                        <h2 id="related-posts" className="text-h2">
+                <section aria-labelledby="related-posts" className="border-t border-border py-section">
+                    <div className="container-page grid gap-12">
+                        <h2 id="related-posts" className="text-section">
                             {t('site.news.related')}
                         </h2>
-                        <ul className="grid gap-6 md:grid-cols-3">
+                        <ul className="grid gap-x-6 gap-y-12 md:grid-cols-3">
                             {related.map((item) => (
                                 <li key={item.id}>
                                     <PostCard post={item} headingLevel={3} />

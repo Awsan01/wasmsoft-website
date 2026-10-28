@@ -89,7 +89,7 @@ export function ContactForm({ fields, topics, data, errors, failure, processing,
 
     return (
         <>
-            <Heading id="contact-form-title" className="text-h3">
+            <Heading id="contact-form-title" className="text-title">
                 {t('site.contact.form_title')}
             </Heading>
             <p className="mt-2 text-sm text-muted">{t('site.contact.required_note')}</p>
@@ -222,7 +222,7 @@ export function ContactSent({ headingLevel = 2, children }: { headingLevel?: 2 |
             <span className="grid size-12 place-items-center rounded-full bg-success-soft text-success">
                 <Icon name="check-circle" size={24} />
             </span>
-            <Heading id="contact-form-title" className="text-h3">
+            <Heading id="contact-form-title" className="text-title">
                 {t('site.contact.sent_title')}
             </Heading>
             <p className="text-muted">{t('site.contact.sent_text')}</p>

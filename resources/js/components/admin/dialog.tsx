@@ -28,19 +28,17 @@ export function clickedBackdrop(event: MouseEvent<HTMLDialogElement>): boolean {
 }
 
 /**
- * Modal dialog on the native <dialog> element: the browser contains focus,
- * closes it with Escape, makes the page behind it inert and returns focus
- * to where it was. Clicking the backdrop closes it too.
+ * Keeps a modal <dialog> in step with React state; spread the result on the
+ * element. The dialog opens and closes with `open`, and Escape, a click on
+ * the backdrop or a close by the browser call `onClose`.
  *
- * It is rendered at the end of the document, so a dialog opened from a
- * field of a form never puts a form inside that form. React events still
- * reach the components around it: a form inside a dialog stops its submit
- * event (see the image picker).
+ * The browser closes the dialog at once on Escape but sends its close event
+ * later (the event is queued), so the state follows the cancel event that
+ * comes first; otherwise a dialog opened again in between would not open,
+ * or the late close event would close it again. That late event is ignored.
  */
-export function Dialog({ open, onClose, title, description, size = 'md', footer, children }: DialogProps) {
-    const { t } = useTranslation();
+export function useModalDialog(open: boolean, onClose: () => void) {
     const ref = useRef<HTMLDialogElement>(null);
-    const id = useId();
 
     useEffect(() => {
         const dialog = ref.current;
@@ -52,14 +50,43 @@ export function Dialog({ open, onClose, title, description, size = 'md', footer,
         }
     }, [open]);
 
+    return {
+        ref,
+        onCancel: () => onClose(),
+        onClose: () => {
+            if (open && !ref.current?.open) {
+                onClose();
+            }
+        },
+        onClick: (event: MouseEvent<HTMLDialogElement>) => {
+            if (clickedBackdrop(event)) {
+                onClose();
+            }
+        },
+    };
+}
+
+/**
+ * Modal dialog on the native <dialog> element: the browser contains focus,
+ * closes it with Escape, makes the page behind it inert and returns focus
+ * to where it was. Clicking the backdrop closes it too.
+ *
+ * It is rendered at the end of the document, so a dialog opened from a
+ * field of a form never puts a form inside that form. React events still
+ * reach the components around it: a form inside a dialog stops its submit
+ * event (see the image picker).
+ */
+export function Dialog({ open, onClose, title, description, size = 'md', footer, children }: DialogProps) {
+    const { t } = useTranslation();
+    const modal = useModalDialog(open, onClose);
+    const id = useId();
+
     return createPortal(
         <dialog
-            ref={ref}
+            {...modal}
             // The title is only rendered while the dialog is open.
             aria-labelledby={open ? `${id}-title` : undefined}
             aria-describedby={open && description ? `${id}-description` : undefined}
-            onClose={onClose}
-            onClick={(event) => clickedBackdrop(event) && onClose()}
             className={cn('m-auto max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-lg', widths[size])}
         >
             {open && (

@@ -89,6 +89,10 @@ export async function isSameDocument(page: Page): Promise<boolean> {
 
 /** Elements that make the page scroll sideways (WCAG 1.4.10 reflow), as short HTML excerpts. */
 export async function overflowingElements(page: Page): Promise<string[]> {
+    // Right after the window is resized, lengths in viewport units (vw) can still have their
+    // old values; the page is measured as it is drawn at the new size, two frames later.
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+
     return page.evaluate(() => {
         const width = document.documentElement.clientWidth;
 

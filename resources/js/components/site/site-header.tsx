@@ -11,7 +11,7 @@ import { LanguageMenu } from './language-menu';
 import { Logo } from './logo';
 
 const linkClasses =
-    'inline-flex h-control-sm items-center gap-1.5 rounded-md px-3.5 text-sm font-semibold text-ink/80 transition-base hover:bg-lavender hover:text-primary aria-[current=page]:text-primary aria-expanded:bg-lavender aria-expanded:text-primary';
+    'inline-flex h-10 items-center gap-1 rounded-full px-3.5 text-[0.9375rem] font-medium text-ink transition-base hover:text-secondary aria-[current=page]:text-secondary aria-expanded:text-secondary';
 
 /**
  * Site header: brand, the menu managed in the dashboard (links to the
@@ -51,19 +51,19 @@ export function SiteHeader({ scrolled }: { scrolled: boolean }) {
     return (
         <header
             data-scrolled={scrolled || mobileOpen ? '' : undefined}
-            className="sticky top-0 z-(--z-header) border-b border-transparent bg-surface/92 backdrop-blur-md transition-base data-scrolled:border-border data-scrolled:shadow-sm"
+            className="sticky top-0 z-(--z-header) border-b border-border/80 bg-surface/95 backdrop-blur-md transition-base data-scrolled:shadow-sm"
         >
-            <div className="container-page flex h-header items-center gap-4 lg:gap-8">
+            <div className="container-page flex h-header items-center gap-4 lg:gap-10">
                 <Logo href={site.homeUrl} name={site.name} src={site.logoUrl} />
 
                 <DesktopNav links={navigation.header} panels={navigation.panels} />
 
-                <div className="ms-auto flex items-center gap-2">
+                <div className="ms-auto flex items-center gap-2 sm:gap-3">
                     <LanguageMenu className="hidden sm:block" />
 
                     {/* Visibility lives on a wrapper: utilities on the button itself would clash with its own display class. */}
                     <div className="hidden sm:block">
-                        <Button href={projectStart} size="sm" iconEnd="arrow-right" prefetch>
+                        <Button href={projectStart} size="sm" prefetch>
                             {t('site.nav.cta')}
                         </Button>
                     </div>
@@ -75,7 +75,7 @@ export function SiteHeader({ scrolled }: { scrolled: boolean }) {
                         aria-controls="site-mobile-nav"
                         aria-label={mobileOpen ? t('ui.close_menu') : t('ui.open_menu')}
                         onClick={() => setMobileOpen((open) => !open)}
-                        className="inline-grid size-control-md place-items-center rounded-md text-ink transition-base hover:bg-lavender hover:text-primary lg:hidden"
+                        className="inline-grid size-control-md place-items-center rounded-full text-ink transition-base hover:bg-lavender hover:text-primary lg:hidden"
                     >
                         <Icon name={mobileOpen ? 'x' : 'menu'} size={22} />
                     </button>
@@ -178,16 +178,16 @@ function DesktopNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) 
                                 className={linkClasses}
                             >
                                 {link.label}
-                                <Icon name="chevron-down" size={16} className={cn('text-muted transition-base', isOpen && 'rotate-180')} />
+                                <Icon name="chevron-down" size={16} className={cn('transition-base', isOpen && 'rotate-180')} />
                             </button>
 
                             <div
                                 id={panelId}
                                 hidden={!isOpen}
                                 onPointerEnter={() => window.clearTimeout(hoverTimer.current)}
-                                className="absolute inset-x-0 top-full border-y border-border bg-surface shadow-lg"
+                                className="absolute inset-x-0 top-full border-t border-border bg-surface shadow-lg"
                             >
-                                <div className="container-page py-8">
+                                <div className="container-page py-10">
                                     {link.panel === 'services' && panels.services && <ServicesPanel link={link} services={panels.services} />}
                                     {link.panel === 'projects' && panels.projects && <ProjectsPanel link={link} projects={panels.projects} />}
                                 </div>
@@ -204,8 +204,8 @@ function PanelIntro({ link, children }: { link: NavLink; children?: ReactNode })
     const { t } = useTranslation();
 
     return (
-        <div className="grid content-start gap-5 border-e border-border pe-8">
-            <p className="text-h3">{link.label}</p>
+        <div className="grid content-start gap-5 border-e border-border pe-10">
+            <p className="text-section">{link.label}</p>
             {children}
             <div>
                 <Button href={link.url ?? '#'} variant="outline" size="sm" iconEnd="arrow-right" prefetch>
@@ -218,15 +218,15 @@ function PanelIntro({ link, children }: { link: NavLink; children?: ReactNode })
 
 function ServicesPanel({ link, services }: { link: NavLink; services: NonNullable<NavPanels['services']> }) {
     return (
-        <div className="grid grid-cols-[16rem_minmax(0,1fr)] gap-8">
+        <div className="grid grid-cols-[17rem_minmax(0,1fr)] gap-10">
             <PanelIntro link={link} />
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-2 xl:grid-cols-3">
                 {services.map((service) =>
                     service.url ? (
                         <li key={service.id}>
-                            <SmartLink href={service.url} prefetch className="group flex items-start gap-4 rounded-lg p-3 transition-base hover:bg-lavender">
-                                <span className="notch-corner grid size-10 shrink-0 place-items-center rounded-md bg-lavender text-primary transition-base group-hover:bg-surface">
-                                    <Icon name={service.icon} size={20} />
+                            <SmartLink href={service.url} prefetch className="group flex items-start gap-4 rounded-2xl p-3.5 transition-base hover:bg-lavender">
+                                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-lavender text-primary transition-base group-hover:bg-primary group-hover:text-white">
+                                    <Icon name={service.icon} size={19} />
                                 </span>
                                 <span className="grid gap-0.5">
                                     <span className="text-sm font-semibold text-ink group-hover:text-primary">{service.title}</span>
@@ -243,7 +243,7 @@ function ServicesPanel({ link, services }: { link: NavLink; services: NonNullabl
 
 function ProjectsPanel({ link, projects }: { link: NavLink; projects: NonNullable<NavPanels['projects']> }) {
     return (
-        <div className="grid grid-cols-[16rem_minmax(0,1fr)] gap-8">
+        <div className="grid grid-cols-[17rem_minmax(0,1fr)] gap-10">
             <PanelIntro link={link}>
                 {projects.categories.length > 0 && (
                     <ul className="grid gap-1">
@@ -262,8 +262,8 @@ function ProjectsPanel({ link, projects }: { link: NavLink; projects: NonNullabl
                 {projects.featured.map((project) =>
                     project.url ? (
                         <li key={project.id}>
-                            <SmartLink href={project.url} prefetch className="group grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-5 rounded-lg p-2 transition-base hover:bg-lavender">
-                                <span className="relative block aspect-4/3 overflow-hidden rounded-md bg-brand-gradient">
+                            <SmartLink href={project.url} prefetch className="group grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-5 rounded-2xl p-2.5 transition-base hover:bg-lavender">
+                                <span className="relative block aspect-4/3 overflow-hidden rounded-xl bg-art">
                                     {project.cover && <ResponsiveImage image={project.cover} sizes="9rem" className="size-full object-cover" />}
                                 </span>
                                 <span className="grid gap-1">
@@ -296,7 +296,7 @@ function MobileNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) {
                                     href={link.url}
                                     newTab={link.newTab}
                                     aria-current={link.current ? 'page' : undefined}
-                                    className="flex items-center justify-between rounded-md px-3 py-3 text-base font-semibold text-ink transition-base hover:bg-lavender hover:text-primary aria-[current=page]:bg-lavender aria-[current=page]:text-primary"
+                                    className="flex items-center justify-between rounded-xl px-3 py-3 text-base font-medium text-ink transition-base hover:bg-lavender hover:text-primary aria-[current=page]:bg-lavender aria-[current=page]:text-primary"
                                 >
                                     {link.label}
                                     <Icon name="chevron-right" size={18} className="text-muted" />
@@ -307,7 +307,7 @@ function MobileNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) {
                                         {panels.services.map((service) =>
                                             service.url ? (
                                                 <li key={service.id}>
-                                                    <SmartLink href={service.url} className="flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-muted transition-base hover:bg-lavender hover:text-primary">
+                                                    <SmartLink href={service.url} className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-muted transition-base hover:bg-lavender hover:text-primary">
                                                         <Icon name={service.icon} size={18} className="text-secondary" />
                                                         {service.title}
                                                     </SmartLink>
@@ -344,7 +344,7 @@ function MobileNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) {
                 </div>
             )}
 
-            <Button href={projectStart} iconEnd="arrow-right" block>
+            <Button href={projectStart} size="lg" block>
                 {t('site.nav.cta')}
             </Button>
         </div>

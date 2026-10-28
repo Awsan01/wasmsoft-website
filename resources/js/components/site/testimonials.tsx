@@ -43,8 +43,8 @@ export function Testimonials({ testimonials, labelledBy }: { testimonials: Testi
     };
 
     return (
-        <div className="grid gap-10 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-16">
-            <div role="tablist" aria-labelledby={labelledBy} onKeyDown={onKeyDown} className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
+        <div className="grid gap-8">
+            <div role="tablist" aria-labelledby={labelledBy} onKeyDown={onKeyDown} className="scrollbar-none flex gap-8 overflow-x-auto border-b border-border">
                 {testimonials.map((testimonial, index) => (
                     <button
                         key={testimonial.id}
@@ -59,8 +59,8 @@ export function Testimonials({ testimonials, labelledBy }: { testimonials: Testi
                         tabIndex={index === selected ? 0 : -1}
                         onClick={() => setSelected(index)}
                         className={cn(
-                            'grid shrink-0 gap-0.5 rounded-lg border-s-2 px-4 py-3 text-start transition-base',
-                            index === selected ? 'border-secondary bg-lavender' : 'border-border hover:border-purple-300 hover:bg-canvas',
+                            '-mb-px grid shrink-0 gap-0.5 border-b-2 pt-1 pb-4 text-start transition-base',
+                            index === selected ? 'border-primary' : 'border-transparent hover:border-purple-300',
                         )}
                     >
                         <span className="font-semibold text-ink">
@@ -83,7 +83,7 @@ export function Testimonials({ testimonials, labelledBy }: { testimonials: Testi
                     aria-labelledby={`${baseId}-tab-${index}`}
                     hidden={index !== selected}
                     tabIndex={0}
-                    className="rounded-xl focus-visible:outline-offset-8"
+                    className="rounded-3xl focus-visible:outline-offset-4"
                 >
                     <Quote testimonial={testimonial} />
                 </div>
@@ -94,9 +94,9 @@ export function Testimonials({ testimonials, labelledBy }: { testimonials: Testi
 
 function Quote({ testimonial }: { testimonial: Testimonial }) {
     return (
-        <figure className="grid content-start gap-8">
-            <Icon name="quote" size={40} className="text-purple-300" />
-            <blockquote className="text-2xl leading-snug font-semibold text-ink sm:text-3xl sm:leading-snug">
+        <figure className="grid content-start gap-8 rounded-3xl bg-lavender p-8 sm:p-12">
+            <Icon name="quote" size={36} className="text-secondary" />
+            <blockquote className="max-w-4xl text-[clamp(1.375rem,1rem+1.3vw,2rem)] leading-snug font-light text-ink">
                 <p>{testimonial.quote}</p>
             </blockquote>
             <figcaption className="flex items-center gap-4">

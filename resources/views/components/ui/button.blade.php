@@ -2,6 +2,7 @@
     Button / link-button.
     Renders an <a> when `href` is given, otherwise a <button>.
     Variants: primary, secondary, outline, ghost, danger, on-dark, on-dark-outline.
+    `pill` gives it the fully round ends of the public site's buttons.
 --}}
 @props([
     'variant' => 'primary',
@@ -11,10 +12,15 @@
     'icon' => null,
     'iconEnd' => null,
     'block' => false,
+    'pill' => false,
 ])
 
 @php
-    $sizes = [
+    $sizes = $pill ? [
+        'sm' => 'h-control-sm gap-1.5 px-4 text-sm',
+        'md' => 'h-control-md gap-2 px-6 text-sm',
+        'lg' => 'h-control-lg gap-2.5 px-8 text-base',
+    ] : [
         'sm' => 'h-control-sm gap-1.5 px-3.5 text-sm',
         'md' => 'h-control-md gap-2 px-5 text-sm',
         'lg' => 'h-control-lg gap-2.5 px-7 text-base',
@@ -33,7 +39,8 @@
     $iconSize = ['sm' => 16, 'md' => 18, 'lg' => 20][$size] ?? 18;
 
     $classes = implode(' ', [
-        'inline-flex shrink-0 items-center justify-center rounded-md font-semibold whitespace-nowrap select-none transition-base',
+        'inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap select-none transition-base',
+        $pill ? 'rounded-full' : 'rounded-md',
         'active:translate-y-px disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55',
         $sizes[$size] ?? $sizes['md'],
         $variants[$variant] ?? $variants['primary'],

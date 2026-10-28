@@ -1,8 +1,8 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { useTranslation } from '@/hooks/use-site';
-import { clickedBackdrop } from './dialog';
+import { useModalDialog } from './dialog';
 
 type ConfirmOptions = {
     message: string;
@@ -47,27 +47,15 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 /** Focus starts on "Cancel", the safe choice. */
 function ConfirmDialog({ request, onFinish }: { request: Request | null; onFinish: (confirmed: boolean) => void }) {
     const { t } = useTranslation();
-    const ref = useRef<HTMLDialogElement>(null);
+    const modal = useModalDialog(request !== null, () => onFinish(false));
     const id = useId();
-
-    useEffect(() => {
-        const dialog = ref.current;
-
-        if (request && dialog && !dialog.open) {
-            dialog.showModal();
-        } else if (!request && dialog?.open) {
-            dialog.close();
-        }
-    }, [request]);
 
     return (
         <dialog
-            ref={ref}
+            {...modal}
             // The texts are only rendered while a confirmation is asked for.
             aria-labelledby={request ? `${id}-title` : undefined}
             aria-describedby={request ? `${id}-message` : undefined}
-            onClose={() => request && onFinish(false)}
-            onClick={(event) => clickedBackdrop(event) && onFinish(false)}
             className="m-auto w-[calc(100vw-2rem)] max-w-md overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-lg"
         >
             {request && (

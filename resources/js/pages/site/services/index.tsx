@@ -20,8 +20,16 @@ export default function ServicesIndex() {
         <>
             <PageHero title={title} lead={lead} breadcrumbs={breadcrumbs} />
 
-            <section aria-label={title} className="container-page py-section">
-                {services.length === 0 ? <EmptyState title={t('site.services.empty')} icon="layers" /> : <ServiceList services={services} headingLevel={2} />}
+            <section aria-label={title} className="bg-lavender py-section-sm">
+                <div className="container-page">
+                    {services.length === 0 ? (
+                        <EmptyState title={t('site.services.empty')} icon="layers" />
+                    ) : (
+                        <div className="rounded-3xl bg-surface p-6 sm:p-8 lg:p-10">
+                            <ServiceList services={services} headingLevel={2} />
+                        </div>
+                    )}
+                </div>
             </section>
 
             <CtaBand />

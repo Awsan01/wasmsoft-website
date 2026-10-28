@@ -59,6 +59,19 @@
     --color-on-dark: #ffffff;
     --color-on-dark-muted: #c9b3dd;
 
+    /* Dark bands and the footer of the public site: the brand purple taken almost to black. */
+    --color-night: #160c20;
+    --color-night-soft: #241631;
+
+    /* The public site's closing call to action: a vivid band from the logo purple to violet. */
+    --color-violet-deep: #4c1a78;
+    --color-violet: #7b35b8;
+    --color-on-violet: #f3ebfa;
+
+    /* Soft glows and illustration backgrounds. Decorative only, never text. */
+    --color-orchid: #c86bb8;
+    --color-blush: #fbf0f7;
+
     --color-success: #15803d;
     --color-success-soft: #ecfdf3;
     --color-success-line: #abefc6;
@@ -84,6 +97,7 @@
     --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Code', Consolas, monospace;
 
     --font-weight-*: initial;
+    --font-weight-light: 300;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
@@ -138,6 +152,7 @@
     --radius-lg: 0.875rem;
     --radius-xl: 1.25rem;
     --radius-2xl: 1.75rem;
+    --radius-3xl: 2.25rem;
     --radius-full: 9999px;
 
     /* ------------------------------------------------------------------
@@ -148,6 +163,8 @@
     --shadow-sm: 0 1px 3px 0 rgb(33 21 43 / 0.08), 0 1px 2px -1px rgb(33 21 43 / 0.06);
     --shadow-md: 0 10px 28px -12px rgb(72 20 103 / 0.22), 0 2px 6px -2px rgb(33 21 43 / 0.06);
     --shadow-lg: 0 28px 56px -24px rgb(72 20 103 / 0.32), 0 8px 16px -8px rgb(33 21 43 / 0.08);
+    /* Floating interface pieces in the public site's illustrations. */
+    --shadow-float: 0 30px 60px -28px rgb(72 20 103 / 0.45), 0 10px 24px -14px rgb(33 21 43 / 0.18);
 
     /* ------------------------------------------------------------------
      * Motion

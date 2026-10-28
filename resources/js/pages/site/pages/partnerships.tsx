@@ -26,16 +26,15 @@ export default function Partnerships() {
             <PageHero title={page.title} lead={page.summary} breadcrumbs={breadcrumbs} />
 
             {page.body !== '' && (
-                <div className="container-page py-section">
+                <div className="container-page pt-section-sm pb-section">
                     <Prose html={page.body} />
                 </div>
             )}
 
             {models.length > 0 && (
-                <section aria-labelledby="partnership-models" className="relative isolate overflow-hidden border-y border-border bg-lavender py-section">
-                    <div className="bg-grid absolute inset-0 -z-10" aria-hidden="true" />
+                <section aria-labelledby="partnership-models" className="bg-lavender py-section">
                     <div className="container-page grid gap-12">
-                        <h2 id="partnership-models" className="text-h2">
+                        <h2 id="partnership-models" className="text-section">
                             {t('site.partnerships.models_title')}
                         </h2>
                         <HighlightList highlights={models} />

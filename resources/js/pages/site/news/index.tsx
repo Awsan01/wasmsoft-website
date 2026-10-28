@@ -32,7 +32,7 @@ export default function NewsIndex() {
                 <FilterChips label={t('site.news.filter')} filters={filters} />
             </PageHero>
 
-            <section aria-label={title} className="container-page grid gap-10 py-section">
+            <section aria-label={title} className="container-page grid gap-14 pt-section-sm pb-section">
                 {!first ? (
                     <EmptyState
                         title={t('site.news.empty')}
@@ -47,10 +47,10 @@ export default function NewsIndex() {
                     />
                 ) : (
                     <>
-                        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <ul className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                             {featureFirst ? (
-                                <li className="sm:col-span-2 lg:col-span-3">
-                                    <PostCard post={first} variant="feature" sizes="(min-width: 64rem) 76rem, 100vw" className="lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]" />
+                                <li className="border-b border-border pb-12 sm:col-span-2 lg:col-span-3">
+                                    <PostCard post={first} variant="feature" sizes="(min-width: 64rem) 42rem, 100vw" />
                                 </li>
                             ) : (
                                 <li>

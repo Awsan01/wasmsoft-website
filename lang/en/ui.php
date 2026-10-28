@@ -29,6 +29,11 @@ return [
     'choose_files' => 'Choose files',
     'no_file_chosen' => 'No file chosen',
 
+    'carousel' => [
+        'previous' => 'Show previous items',
+        'next' => 'Show next items',
+    ],
+
     'pagination' => [
         'label' => 'Pagination',
         'previous' => 'Previous page',

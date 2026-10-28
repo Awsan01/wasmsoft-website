@@ -8,8 +8,8 @@ use Illuminate\Database\Seeder;
 use RuntimeException;
 
 /**
- * Local development data: one demo account per role, then clearly marked
- * placeholder content (DemoContentSeeder).
+ * Local development data: one demo account per role, then demonstration
+ * content for every page (DemoContentSeeder).
  *
  * All accounts share the password in DEV_SEED_PASSWORD (see .env.example).
  * Refuses to run anywhere but local and testing environments.

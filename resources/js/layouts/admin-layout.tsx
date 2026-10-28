@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ConfirmProvider } from '@/components/admin/confirm';
-import { clickedBackdrop } from '@/components/admin/dialog';
+import { useModalDialog } from '@/components/admin/dialog';
 import { FlashMessages } from '@/components/admin/flash-messages';
 import { Sidebar } from '@/components/admin/sidebar';
 import { Topbar } from '@/components/admin/topbar';
@@ -19,23 +19,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const { locale } = useAdminPage();
     const { t } = useTranslation();
     const mainRef = useRef<HTMLElement>(null);
-    const drawerRef = useRef<HTMLDialogElement>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const drawer = useModalDialog(drawerOpen, () => setDrawerOpen(false));
     const announcement = usePageFocus(mainRef);
 
     useDocumentLocale(locale);
 
     useEffect(() => router.on('start', () => setDrawerOpen(false)), []);
-
-    useEffect(() => {
-        const drawer = drawerRef.current;
-
-        if (drawerOpen && drawer && !drawer.open) {
-            drawer.showModal();
-        } else if (!drawerOpen && drawer?.open) {
-            drawer.close();
-        }
-    }, [drawerOpen]);
 
     return (
         <ConfirmProvider>
@@ -48,13 +38,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     <Sidebar idPrefix="sidebar" />
                 </aside>
 
-                <dialog
-                    ref={drawerRef}
-                    aria-label={t('admin.nav.label')}
-                    onClose={() => setDrawerOpen(false)}
-                    onClick={(event) => clickedBackdrop(event) && setDrawerOpen(false)}
-                    className="admin-drawer lg:hidden"
-                >
+                <dialog {...drawer} aria-label={t('admin.nav.label')} className="admin-drawer lg:hidden">
                     {drawerOpen && <Sidebar idPrefix="drawer" onClose={() => setDrawerOpen(false)} />}
                 </dialog>
 

@@ -120,8 +120,10 @@ async function checkErrors(page, url, form, { inPlace = false } = {}) {
 async function inspect(page, status, label) {
     const findings = await audit(page);
 
-    // The small-screen layout (navigation drawer, scrolling tables) is checked too.
+    // The small-screen layout (navigation drawer, scrolling tables) is checked too, as drawn
+    // at that size: right after resizing, lengths in viewport units can keep their old values.
     await page.setViewportSize(NARROW);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     for (const finding of await audit(page)) {
         if (!findings.some((known) => known.id === finding.id)) {
             findings.push(finding);

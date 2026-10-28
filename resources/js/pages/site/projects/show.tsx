@@ -1,7 +1,6 @@
 import { CtaBand } from '@/components/site/cta-band';
 import { PageHero } from '@/components/site/page-hero';
 import { ProjectCard } from '@/components/site/project-card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ResponsiveImage } from '@/components/ui/image';
 import { Prose } from '@/components/ui/prose';
@@ -34,21 +33,25 @@ export default function ProjectShow() {
         <>
             <PageHero title={project.title} lead={project.summary} kicker={project.category} breadcrumbs={breadcrumbs} />
 
-            <div className={hasDetails ? 'container-page grid gap-12 py-section lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16' : 'container-page py-section'}>
-                <div className="grid min-w-0 content-start gap-10">
-                    {project.cover && <ResponsiveImage image={project.cover} sizes="(min-width: 64rem) 46rem, 100vw" eager className="w-full rounded-2xl border border-border object-cover" />}
+            {project.cover && (
+                <div className="container-page">
+                    <ResponsiveImage image={project.cover} sizes="(min-width: 76rem) 76rem, 100vw" eager className="max-h-[40rem] w-full rounded-3xl bg-art object-cover" />
+                </div>
+            )}
 
+            <div className={hasDetails ? 'container-page grid gap-12 py-section lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16' : 'container-page py-section'}>
+                <div className="grid min-w-0 content-start gap-12">
                     {project.body !== '' && <Prose html={project.body} />}
 
                     {project.gallery.length > 0 && (
-                        <section aria-labelledby="project-gallery" className="grid gap-5">
-                            <h2 id="project-gallery" className="text-h3">
+                        <section aria-labelledby="project-gallery" className="grid gap-6">
+                            <h2 id="project-gallery" className="text-title">
                                 {t('site.projects.gallery')}
                             </h2>
                             <ul className="grid gap-4 sm:grid-cols-2">
                                 {project.gallery.map(({ image, url }) => (
                                     <li key={url}>
-                                        <a href={url} target="_blank" rel="noopener" className="block overflow-hidden rounded-xl border border-border">
+                                        <a href={url} target="_blank" rel="noopener" className="block overflow-hidden rounded-2xl">
                                             <ResponsiveImage image={image} sizes="(min-width: 64rem) 23rem, (min-width: 40rem) 50vw, 100vw" className="aspect-4/3 w-full object-cover transition-base hover:scale-105" />
                                             <span className="sr-only">
                                                 {t('site.projects.open_image')} {t('ui.opens_in_new_tab')}
@@ -62,12 +65,12 @@ export default function ProjectShow() {
                 </div>
 
                 {hasDetails && (
-                    <aside className="grid content-start gap-6 lg:sticky lg:top-[calc(var(--spacing-header)+2rem)]">
-                        <div className="rounded-xl border border-border bg-surface p-7 shadow-xs">
-                            <h2 className="text-h3">{t('site.projects.details')}</h2>
-                            <dl className="mt-5 grid gap-4 text-sm">
+                    <aside className="grid content-start gap-6 lg:sticky lg:top-[calc(var(--spacing-header)+2rem)] lg:self-start">
+                        <div className="rounded-3xl bg-lavender p-7 sm:p-8">
+                            <h2 className="text-title">{t('site.projects.details')}</h2>
+                            <dl className="mt-6 grid gap-5 text-sm">
                                 {project.client && (
-                                    <div className="grid gap-0.5">
+                                    <div className="grid gap-1">
                                         <dt className="text-muted">{t('site.projects.client')}</dt>
                                         <dd className="font-semibold">
                                             <bdi>{project.client}</bdi>
@@ -75,13 +78,13 @@ export default function ProjectShow() {
                                     </div>
                                 )}
                                 {project.category && (
-                                    <div className="grid gap-0.5">
+                                    <div className="grid gap-1">
                                         <dt className="text-muted">{t('site.projects.category')}</dt>
                                         <dd className="font-semibold">{project.category}</dd>
                                     </div>
                                 )}
                                 {project.completedOn && (
-                                    <div className="grid gap-0.5">
+                                    <div className="grid gap-1">
                                         <dt className="text-muted">{t('site.projects.completed')}</dt>
                                         <dd className="font-semibold">
                                             <time dateTime={project.completedOn.iso}>{project.completedOn.label}</time>
@@ -94,8 +97,8 @@ export default function ProjectShow() {
                                         <dd>
                                             <ul className="flex flex-wrap gap-1.5" dir="ltr">
                                                 {project.technologies.map((technology) => (
-                                                    <li key={technology}>
-                                                        <Badge tone="primary">{technology}</Badge>
+                                                    <li key={technology} className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-primary">
+                                                        {technology}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -105,7 +108,7 @@ export default function ProjectShow() {
                             </dl>
 
                             {project.website && (
-                                <Button href={project.website} newTab variant="outline" iconEnd="external-link" className="mt-6" block>
+                                <Button href={project.website} newTab variant="outline" iconEnd="external-link" className="mt-7" block>
                                     {t('site.projects.visit')}
                                     <span className="sr-only"> {t('ui.opens_in_new_tab')}</span>
                                 </Button>
@@ -116,12 +119,12 @@ export default function ProjectShow() {
             </div>
 
             {related.length > 0 && (
-                <section aria-labelledby="related-projects" className="border-t border-border bg-canvas py-section">
-                    <div className="container-page grid gap-8">
-                        <h2 id="related-projects" className="text-h2">
+                <section aria-labelledby="related-projects" className="border-t border-border py-section">
+                    <div className="container-page grid gap-12">
+                        <h2 id="related-projects" className="text-section">
                             {t('site.projects.related')}
                         </h2>
-                        <ul className="grid gap-6 md:grid-cols-3">
+                        <ul className="grid gap-x-6 gap-y-12 md:grid-cols-3">
                             {related.map((item) => (
                                 <li key={item.id}>
                                     <ProjectCard project={item} headingLevel={3} />

@@ -64,12 +64,12 @@ class HomeControllerTest extends TestCase
             ->where('projects.1.title', 'Recent project'));
     }
 
-    public function test_the_page_shows_at_most_five_projects_and_three_articles(): void
+    public function test_the_page_shows_at_most_six_projects_and_three_articles(): void
     {
-        Project::factory()->count(6)->published()->translated(['en'])->create();
+        Project::factory()->count(7)->published()->translated(['en'])->create();
         Post::factory()->count(4)->published()->translated(['en'])->create();
 
-        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('projects', 5)->has('posts', 3));
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('projects', 6)->has('posts', 3));
     }
 
     public function test_highlights_and_figures_appear_only_in_the_languages_they_are_written_in(): void

@@ -6,27 +6,55 @@
  * line-height and must never be letter-spaced.
  */
 
+/* The home page headline: large and light, in the public site only. */
 @utility text-display {
-    font-size: var(--text-5xl);
+    font-size: clamp(2.5rem, 1.4rem + 3.8vw, 4.25rem);
     line-height: 1.06;
-    letter-spacing: -0.028em;
-    font-weight: var(--font-weight-extrabold);
+    letter-spacing: -0.032em;
+    font-weight: var(--font-weight-light);
 
     &:lang(ar) {
         line-height: 1.32;
-        font-weight: var(--font-weight-bold);
+        font-weight: var(--font-weight-normal);
     }
 }
 
+/* The title of an inner page of the public site. */
 @utility text-h1 {
-    font-size: var(--text-4xl);
-    line-height: 1.12;
-    letter-spacing: -0.022em;
-    font-weight: var(--font-weight-extrabold);
+    font-size: clamp(2.25rem, 1.55rem + 2.5vw, 3.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.028em;
+    font-weight: var(--font-weight-light);
 
     &:lang(ar) {
         line-height: 1.38;
-        font-weight: var(--font-weight-bold);
+        font-weight: var(--font-weight-normal);
+    }
+}
+
+/* Section headings of the public site (the dashboard uses text-h2). */
+@utility text-section {
+    font-size: clamp(2rem, 1.5rem + 1.8vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -0.024em;
+    font-weight: var(--font-weight-light);
+
+    &:lang(ar) {
+        line-height: 1.42;
+        font-weight: var(--font-weight-normal);
+    }
+}
+
+/* Titles of cards and list items in the public site. */
+@utility text-title {
+    font-size: var(--text-xl);
+    line-height: 1.35;
+    letter-spacing: -0.012em;
+    font-weight: var(--font-weight-medium);
+
+    &:lang(ar) {
+        line-height: 1.6;
+        font-weight: var(--font-weight-semibold);
     }
 }
 
@@ -61,14 +89,17 @@
     }
 }
 
+/* The short label above a few section headings of the public site. */
 @utility text-eyebrow {
-    font-size: var(--text-sm);
-    line-height: 1.25rem;
+    font-size: var(--text-xs);
+    line-height: 1rem;
     font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
 
     &:lang(ar) {
+        font-size: var(--text-sm);
+        line-height: 1.25rem;
         text-transform: none;
     }
 }
@@ -119,16 +150,7 @@
     mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 25%, transparent 80%);
 }
 
-/* 45° pinstripes, echoing the diagonal bar of the logo (for dark surfaces). */
-@utility bg-diagonal {
-    background-image: repeating-linear-gradient(
-        135deg,
-        color-mix(in oklab, var(--color-white) 7%, transparent) 0 1px,
-        transparent 1px 22px
-    );
-}
-
-/* Chamfered corner, like the notched squares in the logo. Mirrors in RTL. */
+/* Chamfered corner, like the notched squares in the logo (dashboard). Mirrors in RTL. */
 @utility notch-corner {
     --notch: 0.875rem;
     clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
@@ -138,35 +160,52 @@
     }
 }
 
-/* Short diagonal slash used before eyebrow labels. */
-@utility slash-mark {
-    display: inline-block;
-    inline-size: 0.75rem;
-    block-size: 2px;
-    border-radius: var(--radius-full);
-    background-color: currentColor;
-    transform: rotate(-55deg);
+/* Dark band of the public site, lit by two soft purple glows. */
+@utility bg-night-glow {
+    background-color: var(--color-night);
+    background-image:
+        radial-gradient(55% 70% at 88% 0%, rgb(123 53 184 / 0.42), transparent 72%),
+        radial-gradient(45% 60% at 6% 100%, rgb(200 107 184 / 0.16), transparent 72%);
 }
 
-/* Items in a row divided by the logo's slash (figures); use with a breakpoint, e.g. lg:slash-dividers. */
-@utility slash-dividers {
-    & > * + * {
-        position: relative;
+/* The vivid band of the closing call to action. */
+@utility bg-violet-band {
+    background-color: var(--color-violet-deep);
+    background-image:
+        radial-gradient(60% 90% at 50% 0%, rgb(200 107 184 / 0.32), transparent 70%),
+        linear-gradient(115deg, var(--color-violet-deep), var(--color-violet));
+}
+
+/* Background of an illustration: lavender into blush. */
+@utility bg-art {
+    background-color: var(--color-lavender);
+    background-image:
+        radial-gradient(70% 80% at 85% 15%, var(--color-blush), transparent 70%),
+        linear-gradient(160deg, var(--color-lavender), var(--color-lavender-strong));
+}
+
+/*
+ * A horizontal rail that starts at the page's content edge and runs to the
+ * edge of the screen (the home page's projects): each item snaps to the start.
+ */
+@utility rail {
+    --rail-inset: max(var(--spacing-gutter), calc((100% - var(--container-page)) / 2));
+    display: grid;
+    grid-auto-flow: column;
+    gap: 1.25rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--rail-inset);
+    padding-inline: var(--rail-inset);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
     }
 
-    & > * + *::before {
-        content: '';
-        position: absolute;
-        inset-block: 0.5rem;
-        inset-inline-start: calc(var(--slash-gap, 2.5rem) / -2);
-        inline-size: 2px;
-        border-radius: var(--radius-full);
-        background-color: var(--color-accent);
-        transform: skewX(-18deg);
-    }
-
-    &:dir(rtl) > * + *::before {
-        transform: skewX(18deg);
+    & > * {
+        scroll-snap-align: start;
     }
 }
 
@@ -175,7 +214,7 @@
  * ---------------------------------------------------------------------- */
 
 @utility transition-base {
-    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, scale, rotate;
     transition-duration: var(--motion-base);
     transition-timing-function: var(--ease-standard);
 }

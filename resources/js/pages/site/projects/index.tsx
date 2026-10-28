@@ -34,7 +34,7 @@ export default function ProjectsIndex() {
                 </div>
             </PageHero>
 
-            <section aria-label={title} className="container-page grid gap-10 py-section">
+            <section aria-label={title} className="container-page grid gap-14 pt-section-sm pb-section">
                 {projects.length === 0 ? (
                     <EmptyState
                         title={search.value !== '' ? t('site.projects.no_results') : t('site.projects.empty')}
@@ -49,7 +49,7 @@ export default function ProjectsIndex() {
                     />
                 ) : (
                     <>
-                        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <ul className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                             {projects.map((project) => (
                                 <li key={project.id}>
                                     <ProjectCard project={project} />
@@ -87,7 +87,7 @@ function ProjectSearch({ search }: { search: ProjectsIndexProps['search'] }) {
     };
 
     return (
-        <form method="GET" action={search.action} role="search" onSubmit={submit} className="flex gap-2">
+        <form method="GET" action={search.action} role="search" onSubmit={submit} className="flex gap-2 sm:items-center">
             {search.category && <input type="hidden" name="category" value={search.category} />}
             <label htmlFor="project-search" className="sr-only">
                 {t('site.projects.search')}
@@ -100,7 +100,7 @@ function ProjectSearch({ search }: { search: ProjectsIndexProps['search'] }) {
                 onChange={(event) => setQuery(event.target.value)}
                 maxLength={100}
                 placeholder={t('site.projects.search')}
-                className="form-control bg-surface sm:w-64"
+                className="form-control rounded-full bg-surface ps-5 sm:w-72"
             />
             <Button type="submit" variant="outline" icon="search">
                 {t('ui.search')}

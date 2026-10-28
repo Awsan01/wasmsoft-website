@@ -17,9 +17,10 @@ export default defineConfig({
             fonts: [
                 fontsource('Plus Jakarta Sans', {
                     alias: 'jakarta',
-                    weights: [400, 500, 600, 700, 800],
+                    // 300 is the public site's headlines, 800 the dashboard's.
+                    weights: [300, 400, 500, 600, 700, 800],
                     subsets: ['latin', 'latin-ext'],
-                    preload: [{ weight: 400 }, { weight: 700 }],
+                    preload: [{ weight: 300 }, { weight: 400 }],
                 }),
                 fontsource('IBM Plex Sans Arabic', {
                     alias: 'plex-arabic',

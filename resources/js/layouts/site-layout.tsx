@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { SiteFooter } from '@/components/site/site-footer';
 import { SiteHeader } from '@/components/site/site-header';
+import { ButtonShapeContext } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { useSitePage, useTranslation } from '@/hooks/use-site';
 
@@ -9,7 +10,8 @@ import { useSitePage, useTranslation } from '@/hooks/use-site';
  * Layout of every public page. It stays mounted while visitors move between
  * pages (Inertia's persistent layout): after each visit to another page,
  * focus moves to the main content and the new page title is announced, as
- * a full page load would do for screen reader users.
+ * a full page load would do for screen reader users. Its buttons have fully
+ * round ends and its form controls the site's own proportions.
  */
 export default function SiteLayout({ children }: { children: ReactNode }) {
     const { preview } = useSitePage();
@@ -49,32 +51,34 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <div className="relative flex min-h-dvh flex-col">
-            <div ref={sentinelRef} className="pointer-events-none absolute inset-x-0 top-0 h-px" aria-hidden="true" />
-            <a href="#main" className="skip-link">
-                {t('ui.skip_to_content')}
-            </a>
+        <ButtonShapeContext value="pill">
+            <div className="site-theme relative flex min-h-dvh flex-col">
+                <div ref={sentinelRef} className="pointer-events-none absolute inset-x-0 top-0 h-px" aria-hidden="true" />
+                <a href="#main" className="skip-link">
+                    {t('ui.skip_to_content')}
+                </a>
 
-            {preview && (
-                <div role="status" className="border-b border-warning-line bg-warning-soft text-warning-ink">
-                    <p className="container-page flex items-center gap-2 py-2.5 text-sm font-semibold">
-                        <Icon name="eye" size={18} />
-                        {t('site.preview.banner')}
-                    </p>
-                </div>
-            )}
+                {preview && (
+                    <div role="status" className="border-b border-warning-line bg-warning-soft text-warning-ink">
+                        <p className="container-page flex items-center gap-2 py-2.5 text-sm font-semibold">
+                            <Icon name="eye" size={18} />
+                            {t('site.preview.banner')}
+                        </p>
+                    </div>
+                )}
 
-            <SiteHeader scrolled={scrolled} />
+                <SiteHeader scrolled={scrolled} />
 
-            <main ref={mainRef} id="main" tabIndex={-1} className="flex-1 focus:outline-none">
-                {children}
-            </main>
+                <main ref={mainRef} id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+                    {children}
+                </main>
 
-            <SiteFooter />
+                <SiteFooter />
 
-            <p className="sr-only" aria-live="polite" aria-atomic="true">
-                {announcement}
-            </p>
-        </div>
+                <p className="sr-only" aria-live="polite" aria-atomic="true">
+                    {announcement}
+                </p>
+            </div>
+        </ButtonShapeContext>
     );
 }

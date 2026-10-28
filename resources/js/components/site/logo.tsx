@@ -9,6 +9,8 @@ type LogoProps = {
     size?: number;
     /** Without the name next to it, the image carries the name as its text alternative. */
     showName?: boolean;
+    /** The large lock-up at the end of the footer. */
+    large?: boolean;
     className?: string;
 };
 
@@ -16,12 +18,14 @@ type LogoProps = {
  * Brand lock-up: the supplied Wasmsoft logo, used unaltered, followed by the
  * company name. The image is decorative because the name is written next to it.
  */
-export function Logo({ href, name, src, tone = 'default', size = 40, showName = true, className }: LogoProps) {
-    const classes = cn('group inline-flex shrink-0 items-center gap-3 rounded-md', className);
+export function Logo({ href, name, src, tone = 'default', size = 40, showName = true, large = false, className }: LogoProps) {
+    const classes = cn('group inline-flex shrink-0 items-center rounded-md', large ? 'gap-4' : 'gap-3', className);
     const content = (
         <>
             <img src={src} width={size} height={size} alt={showName ? '' : name} decoding="async" className={cn('shrink-0 rounded-sm object-cover', tone === 'dark' && 'ring-1 ring-white/15')} />
-            {showName && <span className={cn('text-xl leading-none font-extrabold', tone === 'dark' ? 'text-white' : 'text-primary')}>{name}</span>}
+            {showName && (
+                <span className={cn('leading-none font-extrabold', large ? 'text-4xl tracking-tight sm:text-5xl' : 'text-xl', tone === 'dark' ? 'text-white' : 'text-primary')}>{name}</span>
+            )}
         </>
     );
 

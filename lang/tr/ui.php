@@ -29,6 +29,11 @@ return [
     'choose_files' => 'Dosyaları seç',
     'no_file_chosen' => 'Dosya seçilmedi',
 
+    'carousel' => [
+        'previous' => 'Önceki öğeleri göster',
+        'next' => 'Sonraki öğeleri göster',
+    ],
+
     'pagination' => [
         'label' => 'Sayfalama',
         'previous' => 'Önceki sayfa',

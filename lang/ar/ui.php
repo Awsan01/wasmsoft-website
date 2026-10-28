@@ -29,6 +29,11 @@ return [
     'choose_files' => 'اختيار الملفات',
     'no_file_chosen' => 'لم يُختر أي ملف',
 
+    'carousel' => [
+        'previous' => 'عرض العناصر السابقة',
+        'next' => 'عرض العناصر التالية',
+    ],
+
     'pagination' => [
         'label' => 'التنقل بين الصفحات',
         'previous' => 'الصفحة السابقة',

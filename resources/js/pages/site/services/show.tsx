@@ -1,3 +1,4 @@
+import { ServiceArt } from '@/components/site/art/service-art';
 import { PageHero } from '@/components/site/page-hero';
 import { ServiceList } from '@/components/site/service-list';
 import { Button } from '@/components/ui/button';
@@ -20,9 +21,9 @@ export default function ServiceShow() {
 
     return (
         <>
-            <PageHero title={service.title} lead={service.summary} breadcrumbs={breadcrumbs}>
-                <div>
-                    <Button href={contactUrl} iconEnd="arrow-right" prefetch>
+            <PageHero title={service.title} lead={service.summary} breadcrumbs={breadcrumbs} aside={<ServiceArt icon={service.icon} className="rounded-3xl" />}>
+                <div className="pt-2">
+                    <Button href={contactUrl} size="lg" prefetch>
                         {t('site.services.cta_button')}
                     </Button>
                 </div>
@@ -30,18 +31,18 @@ export default function ServiceShow() {
 
             <div className="container-page grid gap-12 py-section lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
                 <div className="grid min-w-0 content-start gap-10">
-                    {service.image && <ResponsiveImage image={service.image} sizes="(min-width: 64rem) 46rem, 100vw" eager className="w-full rounded-2xl border border-border object-cover" />}
+                    {service.image && <ResponsiveImage image={service.image} sizes="(min-width: 64rem) 46rem, 100vw" className="w-full rounded-3xl object-cover" />}
                     {service.body !== '' && <Prose html={service.body} />}
                 </div>
 
-                <aside className="grid content-start gap-6 lg:sticky lg:top-[calc(var(--spacing-header)+2rem)]">
+                <aside className="grid content-start gap-6 lg:sticky lg:top-[calc(var(--spacing-header)+2rem)] lg:self-start">
                     {service.benefits.length > 0 && (
-                        <div className="rounded-xl border border-border bg-surface p-7 shadow-xs">
-                            <h2 className="text-h3">{t('site.services.benefits')}</h2>
-                            <ul className="mt-5 grid gap-3">
+                        <div className="rounded-3xl bg-lavender p-7 sm:p-8">
+                            <h2 className="text-title">{t('site.services.benefits')}</h2>
+                            <ul className="mt-6 grid gap-4">
                                 {service.benefits.map((benefit, index) => (
                                     <li key={index} className="flex items-start gap-3">
-                                        <span className="mt-1 grid size-6 shrink-0 place-items-center rounded-full bg-success-soft text-success">
+                                        <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-primary text-white">
                                             <Icon name="check" size={14} />
                                         </span>
                                         <span>{benefit}</span>
@@ -51,28 +52,27 @@ export default function ServiceShow() {
                         </div>
                     )}
 
-                    <div className="surface-dark relative overflow-hidden rounded-2xl bg-brand-gradient p-7">
-                        <div className="bg-diagonal pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
-                        <div className="relative grid gap-4">
-                            <h2 className="text-h3 text-white">{t('site.services.cta_title')}</h2>
-                            <p className="text-sm text-on-dark-muted">{t('site.services.cta_text')}</p>
-                            <div>
-                                <Button href={contactUrl} variant="on-dark" iconEnd="arrow-right">
-                                    {t('site.services.cta_button')}
-                                </Button>
-                            </div>
+                    <div className="surface-dark grid gap-4 rounded-3xl bg-violet-band p-7 sm:p-8">
+                        <h2 className="text-title text-white">{t('site.services.cta_title')}</h2>
+                        <p className="text-sm text-on-violet">{t('site.services.cta_text')}</p>
+                        <div className="pt-1">
+                            <Button href={contactUrl} variant="night" iconEnd="arrow-right">
+                                {t('site.services.cta_button')}
+                            </Button>
                         </div>
                     </div>
                 </aside>
             </div>
 
             {others.length > 0 && (
-                <section aria-labelledby="more-services" className="border-t border-border bg-canvas py-section">
+                <section aria-labelledby="more-services" className="bg-lavender py-section">
                     <div className="container-page grid gap-10">
-                        <h2 id="more-services" className="text-h2">
+                        <h2 id="more-services" className="text-section">
                             {t('site.services.more')}
                         </h2>
-                        <ServiceList services={others} columns={3} />
+                        <div className="rounded-3xl bg-surface p-6 sm:p-8 lg:p-10">
+                            <ServiceList services={others} />
+                        </div>
                     </div>
                 </section>
             )}

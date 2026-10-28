@@ -61,6 +61,21 @@ const PAIRS = [
     ['accent', 'purple-950', 'ui', 'diagonal bar motif on dark surfaces'],
     ['white', 'purple-900', 'text', 'headings on the featured work band'],
     ['on-dark-muted', 'purple-900', 'text', 'text on the featured work band'],
+    ['white', 'night', 'text', 'headings on the dark bands, night buttons'],
+    ['white/85', 'night', 'text', 'footer links'],
+    ['on-dark-muted', 'night', 'text', 'leads on the dark bands, footer text'],
+    ['purple-400', 'night', 'text', 'footer column headings'],
+    ['purple-300', 'night', 'text', 'eyebrows on the dark bands'],
+    ['white', 'night-soft', 'text', 'project titles on the dark band, night buttons (hover)'],
+    ['on-dark-muted', 'night-soft', 'text', 'project summaries on the dark band'],
+    ['purple-300', 'night-soft', 'text', 'project categories on the dark band'],
+    ['white/45', 'night', 'ui', 'previous / next buttons on the dark band'],
+    ['white', 'night', 'ui', 'focus ring on the dark bands'],
+    ['white', 'violet-deep', 'text', 'headings on the call to action band'],
+    ['white', 'violet', 'text', 'headings on the call to action band'],
+    ['on-violet', 'violet-deep', 'text', 'text on the call to action band'],
+    ['on-violet', 'violet', 'text', 'text on the call to action band'],
+    ['white', 'violet', 'ui', 'focus ring on the call to action band'],
 ];
 
 const channels = (hex) => hex.match(/[0-9a-f]{2}/gi).map((pair) => parseInt(pair, 16));

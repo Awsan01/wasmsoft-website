@@ -14,7 +14,7 @@ export default function PageShow() {
             <PageHero title={page.title} lead={page.summary} breadcrumbs={breadcrumbs} />
 
             {page.body !== '' && (
-                <div className="container-page py-section">
+                <div className="container-page pt-section-sm pb-section">
                     <Prose html={page.body} />
                 </div>
             )}

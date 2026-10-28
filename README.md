@@ -22,7 +22,7 @@ Laravel 13 (PHP 8.4) and Inertia.js 3: the pages of the public site and of the d
 
 ```sh
 composer run setup     # dependencies, .env, application key, SQLite database, migrations, asset build
-php artisan db:seed    # demo accounts and clearly marked sample content
+php artisan db:seed    # demo accounts and demonstration content
 php artisan storage:link
 composer run dev       # web server, queue worker and Vite (plus the log viewer on macOS and Linux)
 ```
@@ -38,9 +38,17 @@ The seeder creates one account per role, all with the password in `DEV_SEED_PASS
 | author@wasmsoft.test | Author: writes news articles (own drafts) and uploads media |
 | viewer@wasmsoft.test | Viewer: reads content in the dashboard, changes nothing |
 
-The sample content fills every section of the site, so it can be previewed in all three languages: services, projects, news, differentiators, figures, testimonials, values, team, history, contact details and social links. Nothing passes for real company information: every sample text starts with "Sample:" (نموذج: / Örnek:), sample people and companies are called "Sample person" or "Sample client", the contact email uses the reserved `.test` domain, social links point to the networks' home pages and sample images are labelled. Dhaman and Fantastic, the company's products in development, are listed by name with a placeholder description. The seeders refuse to run outside local environments.
+The demonstration content fills every page in all three languages, so the site can be seen as it will look:
 
-On a database that already has content, `php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder` adds only the samples each section is short of. It never changes or removes existing content, and never overwrites a setting that has been filled in.
+- **Services:** the company's six services, with the texts the company supplied, translated into Arabic and Turkish.
+- **Projects and news:** four example projects and eight articles (six published, one scheduled, one draft), with drawn cover images. They show the kind of content the site is made for and name no client, partner or result. **They exist only in local databases: on the live site, enter the company's real projects and articles in the dashboard.**
+- **Products:** Dhaman and Fantastic, listed by name and described as in development. What they do is left for the company to write.
+- **Home, about and partnerships pages:** their texts, the reasons to choose the company, its values and the ways to partner.
+- **Figures:** only true ones (6 services, 3 languages, 2 products in development).
+
+Nothing stands in for facts the company has not given. There are no testimonials, team members, history, phone number, address or opening hours: those sections stay hidden until they are entered in the dashboard. The contact email uses the reserved `.test` domain and the social links point to the networks' home pages until the real ones are entered in Settings. The seeders refuse to run outside local environments. The texts are in `database/seeders/DemoContent.php` and the cover images are drawn by `database/seeders/DemoArtwork.php`.
+
+On a database that already has content, `php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder` adds only what each section is short of. It never changes or removes existing content, and never overwrites a setting that has been filled in. To replace older demo content with this version, start from an empty local database: `php artisan migrate:fresh --seed`. That command deletes everything in the local database, including anything entered in the dashboard.
 
 Built assets are served from `public/build`; after changing pages, views, CSS or JavaScript without `composer run dev`, run `npm run build` (it also builds the server-side rendering bundle in `bootstrap/ssr`).
 

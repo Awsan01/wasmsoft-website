@@ -29,9 +29,9 @@ export default function Contact() {
         <>
             <PageHero title={title} lead={lead} breadcrumbs={breadcrumbs} />
 
-            <div className={hasDetails ? 'container-page grid gap-10 py-section lg:grid-cols-[minmax(0,1fr)_22rem]' : 'container-page py-section'}>
+            <div className={hasDetails ? 'container-page grid gap-10 py-section lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-12' : 'container-page py-section'}>
                 <section aria-labelledby="contact-form-title" className={hasDetails ? 'min-w-0' : 'max-w-3xl'}>
-                    <div className="rounded-xl border border-border bg-surface p-7 shadow-xs sm:p-9">
+                    <div className="rounded-3xl border border-border bg-surface p-7 shadow-sm sm:p-10">
                         {sent ? (
                             <ContactSent>
                                 <Button href={site.urls.contact} variant="outline">
@@ -45,13 +45,13 @@ export default function Contact() {
                 </section>
 
                 {hasDetails && (
-                    <aside aria-labelledby="contact-details-title" className="grid content-start gap-6">
-                        <div className="rounded-xl border border-border bg-surface p-7 shadow-xs">
-                            <h2 id="contact-details-title" className="text-h3">
+                    <aside aria-labelledby="contact-details-title" className="grid content-start gap-6 lg:sticky lg:top-[calc(var(--spacing-header)+2rem)] lg:self-start">
+                        <div className="rounded-3xl bg-lavender p-7 sm:p-8">
+                            <h2 id="contact-details-title" className="text-title">
                                 {t('site.contact.details_title')}
                             </h2>
 
-                            <dl className="mt-5 grid gap-5 text-sm">
+                            <dl className="mt-6 grid gap-5 text-sm">
                                 {contact.email && contact.emailHref && (
                                     <Detail icon="mail" label={t('site.contact.email')}>
                                         <a href={contact.emailHref} className="font-semibold break-all text-ink hover:text-primary hover:underline" dir="ltr">
@@ -86,7 +86,7 @@ export default function Contact() {
                             )}
 
                             {contact.social.length > 0 && (
-                                <div className="mt-6 grid gap-3 border-t border-border pt-6">
+                                <div className="mt-6 grid gap-3 border-t border-purple-200 pt-6">
                                     <h3 id="contact-social-title" className="text-sm font-semibold">
                                         {t('site.footer.social')}
                                     </h3>
@@ -99,7 +99,7 @@ export default function Contact() {
                                                     rel="noopener noreferrer"
                                                     aria-label={`${social.label} ${t('ui.opens_in_new_tab')}`}
                                                     title={social.label}
-                                                    className="inline-grid size-control-md place-items-center rounded-md text-muted transition-base hover:bg-lavender hover:text-primary"
+                                                    className="inline-grid size-control-md place-items-center rounded-full bg-surface text-ink transition-base hover:bg-primary hover:text-white"
                                                 >
                                                     <Icon name={social.icon} size={20} />
                                                 </a>
@@ -118,8 +118,10 @@ export default function Contact() {
 
 function Detail({ icon, label, children }: { icon: 'mail' | 'phone' | 'map-pin' | 'clock'; label: string; children: ReactNode }) {
     return (
-        <div className="flex items-start gap-3">
-            <Icon name={icon} size={20} className="mt-0.5 text-secondary" />
+        <div className="flex items-start gap-3.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-surface text-primary">
+                <Icon name={icon} size={18} />
+            </span>
             <div className="grid gap-0.5">
                 <dt className="text-muted">{label}</dt>
                 <dd>{children}</dd>

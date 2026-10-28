@@ -29,16 +29,15 @@ export default function About() {
             <PageHero title={page.title} lead={page.summary} breadcrumbs={breadcrumbs} />
 
             {page.body !== '' && (
-                <div className="container-page py-section">
+                <div className="container-page pt-section-sm pb-section">
                     <Prose html={page.body} />
                 </div>
             )}
 
             {values.length > 0 && (
-                <section aria-labelledby="about-values" className="relative isolate overflow-hidden border-y border-border bg-lavender py-section">
-                    <div className="bg-grid absolute inset-0 -z-10" aria-hidden="true" />
+                <section aria-labelledby="about-values" className="bg-lavender py-section">
                     <div className="container-page grid gap-12">
-                        <h2 id="about-values" className="text-h2">
+                        <h2 id="about-values" className="text-section">
                             {t('site.about.values_title')}
                         </h2>
                         <HighlightList highlights={values} />
@@ -49,21 +48,21 @@ export default function About() {
             {team.length > 0 && (
                 <section aria-labelledby="about-team" className="py-section">
                     <div className="container-page grid gap-12">
-                        <h2 id="about-team" className="text-h2">
+                        <h2 id="about-team" className="text-section">
                             {t('site.about.team_title')}
                         </h2>
-                        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                             {team.map((member) => (
-                                <li key={member.id} className="flex h-full flex-col gap-5 rounded-xl border border-border bg-surface p-7 shadow-xs">
+                                <li key={member.id} className="flex h-full flex-col gap-5 rounded-3xl bg-lavender p-7 sm:p-8">
                                     {member.photo ? (
                                         <ResponsiveImage image={member.photo} sizes="5rem" className="size-20 rounded-full object-cover" />
                                     ) : (
-                                        <span className="notch-corner grid size-20 place-items-center rounded-xl bg-lavender text-h2 text-primary" aria-hidden="true">
+                                        <span className="grid size-20 place-items-center rounded-full bg-surface text-3xl font-light text-primary" aria-hidden="true">
                                             {member.initial}
                                         </span>
                                     )}
                                     <div className="grid gap-1">
-                                        <h3 className="text-h3">
+                                        <h3 className="text-title">
                                             <bdi>{member.name}</bdi>
                                         </h3>
                                         {member.role && <p className="text-sm font-semibold text-secondary">{member.role}</p>}
@@ -77,20 +76,20 @@ export default function About() {
             )}
 
             {milestones.length > 0 && (
-                <section aria-labelledby="about-history" className="border-t border-border bg-canvas py-section">
+                <section aria-labelledby="about-history" className="surface-dark bg-night-glow py-section">
                     <div className="container-page grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
-                        <h2 id="about-history" className="text-h2">
+                        <h2 id="about-history" className="text-section text-white">
                             {t('site.about.history_title')}
                         </h2>
-                        <ol className="grid gap-10 border-s-2 border-purple-200 ps-8">
+                        <ol className="grid gap-10 border-s border-white/20 ps-8">
                             {milestones.map((milestone) => (
-                                <li key={milestone.id} className="relative grid gap-1">
-                                    <span className="absolute inset-s-[-2.6rem] top-2 size-4 rounded-full border-4 border-canvas bg-secondary" aria-hidden="true" />
-                                    <p className="text-h3 text-secondary">
+                                <li key={milestone.id} className="relative grid gap-1.5">
+                                    <span className="absolute inset-s-[-2.45rem] top-2.5 size-3.5 rounded-full bg-orchid ring-4 ring-orchid/25" aria-hidden="true" />
+                                    <p className="text-3xl font-light text-purple-300">
                                         <time dateTime={String(milestone.year)}>{milestone.year}</time>
                                     </p>
-                                    <h3 className="text-h3">{milestone.title}</h3>
-                                    {milestone.description && <p className="text-muted">{milestone.description}</p>}
+                                    <h3 className="text-title text-white">{milestone.title}</h3>
+                                    {milestone.description && <p className="text-on-dark-muted">{milestone.description}</p>}
                                 </li>
                             ))}
                         </ol>

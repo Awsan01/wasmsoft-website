@@ -1,6 +1,6 @@
 # Project status
 
-State of the Wasmsoft website on 2026-10-28, measured against [the specification](specification.md). The public site and the dashboard are complete, tested and documented, but the site has not been deployed and its content is still placeholder text. The public site was rebuilt in React with Inertia and given a new design on 2026-10-27 (stage 1), and the dashboard was rebuilt in React with Inertia on 2026-10-28 (stage 2), both below; both are on the main branch. The contact form was then added to the end of the home page (2026-10-28, below).
+State of the Wasmsoft website on 2026-10-28, measured against [the specification](specification.md). The public site and the dashboard are complete, tested and documented, but the site has not been deployed and most of its content is still demonstration content. The public site was rebuilt in React with Inertia and given a new design on 2026-10-27 (stage 1), and the dashboard was rebuilt in React with Inertia on 2026-10-28 (stage 2), both below; both are on the main branch. The contact form was then added to the end of the home page, and the public site was redesigned in the style of payoneer.com (both 2026-10-28, below).
 
 ## Stage 1: the public site in React and Inertia (2026-10-27)
 
@@ -94,10 +94,40 @@ Requested by the company: the home page should be a complete landing page, with 
 | `npm run check:contrast` | All 38 colour pairs meet WCAG 2.2 AA (no new colours) |
 | Production build, `npm run check:a11y`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access) |
 
+## The Payoneer-style redesign (2026-10-28)
+
+Requested by the company: the public site follows the style of payoneer.com, the projects and services look real, the word "Sample" appears nowhere, and two sections it did not like are replaced: the home page's opening figure (two notched cards and the diagonal bar) and the "Why work with us" section with its figures. The Wasmsoft logo and purple stay; no logo, image or text of Payoneer is used. The dashboard keeps its design.
+
+**What changed**
+- **Design system** (`resources/css`): large light headlines (Plus Jakarta Sans 300 is now loaded and preloaded; Arabic headlines use IBM Plex Sans Arabic 400), buttons with round ends on the public site (`ButtonShapeContext` in `components/ui/button.tsx`, set by the site layout only), white rounded panels and cards on lavender bands, dark "night" bands lit by soft purple light, a violet band for calls to action, and larger, rounder form fields on the public site. New tokens: `night`, `night-soft`, `violet-deep`, `violet`, `on-violet`, `orchid`, `blush`; new utilities: `text-section`, `text-title`, `bg-night-glow`, `bg-violet-band`, `bg-art`, `rail`. The motifs of the previous design (split figure, slanted pair, page-header slash, slash dividers, diagonal stripes) were removed.
+- **Illustrations drawn in code** (`components/site/art`): one picture per service icon (website, app, assistant, business modules, servers, roadmap), the home page's application, phone and notes, a dashboard with notes repeating the first reasons to choose the company, and a globe of dots. They contain no text to translate except one short note and the site's language codes, and are hidden from assistive technology.
+- **Home page**, in order: hero with an email box that carries the address into the contact form and moves there; projects and products on a dark band as a sideways rail with previous / next buttons (`components/site/rail.tsx`; up to six projects, was five); the six services as illustrated cards; "Why choose us" with round icons over the dashboard picture; the figures on a dark band; testimonials, only when real ones exist; the latest news; the contact form on the violet band.
+- **Everything else restyled:** header, menu panels, phone menu, language menu, footer (now ending with a large logo lock-up), services (list, and detail with its picture), projects, news, about, partnerships, custom pages, contact, the error pages (also the self-contained server error pages) and the translation-missing page.
+- **Demo content rewritten** (`database/seeders`: `DemoContentSeeder`, texts in `DemoContent`, covers drawn by `DemoArtwork`): the company's six services with the summaries it supplied, translated into Arabic and Turkish, plus descriptions and benefits written from them; four example projects that name no client or result; Dhaman and Fantastic as products in development; eight articles; texts for the home, about and partnerships pages; only true figures. Nothing is labelled "Sample" any more, and nothing stands in for facts the company has not given: no testimonials, team, history, phone, address or opening hours (those sections stay hidden). See the README.
+- **Translations:** new texts for the home page (email box, why-choose-us and figures introductions) and the rail buttons in the three languages; the home page's fallback headline is now "Software that powers your business growth".
+- **Tests:** `DemoContentSeederTest` rewritten (the company's services, nothing marked as a sample in any language, only facts the company gave, drawn covers, re-runs); the home page test now expects six projects; 15 new colour pairs in `npm run check:contrast`.
+- **Dashboard dialogs** (found while verifying): the image library, the confirmation and the phone drawer now follow Escape at once (`useModalDialog` in `components/admin/dialog.tsx`). The browser closes a dialog on Escape but sends its close event a moment later, so a dialog opened again within that moment stayed closed, or closed again by itself; the image picker's browser test failed about one run in four because of it.
+
+**To see it on the development machine:** `npm run build` (or keep `composer run dev` running). The old demo content stays in an existing database; `php artisan migrate:fresh --seed` replaces it with the new one, and deletes everything else in the local database too.
+
+**Verification results (2026-10-28)**
+
+| Check | Result |
+|---|---|
+| `php artisan test` | 455 tests, 11,037 assertions, all passing (SQLite) |
+| `vendor/bin/phpstan analyse` (level 8) | No errors |
+| `vendor/bin/pint` | Code formatted |
+| TypeScript check (`resources/js`, browser tests) | No errors |
+| Browser tests (Playwright 1.63 with Chromium) | 30 tests passing, with no browser error, unexpected failed request or Content-Security-Policy violation, including two new ones: the hero's email box (the address reaches the form, which takes the focus) and the projects rail (moves one project at a time, in both reading directions, and its buttons keep the focus). The client quotes test is skipped because the demo content has no quotes; it passed against a copy of the site with two temporary quotes, removed afterwards. The 320 px reflow check now measures the page once it is drawn at that size: right after a resize, lengths in viewport units could still have their desktop values (`tests/Browser/fixtures.ts`; `scripts/check-accessibility.mjs` waits the same way). The image picker test failed 2 of 8 repeated runs before the dialog fix and passed 24 of 24 after it |
+| Page structure check (16 pages: the home page in three languages and the services, projects, news, about, partnerships, contact and 404 pages, at 1440 and 320 px) | No issues: fields labelled, controls named, no duplicate ids or broken references, one main heading, no skipped heading levels, no sideways scrolling |
+| `npm run check:contrast` | All 53 colour pairs meet WCAG 2.2 AA |
+| Visual review (screenshots) | The home page in English and Arabic at 1440 px and in English at 390 px; the services, projects, news, about, partnerships, contact and 404 pages in English at 1440 px, five of them at 390 px and three in Arabic; the menu panels, the phone menu, the language menu, the email box's focus and the client quotes |
+| Production build, `npm run check:a11y`, `npm run measure:performance`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access); the assets for the checks above were built by the equivalent script used since stage 1 |
+
 ## Implemented
 
 **Public site** (Arabic right to left, English, Turkish)
-- Home: hero, services, differentiators, figures, selected projects, testimonials and latest news, each shown only when it has content, then the contact form with the contact details that have been filled in.
+- Home: hero with an email box leading to the contact form, projects and products, services, reasons to choose the company, figures, testimonials and latest news, each shown only when it has content, then the contact form with the contact details that have been filled in.
 - About (mission and vision text, values, team, milestones), partnerships (partnership models and a call to action), services and service pages, projects with category filter and search, news with categories, tags, related articles and reading time, contact form, and any page editors create.
 - Language in every address, language switcher limited to existing translations, no silent fallback; header and footer menus managed in the dashboard; localized error pages for every status code.
 - SEO: titles, descriptions, canonical and `hreflang` links, Open Graph, JSON-LD (organization, website, article, breadcrumbs) only where content supports it, XML sitemap, robots.txt (crawlers turned away outside production), `noindex` on the dashboard, errors and previews.
@@ -167,7 +197,7 @@ To fill an existing local database with the samples: `php artisan db:seed --clas
 
 ## Outstanding work (recommended)
 
-1. Finish the checks that could not run in the sessions of stages 1 and 2 (above). On the development machine `npm run build` has completed and `npm run test:browser` has passed (2026-10-28); still to report: `php artisan test`, `npm run check:a11y` (the WCAG rules), `composer audit` and `npm audit`.
+1. Finish the checks that could not run in the sessions of stages 1 and 2 (above). On the development machine `npm run build` has completed and `npm run test:browser` has passed (2026-10-28, before the redesign); after the redesign, run both again, and report `php artisan test`, `npm run check:a11y` (the WCAG rules), `composer audit` and `npm audit`.
 2. Decide whether production runs server-side rendering (recommended, needs Node.js on the server).
 3. Run the test suite against the production database engine and test backups there ([deployment.md](deployment.md#1-what-the-server-needs)).
 4. Deploy to a staging server, then run `npm run check:a11y` and `npm run measure:performance` against it.
@@ -178,13 +208,13 @@ To fill an existing local database with the samples: `php artisan db:seed --clas
 
 ## Business information still needed
 
-Nothing below has been invented. Until it is supplied, the site shows clearly marked sample content in development and empty sections in production.
+Nothing below has been invented. Until it is supplied, the demonstration content in development stays limited to what the README describes, and these sections stay empty in production.
 
-- **Texts in Arabic, English and Turkish:** company description and tagline, the home page hero (its current fallback "Software built around your business" and its introduction were written during development and must be approved or replaced), about page (mission, vision, values), and the introductions of the services, projects, news and contact pages.
+- **Texts in Arabic, English and Turkish:** company description and tagline, the home page hero (its fallback "Software that powers your business growth" and the other home page texts were written during development and must be approved or replaced), about page (mission, vision, values), and the introductions of the services, projects, news and contact pages. The Arabic and Turkish translations should be checked by native speakers.
 - **Brand:** the logo as a vector file (SVG; the site currently uses the supplied JPG), a favicon, a sharing image (1200 × 630 px), and the official spelling of the company name in Arabic and Turkish if it is not written "Wasmsoft".
-- **Services:** the real list with descriptions and benefits.
-- **Partnerships:** the partnership models the company offers and, with their permission, its partners (the page currently shows three sample models).
-- **Projects:** real projects with images and the clients' permission to show them.
+- **Services:** supplied by the company on 2026-10-28 (six services with their summaries). Still to approve: the longer descriptions and benefits written from those summaries in the demo content.
+- **Partnerships:** the partnership models the company offers and, with their permission, its partners (the demo content describes three ways to partner, to be approved).
+- **Projects:** real projects with images and the clients' permission to show them (the demo content has four examples that name no client), and what Dhaman and Fantastic do.
 - **People and proof:** team members (with their consent), company milestones, figures that can be verified, and testimonials with written consent.
 - **Contact:** email, phone, address, opening hours, map link, the address that should receive inquiry alerts, and social media profiles.
 - **Legal:** a privacy policy for the contact form and any other pages required where the company operates (for example under Turkey's KVKK or the EU's GDPR). Create them as pages in the dashboard and link them in the footer menu.

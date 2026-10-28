@@ -38,8 +38,8 @@ class HomeController extends Controller
     use PreparesContactForm;
     use RendersSitePages;
 
-    /** Projects on the home page: two featured side by side, then a row of three. */
-    private const PROJECTS = 5;
+    /** Projects on the home page's rail (products included). */
+    private const PROJECTS = 6;
 
     public function __construct(
         private readonly Locales $locales,

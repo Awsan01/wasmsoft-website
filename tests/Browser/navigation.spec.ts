@@ -92,6 +92,32 @@ test.describe('on a large screen', () => {
         expect(await isSameDocument(page), 'a full page load (language, direction and fonts change)').toBe(false);
     });
 
+    test('the projects rail moves one project at a time with its buttons, in reading direction', async ({ page }) => {
+        for (const locale of ['en', 'ar']) {
+            await page.goto(`/${locale}`);
+            const band = page.locator('section[aria-labelledby="home-projects"]');
+            const buttons = band.locator('button[aria-controls]');
+            const [previous, next] = [buttons.first(), buttons.last()];
+            const first = band.getByRole('listitem').first();
+            const start = (await first.boundingBox())?.x ?? 0;
+
+            await expect(buttons).toHaveCount(2);
+            await expect(previous).toHaveAttribute('aria-disabled', 'true');
+
+            await next.click();
+
+            // The first project moves out towards the start of the reading direction; the button keeps the focus.
+            await expect.poll(async () => Math.sign(((await first.boundingBox())?.x ?? start) - start)).toBe(locale === 'ar' ? 1 : -1);
+            await expect(previous).toHaveAttribute('aria-disabled', 'false');
+            await expect(next).toBeFocused();
+
+            await previous.click();
+
+            await expect.poll(async () => Math.round(((await first.boundingBox())?.x ?? 0) - start)).toBe(0);
+            await expect(previous).toHaveAttribute('aria-disabled', 'true');
+        }
+    });
+
     test('client quotes are tabs that arrow keys move between, in reading direction', async ({ page }) => {
         for (const [locale, forward] of [
             ['en', 'ArrowRight'],

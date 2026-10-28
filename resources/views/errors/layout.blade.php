@@ -35,9 +35,9 @@
     <x-ui.fonts :aliases="$locale === 'ar' ? null : ['jakarta']" />
     @vite(['resources/css/app.css'])
 </head>
-<body class="min-h-dvh bg-lavender">
-    <div class="relative isolate flex min-h-dvh flex-col">
-        <div class="bg-grid absolute inset-0 -z-10" aria-hidden="true"></div>
+<body class="min-h-dvh bg-surface">
+    <div class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-linear-to-b from-lavender to-surface">
+        <div class="art-ribbon absolute -top-24 -end-40 -z-10 h-72 w-[44rem] -rotate-12 rounded-full bg-linear-to-r from-orchid/40 via-purple-400/30 to-violet/10 rtl:rotate-12" aria-hidden="true"></div>
 
         <header class="container-page py-6">
             <x-ui.logo :href="$home" :name="config('app.name')" />
@@ -45,14 +45,11 @@
 
         <main id="main" class="container-page flex flex-1 items-center pb-16">
             <div class="grid max-w-xl gap-5">
-                <p class="flex items-center gap-2.5 text-eyebrow text-secondary">
-                    <span class="slash-mark" aria-hidden="true"></span>
-                    {{ __('site.errors.code', ['code' => $code]) }}
-                </p>
+                <p class="text-eyebrow text-secondary">{{ __('site.errors.code', ['code' => $code]) }}</p>
                 <h1 class="text-h1">{{ $title }}</h1>
                 <p class="text-lead text-muted">{{ $message }}</p>
-                <div class="pt-2">
-                    <x-ui.button :href="$home" :icon="$inDashboard ? 'layout-dashboard' : 'home'">
+                <div class="pt-3">
+                    <x-ui.button :href="$home" :icon="$inDashboard ? 'layout-dashboard' : 'home'" :pill="! $inDashboard">
                         {{ $inDashboard ? __('site.errors.dashboard') : __('site.errors.home') }}
                     </x-ui.button>
                 </div>
