@@ -1,6 +1,6 @@
 # Project status
 
-State of the Wasmsoft website on 2026-10-28, measured against [the specification](specification.md). The public site and the dashboard are complete, tested and documented, but the site has not been deployed and most of its content is still demonstration content. The public site was rebuilt in React with Inertia and given a new design on 2026-10-27 (stage 1), and the dashboard was rebuilt in React with Inertia on 2026-10-28 (stage 2), both below; both are on the main branch. The contact form was then added to the end of the home page, and the public site was redesigned in the style of payoneer.com (both 2026-10-28, below).
+State of the Wasmsoft website on 2026-10-28, measured against [the specification](specification.md). The public site and the dashboard are complete, tested and documented, but the site has not been deployed and most of its content is still demonstration content. The public site was rebuilt in React with Inertia and given a new design on 2026-10-27 (stage 1), and the dashboard was rebuilt in React with Inertia on 2026-10-28 (stage 2), both below; both are on the main branch. The contact form was then added to the end of the home page, the public site was redesigned in the style of payoneer.com, and the company's requests after that redesign were made (all 2026-10-28, below).
 
 ## Stage 1: the public site in React and Inertia (2026-10-27)
 
@@ -124,10 +124,129 @@ Requested by the company: the public site follows the style of payoneer.com, the
 | Visual review (screenshots) | The home page in English and Arabic at 1440 px and in English at 390 px; the services, projects, news, about, partnerships, contact and 404 pages in English at 1440 px, five of them at 390 px and three in Arabic; the menu panels, the phone menu, the language menu, the email box's focus and the client quotes |
 | Production build, `npm run check:a11y`, `npm run measure:performance`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access); the assets for the checks above were built by the equivalent script used since stage 1 |
 
+## Changes requested after the redesign (2026-10-28, evening)
+
+Requested by the company: whole project cards that move on their own, instead of a rail cut by the edge of the screen; no email box in the home page's hero; a picture at the top of every inner page; a "Home" item in the menu; and menu panels that stay open while the pointer is on them.
+
+**What changed**
+- **Menu panels stay open** (`components/site/site-header.tsx`). Resting on a link in a panel loads its page in the background (an Inertia prefetch), and Inertia fires its "start" event for every request, prefetches included; the panels closed on that event. Menus now close only when a visit begins (`onVisit` in `lib/visits.ts`: the "before" event, prefetches ignored). The same helper is used by the language menu, the phone menu and the dashboard drawer, and by the full-page fallback after a server error (`site.tsx`, `admin.tsx`), whose address a prefetch could also have replaced. The menu now fills the header's height, so its area touches the panels. Passing over another item on the way into a panel no longer switches panels; only resting on it for 0.2 s does. A click right after the pointer opened a panel keeps it open instead of closing it, and the pointer may leave the menu and its panel for 0.3 s.
+- **Home in the menu.** A new migration (`2026_10_28_155640_add_home_to_header_menu`) puts a link to the home page first in the header menu of every database, existing ones included; editors can move or remove it. The demo seeder puts the about page after it. The error pages' list of ways forward leaves it out, since they have their own button to the home page.
+- **Projects carousel** (`components/site/carousel.tsx`; the `carousel-viewport` and `carousel-track` utilities replace `rail.tsx` and the `rail` utility):
+  - Three whole cards side by side on large screens, two on tablets and one on phones; never part of a card, and no sideways scrolling.
+  - The cards move by one every 6 seconds and with previous / next buttons, going back to the first after the last; on touch screens a swipe moves them.
+  - They hold still while the pointer is on the band, while the keyboard is in it and while the browser tab is hidden. A pause button stops them (WCAG 2.2.2), and for visitors who ask for less motion they do not move on their own.
+  - Cards out of view are inert (not reachable by keyboard or screen readers), and a move by the visitor is announced ("Showing items 2 to 4 of 6").
+  - New icons `pause` and `play`, and new texts in `lang/*/ui.php`.
+- **Hero without the email box:** "Start a project" (to the contact form at the end of the page) and "See our work" (the projects page) buttons instead. The email box, its texts and the contact form's way of receiving the address were removed.
+- **A picture at the top of every inner page** (`components/site/art/page-art.tsx`, in the style of the service pictures):
+  - About: the team's board with the four steps of the work, and the company's values.
+  - Contact: a message and its answer.
+  - Partnerships: two products joined, growing together.
+  - Services: the six kinds of work around one team.
+  - Projects: finished projects and a running dashboard.
+  - News: articles.
+  - Pages created in the dashboard: a page.
+
+  The project and news filters moved from the page heading to the top of their lists. Service, project and article pages keep their own pictures.
+- **Demo content:** short introductions for the services, projects and news pages in the three languages (`DemoContent::LISTINGS`), so their headings are not a lone title.
+- **Tests:**
+  - Browser tests for the menu: a panel stays open while its links prefetch, a passing pointer does not switch panels, and a click right after it opened keeps it open.
+  - Browser tests for the carousel: whole cards in view in both reading directions, the buttons and the wrap-around, automatic movement with the page's clock controlled, holding still under the pointer, the pause button, and one card with a swipe on a phone. Also a browser test for the hero.
+  - PHP tests for the home link (first in the menu, current on the home page, added once in front of an existing menu) and for the seeded menu order.
+
+**To see it on the development machine:**
+1. `php artisan migrate` adds the home link to the menu; nothing is deleted.
+2. `php artisan db:seed --class=Database\\Seeders\\DemoContentSeeder` adds the new introductions and changes nothing that exists.
+3. `npm run build`.
+
+**Verification results (2026-10-28, evening)**
+
+| Check | Result |
+|---|---|
+| `php artisan test` | 457 tests, 11,113 assertions, all passing (SQLite) |
+| `vendor/bin/phpstan analyse` (level 8) | No errors |
+| `vendor/bin/pint` | Code formatted |
+| TypeScript check (`resources/js`, also with the unused-code checks; browser tests) | No errors |
+| Browser tests (Playwright 1.63 with Chromium) | 34 tests passing, 1 skipped (client quotes: the demo content has none), with no browser error, unexpected failed request or Content-Security-Policy violation. The new menu test fails on the previous header (the panel closes while a link prefetches) and passed 16 of 16 runs with 4 parallel workers after the fix; the timing-sensitive steps run on the page's controlled clock (`page.clock`), so they do not depend on the machine's speed |
+| Page structure check (the same 16 pages, at 1440 and 320 px) | No issues: fields labelled, controls named, no duplicate ids or broken references, one main heading, no skipped heading levels, no sideways scrolling |
+| `npm run check:contrast` | All 53 colour pairs meet WCAG 2.2 AA (no new colours) |
+| Visual review (screenshots) | The home page's hero and carousel at 1440, 768 and 390 px and in Arabic; the about, contact, partnerships, services, projects and news pages at 1440 px, six of them at 320 or 390 px, and two in Arabic |
+| Production build, `npm run check:a11y`, `npm run measure:performance`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access) |
+
+## Inner pages like the example, and a carousel that keeps moving (2026-10-28, night)
+
+Requested by the company: the about, partnerships and news pages left too much empty space and should look like the example it sent (the about page of payoneer.com: a small centred "About us", a large centred headline and a wide rounded photo right under it); and the projects on the home page should move by themselves, which they did not do on its computer.
+
+**What changed**
+- **A banner like the example** (`components/site/page-banner.tsx`) on the about, partnerships and news pages and on pages made in the dashboard:
+  - The page's name as a small centred label (it stays the page's one main heading), its summary as a large light headline, centred, and a wide rounded picture under them. Headlines longer than 64 characters are set a size smaller.
+  - The picture is the page's own photo, or until it has one a drawing in the site's style on a dark violet ground (`components/site/art/banner-art.tsx`: the team's board for the about page, two products joined for partnerships, a page for the others), with more of the drawing at its sides on large screens. The about and partnerships drawings moved there from `page-art.tsx`, and the news drawing was removed.
+  - These pages show no breadcrumbs any more; search engines still get them as structured data.
+- **News:** the latest article is the news page's wide picture, its cover beside its title and summary on a dark panel (`components/site/featured-post.tsx`); the filters and the other articles follow. Category and tag pages show their name large under "Category" or "Tag".
+- **Page text in rows** (`components/site/page-sections.tsx`): each `##` (or `#`) heading of a page's text starts a row, with the heading at the start and its text beside it, so the text uses the width of the page. Text before the first heading comes first; a page without headings is one column in the middle. The server cuts the text into these parts (`Markdown::sections()`, with the same protections as the whole text: raw HTML escaped, unsafe links dropped). The bands of these pages are a little less tall.
+- **A picture for each page in the dashboard:** Pages → a page → Picture, for the about and partnerships pages and the pages made in the dashboard (the fixed pages have none). Only images can be chosen, an image a page uses cannot be deleted from the library, and it is also the page's image when the page is shared (Open Graph). New migration `2026_10_28_193838_add_image_to_pages_table` (a nullable `image_id` on `pages`).
+- **Shorter headlines in the demo content:** the summaries of the about, partnerships and news pages are now headlines ("We build software that helps businesses grow", "Let’s build complete solutions together", "News and ideas from the Wasmsoft team", and the same in Arabic and Turkish); their former texts became the pages' search descriptions. The migration `2026_10_28_200142_shorten_the_demo_page_headlines` makes the same change in an existing database, only where a summary is still exactly the former demo text, and fills a search description only where it is empty. The dashboard's hint for the summary of these pages says it is the headline.
+- **The carousel keeps moving** (`components/site/carousel.tsx`):
+  - One card every 4.5 seconds (was 6), counted frame by frame; a bar under the cards fills up until they move on.
+  - The pointer holds them only while it moves over the cards and for 3 seconds after, so a card does not slide away from under a pointer about to click it. Before, a pointer resting anywhere on the band (where it often is after scrolling to it with the mouse) stopped them for as long as it stayed there.
+  - They also move for visitors whose system asks for less motion, changing places without sliding (the bar then only marks where they are). Before, they did not move on their own at all for them, which is the case for example when Windows' animation effects are turned off.
+  - The keyboard inside the carousel and a hidden browser tab still hold them; the pause button still stops them (WCAG 2.2.2).
+- **Style guide:** the three banner drawings.
+- **Tests:**
+  - PHP: the page picture (chosen, removed, images only, kept from deletion while in use, none for the fixed pages, shown on the site and in link previews); the page text in sections; `Markdown::sections()` (`tests/Unit/Content/MarkdownTest.php`); the headline migration, which leaves summaries written in the dashboard alone.
+  - Browser: choosing a page's picture and seeing it in the preview of a draft (created and deleted by the test); the carousel moving under a resting pointer and for visitors who ask for less motion. The dashboard tests allow 15 seconds for signing in, which hashes the password on purpose slowly and took longer than 5 seconds while other tests loaded pages on a two-core machine.
+  - Three new colour pairs in `npm run check:contrast` (the latest article's dark panel where it is lit).
+
+**To see it on the development machine:**
+1. `php artisan migrate`: adds the page picture and shortens the demo headlines; nothing is deleted.
+2. `npm run build`, then reload the page without the browser's cache (Ctrl+F5).
+3. For a photo instead of the drawing: Dashboard → Pages → About us → Picture → Choose image (upload a wide photo, at least 2000 pixels wide, with what matters in the middle) → Save changes; the same for Partnerships.
+
+**Verification results (2026-10-28, night)**
+
+| Check | Result |
+|---|---|
+| `php artisan test` | 469 tests, 11,196 assertions, all passing (SQLite) |
+| `vendor/bin/phpstan analyse` (level 8) | No errors |
+| `vendor/bin/pint` | Code formatted |
+| TypeScript check (`resources/js`, also with the unused-code checks; browser tests) | No errors |
+| Browser tests (Playwright 1.63 with Chromium) | 36 tests: 35 passing, 1 skipped (client quotes: the demo content has none), with no browser error, unexpected failed request or Content-Security-Policy violation. The new carousel test, on the page's controlled clock, fails on the previous rule (a resting pointer held the cards) and passes on the new one; the new dashboard test fails when the picture is not sent with the form. This machine has two processor cores: with two workers, a few dashboard steps that wait for the server (signing out, a refused save) sometimes took longer than Playwright's 5-second wait while the page crawl ran, and passed when run again; the final run used one worker |
+| Page structure check (20 pages: the 16 before, plus the Arabic about page, the Turkish partnerships page, a news category and the Arabic news page, at 1440 and 320 px) | No issues: fields labelled, controls named, no duplicate ids or broken references, one main heading, no skipped heading levels, no sideways scrolling |
+| `npm run check:contrast` | All 56 colour pairs meet WCAG 2.2 AA |
+| Carousel in real time (no controlled clock), pointer resting on the cards | First move after about 7 seconds, then one every 4.5 to 5 seconds, with and without less motion asked for |
+| Visual review (screenshots) | The about, partnerships and news pages at 1440, 768, 390 and 320 px, in Arabic and Turkish; a news category; the dashboard's page form with the picture; the three banner drawings |
+| Production build, `npm run check:a11y`, `npm run measure:performance`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access) |
+
+## The contact page in the same style (2026-10-29)
+
+Requested by the company: the contact page left too much empty space, and should open with a picture like the about and partnerships pages, with the form under it.
+
+**What changed**
+- The contact page opens with the banner: "Contact us" as the small label, a short headline and a wide picture of a message and its answer (`BannerArt` kind `contact`; the drawing moved there from `page-art.tsx`). The headline is the contact page's summary in the dashboard, or "Let’s talk about your project" (`site.contact.headline`, in the three languages). No breadcrumbs.
+- Under it, one panel: the form, and beside it a tinted column as tall as the form with what happens after a message is sent (you tell us what you need, we read it and reply, we talk it through) and, at its foot, the contact details that are filled in. The longer introduction ("Tell us about your project or your question…") is now the form's own introduction.
+- In the dashboard, the hint of the contact page's summary says it is the headline.
+- Tests: the contact page's headline (the default and the page's summary), and no breadcrumbs.
+
+**To see it on the development machine:** `npm run build`, then reload the page without the browser's cache (Ctrl+F5). Nothing to migrate.
+
+**Verification results (2026-10-29)**
+
+| Check | Result |
+|---|---|
+| `php artisan test` | 470 tests, 11,265 assertions, all passing (SQLite) |
+| `vendor/bin/phpstan analyse` (level 8) | No errors |
+| `vendor/bin/pint` | Code formatted |
+| TypeScript check (`resources/js`, also with the unused-code checks) | No errors |
+| Browser tests (Playwright 1.63 with Chromium, one worker) | 36 tests: 35 passing, 1 skipped (client quotes: the demo content has none), with no browser error, unexpected failed request or Content-Security-Policy violation |
+| Page structure check (21 pages: the 20 before and the Turkish contact page, at 1440 and 320 px) | No issues |
+| `npm run check:contrast` | All 56 colour pairs meet WCAG 2.2 AA (no new colours) |
+| Visual review (screenshots) | The contact page at 1440 px in English and Arabic, at 768 px in Turkish and at 390 px |
+| Production build, `npm run check:a11y`, `npm run measure:performance`, `composer audit`, `npm audit` | **Not run** in this session (no npm or network access) |
+
 ## Implemented
 
 **Public site** (Arabic right to left, English, Turkish)
-- Home: hero with an email box leading to the contact form, projects and products, services, reasons to choose the company, figures, testimonials and latest news, each shown only when it has content, then the contact form with the contact details that have been filled in.
+- Home: hero with buttons to the contact form and the projects, projects and products as a carousel of whole cards, services, reasons to choose the company, figures, testimonials and latest news, each shown only when it has content, then the contact form with the contact details that have been filled in. The about, partnerships, news and contact pages and the pages made in the dashboard open with a centred headline over a wide picture (the page's photo, or a drawing until it has one); the services and projects pages with their title beside a picture of their subject.
 - About (mission and vision text, values, team, milestones), partnerships (partnership models and a call to action), services and service pages, projects with category filter and search, news with categories, tags, related articles and reading time, contact form, and any page editors create.
 - Language in every address, language switcher limited to existing translations, no silent fallback; header and footer menus managed in the dashboard; localized error pages for every status code.
 - SEO: titles, descriptions, canonical and `hreflang` links, Open Graph, JSON-LD (organization, website, article, breadcrumbs) only where content supports it, XML sitemap, robots.txt (crawlers turned away outside production), `noindex` on the dashboard, errors and previews.

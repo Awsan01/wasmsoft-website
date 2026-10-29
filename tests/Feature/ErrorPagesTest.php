@@ -35,7 +35,7 @@ class ErrorPagesTest extends TestCase
             ->where('title', __('site.errors.404.title', [], $locale))
             ->where('message', __('site.errors.404.message', [], $locale))
             ->where('site.homeUrl', url("/{$locale}"))
-            ->has('navigation.header', 3));
+            ->has('navigation.header', 4));
     }
 
     public function test_without_a_language_in_the_url_the_browser_language_is_used(): void

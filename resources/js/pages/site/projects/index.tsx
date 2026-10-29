@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
+import { PageArt } from '@/components/site/art/page-art';
 import { CtaBand } from '@/components/site/cta-band';
 import { FilterChips } from '@/components/site/filter-chips';
 import { PageHero } from '@/components/site/page-hero';
@@ -27,14 +28,14 @@ export default function ProjectsIndex() {
 
     return (
         <>
-            <PageHero title={title} lead={lead} breadcrumbs={breadcrumbs}>
+            <PageHero title={title} lead={lead} breadcrumbs={breadcrumbs} aside={<PageArt kind="projects" />} />
+
+            <section aria-label={title} className="container-page grid gap-12 pt-section-sm pb-section">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <FilterChips label={t('site.projects.filter')} filters={filters} />
                     <ProjectSearch search={search} />
                 </div>
-            </PageHero>
 
-            <section aria-label={title} className="container-page grid gap-14 pt-section-sm pb-section">
                 {projects.length === 0 ? (
                     <EmptyState
                         title={search.value !== '' ? t('site.projects.no_results') : t('site.projects.empty')}

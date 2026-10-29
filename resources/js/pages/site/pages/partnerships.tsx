@@ -1,38 +1,35 @@
 import { CtaBand } from '@/components/site/cta-band';
 import { HighlightList } from '@/components/site/highlight-list';
-import { PageHero } from '@/components/site/page-hero';
-import { Prose } from '@/components/ui/prose';
+import { BannerPicture, PageBanner } from '@/components/site/page-banner';
+import { PageSections } from '@/components/site/page-sections';
 import { useSitePage, useTranslation } from '@/hooks/use-site';
-import type { Crumb, Highlight } from '@/types/site';
-import type { PageContent } from './show';
+import type { Highlight, PageContent } from '@/types/site';
 
 type PartnershipsProps = {
     page: PageContent;
-    breadcrumbs: Crumb[];
     models: Highlight[];
 };
 
 /**
- * A page with the "partnerships" template: the page text, the ways other
- * companies can work with Wasmsoft (managed in the dashboard), and an
- * invitation to get in touch. No partner is named unless editors name one.
+ * A page with the "partnerships" template: the banner with the page's
+ * headline and wide picture, the page text, the ways other companies can
+ * work with Wasmsoft (managed in the dashboard), and an invitation to get
+ * in touch. No partner is named unless editors name one.
  */
 export default function Partnerships() {
-    const { page, breadcrumbs, models } = useSitePage<PartnershipsProps>();
+    const { page, models } = useSitePage<PartnershipsProps>();
     const { t } = useTranslation();
 
     return (
         <>
-            <PageHero title={page.title} lead={page.summary} breadcrumbs={breadcrumbs} />
+            <PageBanner title={page.title} headline={page.summary}>
+                <BannerPicture image={page.image} art="partnerships" />
+            </PageBanner>
 
-            {page.body !== '' && (
-                <div className="container-page pt-section-sm pb-section">
-                    <Prose html={page.body} />
-                </div>
-            )}
+            <PageSections sections={page.sections} className="pb-section-sm" />
 
             {models.length > 0 && (
-                <section aria-labelledby="partnership-models" className="bg-lavender py-section">
+                <section aria-labelledby="partnership-models" className="bg-lavender py-section-sm">
                     <div className="container-page grid gap-12">
                         <h2 id="partnership-models" className="text-section">
                             {t('site.partnerships.models_title')}

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Seeders;
 
 use App\Content\HighlightGroup;
+use App\Content\SystemPage;
 use App\Models\Highlight;
 use App\Models\Media;
 use App\Models\MenuItem;
@@ -55,6 +56,20 @@ class DemoContentSeederTest extends TestCase
         $this->get('/en')->assertOk()->assertPageShows('Web Development', 'Software that powers your business growth');
         $this->get('/ar/'.rawurlencode('من-نحن'))->assertOk()->assertPageShows('من نحن');
         $this->get('/tr/projects')->assertOk()->assertPageShows('Klinik randevu platformu');
+    }
+
+    public function test_the_header_menu_starts_with_the_home_page_and_then_the_about_page(): void
+    {
+        $this->seed();
+
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('navigation.header.0.url', url('/en'))
+            ->where('navigation.header.1.url', url('/en/about'))
+            ->where('navigation.header.2.url', url('/en/services'))
+            ->where('navigation.header.3.url', url('/en/projects'))
+            ->where('navigation.header.4.url', url('/en/news'))
+            ->where('navigation.header.5.url', url('/en/partnerships'))
+            ->has('navigation.header', 6));
     }
 
     public function test_every_section_of_the_home_about_and_partnerships_pages_has_content(): void
@@ -188,5 +203,35 @@ class DemoContentSeederTest extends TestCase
 
         $this->assertSame('hello@example.com', $settings->get(SettingKey::ContactEmail));
         $this->assertSame('Software development and digital solutions', $settings->localized(SettingKey::SiteTagline, 'en'));
+    }
+
+    public function test_a_site_seeded_before_gets_the_shorter_headlines_but_keeps_its_own_summaries(): void
+    {
+        $about = Page::factory()->published()->about()->translated(['en', 'tr'], [
+            'en' => ['slug' => 'about', 'summary' => 'We build websites, mobile apps, AI solutions and business systems for companies that want to grow with technology.', 'meta_description' => null],
+            'tr' => ['slug' => 'hakkimizda', 'summary' => 'Kendi yazdığımız özet.'],
+        ])->create();
+        $news = Page::factory()->system(SystemPage::News)->translated(['en'], [
+            'en' => ['summary' => 'Company news and articles about building and running software, written for business owners and their teams.', 'meta_description' => 'Our own description.'],
+        ])->create();
+        $migration = require database_path('migrations/2026_10_28_200142_shorten_the_demo_page_headlines.php');
+
+        $migration->up();
+        $about->refresh();
+        $news->refresh();
+
+        $this->assertSame('We build software that helps businesses grow', $about->translation('en')?->summary);
+        $this->assertSame('We build websites, mobile apps, AI solutions and business systems for companies that want to grow with technology.', $about->translation('en')?->meta_description);
+        $this->assertSame('Kendi yazdığımız özet.', $about->translation('tr')?->summary);
+        $this->assertSame('News and ideas from the Wasmsoft team', $news->translation('en')?->summary);
+        $this->assertSame('Our own description.', $news->translation('en')?->meta_description);
+
+        $migration->down();
+        $about->refresh();
+        $news->refresh();
+
+        $this->assertSame('We build websites, mobile apps, AI solutions and business systems for companies that want to grow with technology.', $about->translation('en')?->summary);
+        $this->assertNull($about->translation('en')?->meta_description);
+        $this->assertSame('Our own description.', $news->translation('en')?->meta_description);
     }
 }

@@ -692,8 +692,11 @@ return [
         'empty_title' => 'No custom pages yet',
         'empty_text' => 'Create pages such as About, Careers or Privacy policy.',
         'summary_hint' => 'Shown under the title; also used as the search description when none is set.',
+        'summary_headline_hint' => 'The headline of the page, shown large under its name: one short sentence works best. Also used as the search description when none is set.',
         'system_edit_description' => 'The address of this page is fixed. Its title is the main headline and the summary is the introduction below it.',
         'template_hint' => 'The About template adds your values, team and milestones after the text.',
+        'image' => 'Picture',
+        'image_hint' => 'A wide photo shown across the page under its headline. Keep what matters in the middle: the edges are cut to fit each screen. A photo at least 2000 pixels wide works best. Without one, the page shows a drawn picture.',
         'columns' => [
             'page' => 'Page',
             'updated' => 'Updated',

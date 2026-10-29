@@ -16,7 +16,8 @@ type ErrorProps = {
 export default function ErrorPage() {
     const { status, title, message, site, navigation } = useSitePage<ErrorProps>();
     const { t } = useTranslation();
-    const links = navigation.header.filter((link) => link.url && !link.newTab);
+    // The home page has its own button above.
+    const links = navigation.header.filter((link) => link.url && !link.newTab && link.url !== site.homeUrl);
 
     return (
         <section aria-labelledby="error-title" className="relative isolate overflow-hidden bg-linear-to-b from-lavender to-surface">

@@ -19,6 +19,7 @@ class MediaUsage
      * @var list<array{string, string}>
      */
     private const REFERENCES = [
+        ['pages', 'image_id'],
         ['services', 'image_id'],
         ['projects', 'cover_id'],
         ['media_project', 'media_id'],

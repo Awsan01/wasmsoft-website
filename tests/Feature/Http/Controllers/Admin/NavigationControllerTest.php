@@ -117,7 +117,7 @@ class NavigationControllerTest extends TestCase
 
         $this->actingAs(User::factory()->editor()->create())->patch(route('admin.navigation.move', $header[1]), ['direction' => 'up']);
 
-        $this->assertSame([$header[1], $header[0], $header[2]], MenuItem::query()->where('menu', MenuLocation::Header)->ordered()->pluck('id')->all());
+        $this->assertSame([$header[1], $header[0], ...array_slice($header, 2)], MenuItem::query()->where('menu', MenuLocation::Header)->ordered()->pluck('id')->all());
     }
 
     #[TestWith([Role::Author])]

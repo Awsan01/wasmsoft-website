@@ -1,4 +1,3 @@
-import { router } from '@inertiajs/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ConfirmProvider } from '@/components/admin/confirm';
 import { useModalDialog } from '@/components/admin/dialog';
@@ -7,6 +6,7 @@ import { Sidebar } from '@/components/admin/sidebar';
 import { Topbar } from '@/components/admin/topbar';
 import { useAdminPage } from '@/hooks/use-admin';
 import { useTranslation } from '@/hooks/use-site';
+import { onVisit } from '@/lib/visits';
 import { RequestFailure } from './request-failure';
 import { useDocumentLocale, usePageFocus } from './use-page-focus';
 
@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     useDocumentLocale(locale);
 
-    useEffect(() => router.on('start', () => setDrawerOpen(false)), []);
+    useEffect(() => onVisit(() => setDrawerOpen(false)), []);
 
     return (
         <ConfirmProvider>

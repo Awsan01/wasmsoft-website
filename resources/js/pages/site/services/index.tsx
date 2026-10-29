@@ -1,3 +1,4 @@
+import { PageArt } from '@/components/site/art/page-art';
 import { CtaBand } from '@/components/site/cta-band';
 import { PageHero } from '@/components/site/page-hero';
 import { ServiceList } from '@/components/site/service-list';
@@ -18,7 +19,7 @@ export default function ServicesIndex() {
 
     return (
         <>
-            <PageHero title={title} lead={lead} breadcrumbs={breadcrumbs} />
+            <PageHero title={title} lead={lead} breadcrumbs={breadcrumbs} aside={<PageArt kind="services" />} />
 
             <section aria-label={title} className="bg-lavender py-section-sm">
                 <div className="container-page">

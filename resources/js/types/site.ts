@@ -24,6 +24,23 @@ export type Crumb = {
     url: string | null;
 };
 
+/** A part of a page's text: one of its main headings and what follows it (no heading for the text before the first one). */
+export type PageSection = {
+    heading: string | null;
+    /** HTML rendered on the server from the editors' Markdown (App\Content\Markdown). */
+    html: string;
+};
+
+/** A page made in the dashboard (custom, about and partnerships pages). */
+export type PageContent = {
+    title: string;
+    /** Shown as the page's headline. */
+    summary: string | null;
+    sections: PageSection[];
+    /** The page's wide photo; without one, the page shows a drawing. */
+    image: Image | null;
+};
+
 export type ServiceCard = {
     id: number;
     title: string;

@@ -1,11 +1,12 @@
-import { router, usePage } from '@inertiajs/react';
-import { type FocusEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { usePage } from '@inertiajs/react';
+import { type FocusEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { ResponsiveImage } from '@/components/ui/image';
 import { SmartLink } from '@/components/ui/smart-link';
 import { useSitePage, useTranslation } from '@/hooks/use-site';
 import { cn } from '@/lib/cn';
+import { onVisit } from '@/lib/visits';
 import type { NavLink, NavPanels } from '@/types/site';
 import { LanguageMenu } from './language-menu';
 import { Logo } from './logo';
@@ -27,7 +28,7 @@ export function SiteHeader({ scrolled }: { scrolled: boolean }) {
     const toggleRef = useRef<HTMLButtonElement>(null);
     const mobileRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => router.on('start', () => setMobileOpen(false)), []);
+    useEffect(() => onVisit(() => setMobileOpen(false)), []);
 
     useEffect(() => {
         if (!mobileOpen) {
@@ -96,14 +97,31 @@ export function SiteHeader({ scrolled }: { scrolled: boolean }) {
     );
 }
 
+/** How long the pointer rests on a menu item before its panel opens, or another one replaces it. */
+const OPEN_DELAY = 120;
+const SWITCH_DELAY = 200;
+/** How long the pointer may be away from the menu and its panel before the panel closes. */
+const CLOSE_DELAY = 300;
+
+/**
+ * The large-screen menu. With a mouse, a panel opens when the pointer rests
+ * on its menu item and stays open while the pointer is on the item or the
+ * panel; crossing another item on the way only switches panels if the
+ * pointer stays there. Clicking the item, or Enter / Space, toggles it.
+ */
 function DesktopNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) {
     const { t } = useTranslation();
     const [openPanel, setOpenPanel] = useState<number | null>(null);
     const hoverTimer = useRef<number | undefined>(undefined);
+    /** When the pointer last opened a panel (resting on its item). */
+    const hoverOpenedAt = useRef(0);
     const navRef = useRef<HTMLElement>(null);
     const panelIdBase = useId();
 
-    useEffect(() => router.on('start', () => setOpenPanel(null)), []);
+    // Closes when a page starts loading: never for the prefetches that links under the pointer make.
+    useEffect(() => onVisit(() => setOpenPanel(null)), []);
+
+    useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
 
     useEffect(() => {
         if (openPanel === null) {
@@ -134,7 +152,33 @@ function DesktopNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) 
 
     const schedule = (index: number | null, delay: number) => {
         window.clearTimeout(hoverTimer.current);
-        hoverTimer.current = window.setTimeout(() => setOpenPanel(index), delay);
+        hoverTimer.current = window.setTimeout(() => {
+            hoverOpenedAt.current = index === null ? 0 : performance.now();
+            setOpenPanel(index);
+        }, delay);
+    };
+
+    /**
+     * Clicking an item toggles its panel, except right after the pointer
+     * opened it: then the click (meant to open it) keeps it open.
+     */
+    const toggle = (index: number, byPointer: boolean) => {
+        keep();
+
+        if (openPanel === index && byPointer && performance.now() - hoverOpenedAt.current < 1000) {
+            return;
+        }
+
+        setOpenPanel(openPanel === index ? null : index);
+    };
+
+    const keep = () => window.clearTimeout(hoverTimer.current);
+
+    /** Only a mouse hovers; touch and pen open panels by tapping. */
+    const withMouse = (event: ReactPointerEvent, action: () => void) => {
+        if (event.pointerType === 'mouse') {
+            action();
+        }
     };
 
     const closeWhenFocusLeaves = (event: FocusEvent<HTMLElement>) => {
@@ -143,9 +187,17 @@ function DesktopNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) 
         }
     };
 
+    // The menu fills the header's height, so its area touches the panels below it:
+    // moving from an item down into its panel never leaves the menu.
     return (
-        <nav ref={navRef} aria-label={t('site.nav.primary')} className="hidden lg:block" onBlur={closeWhenFocusLeaves} onPointerLeave={() => schedule(null, 200)}>
-            <ul className="flex items-center gap-1">
+        <nav
+            ref={navRef}
+            aria-label={t('site.nav.primary')}
+            className="hidden self-stretch lg:block"
+            onBlur={closeWhenFocusLeaves}
+            onPointerLeave={(event) => withMouse(event, () => schedule(null, openPanel === null ? 0 : CLOSE_DELAY))}
+        >
+            <ul className="flex h-full items-center gap-1">
                 {links.map((link, index) => {
                     const panel = link.panel ? panels[link.panel] : undefined;
 
@@ -156,7 +208,14 @@ function DesktopNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) 
                     if (!link.panel || !panel) {
                         return (
                             <li key={index}>
-                                <SmartLink href={link.url} newTab={link.newTab} prefetch aria-current={link.current ? 'page' : undefined} className={linkClasses}>
+                                <SmartLink
+                                    href={link.url}
+                                    newTab={link.newTab}
+                                    prefetch
+                                    aria-current={link.current ? 'page' : undefined}
+                                    onPointerEnter={(event) => withMouse(event, () => schedule(null, openPanel === null ? 0 : SWITCH_DELAY))}
+                                    className={linkClasses}
+                                >
                                     {link.label}
                                 </SmartLink>
                             </li>
@@ -173,18 +232,22 @@ function DesktopNav({ links, panels }: { links: NavLink[]; panels: NavPanels }) 
                                 aria-expanded={isOpen}
                                 aria-controls={panelId}
                                 aria-current={link.current ? 'page' : undefined}
-                                onClick={() => setOpenPanel(isOpen ? null : index)}
-                                onPointerEnter={(event) => event.pointerType === 'mouse' && schedule(index, openPanel === null ? 120 : 0)}
+                                // event.detail counts the clicks of a pointer; it is 0 for Enter and Space.
+                                onClick={(event) => toggle(index, event.detail > 0)}
+                                onPointerEnter={(event) => withMouse(event, () => (isOpen ? keep() : schedule(index, openPanel === null ? OPEN_DELAY : SWITCH_DELAY)))}
+                                // Passing over an item without resting on it opens nothing.
+                                onPointerLeave={(event) => withMouse(event, keep)}
                                 className={linkClasses}
                             >
                                 {link.label}
                                 <Icon name="chevron-down" size={16} className={cn('transition-base', isOpen && 'rotate-180')} />
                             </button>
 
+                            {/* Entering the panel cancels a close (the pointer crossed the gap under the menu) or a switch (it crossed another item). */}
                             <div
                                 id={panelId}
                                 hidden={!isOpen}
-                                onPointerEnter={() => window.clearTimeout(hoverTimer.current)}
+                                onPointerEnter={(event) => withMouse(event, keep)}
                                 className="absolute inset-x-0 top-full border-t border-border bg-surface shadow-lg"
                             >
                                 <div className="container-page py-10">

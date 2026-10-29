@@ -30,8 +30,16 @@ return [
     'no_file_chosen' => 'No file chosen',
 
     'carousel' => [
+        // Spoken by screen readers for the carousel and each of its items.
+        'carousel' => 'carousel',
+        'slide' => 'item',
+        'position' => ':position of :total',
         'previous' => 'Show previous items',
         'next' => 'Show next items',
+        'pause' => 'Stop moving automatically',
+        'play' => 'Move automatically',
+        'showing_one' => 'Showing item :position of :total',
+        'showing_range' => 'Showing items :from to :to of :total',
     ],
 
     'pagination' => [

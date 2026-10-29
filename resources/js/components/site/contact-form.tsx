@@ -59,6 +59,8 @@ type ContactFormProps = {
     /** How many times sending was refused: each refusal moves focus to the summary, once it is shown. */
     refusals: number;
     headingLevel?: 2 | 3;
+    /** A sentence under the form's title, saying what to write and when to expect an answer. */
+    intro?: string;
     onChange: (field: string, value: string | boolean) => void;
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
     /** Called when the visitor moves into the form. */
@@ -69,7 +71,7 @@ type ContactFormProps = {
  * The contact form: its title, the summary of what to correct (each problem
  * links to its field) and the fields. How it is sent is up to the page.
  */
-export function ContactForm({ fields, topics, data, errors, failure, processing, refusals, headingLevel = 2, onChange, onSubmit, onFocus }: ContactFormProps) {
+export function ContactForm({ fields, topics, data, errors, failure, processing, refusals, headingLevel = 2, intro, onChange, onSubmit, onFocus }: ContactFormProps) {
     const { t, tc } = useTranslation();
     const summaryRef = useRef<HTMLDivElement>(null);
     const Heading = headingLevel === 3 ? 'h3' : 'h2';
@@ -92,6 +94,7 @@ export function ContactForm({ fields, topics, data, errors, failure, processing,
             <Heading id="contact-form-title" className="text-title">
                 {t('site.contact.form_title')}
             </Heading>
+            {intro && <p className="mt-2 text-muted">{intro}</p>}
             <p className="mt-2 text-sm text-muted">{t('site.contact.required_note')}</p>
 
             {failure && (

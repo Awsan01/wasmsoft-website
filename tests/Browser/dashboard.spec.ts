@@ -20,7 +20,8 @@ async function signIn(page: Page, role: Role): Promise<void> {
     await page.getByRole('textbox', { name: 'Email address' }).fill(`${role}@wasmsoft.test`);
     await page.getByRole('textbox', { name: 'Password' }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/admin$/);
+    // Checking a password is slow on purpose (bcrypt), and slower still while other tests load pages.
+    await expect(page).toHaveURL(/\/admin$/, { timeout: 15_000 });
 }
 
 /**
@@ -171,6 +172,39 @@ test.describe('on a computer', () => {
         await expect(library).toContainText('No images found.');
         await expect(page).toHaveURL(/\/edit$/);
         await expect(message(page, /saved/i)).toHaveCount(0);
+    });
+
+    test('a page’s picture is chosen from the library and shown across the page under its headline', async ({ page }) => {
+        await signIn(page, 'editor');
+        await page.goto('/admin/pages/create');
+
+        const title = `Browser test picture ${Date.now()}`;
+        await field(page, 'Title').fill(title);
+        await field(page, 'Summary').fill('A headline over a wide photo');
+
+        const picture = page.getByRole('group', { name: 'Picture' });
+        await picture.getByRole('button', { name: 'Choose image' }).click();
+        const firstImage = page.getByRole('dialog', { name: 'Choose an image' }).getByRole('button', { name: /^Select / }).first();
+        const name = ((await firstImage.textContent()) ?? '').replace(/^Select /, '');
+        await firstImage.click();
+        await expect(picture).toContainText(name);
+
+        await page.getByRole('button', { name: 'Create' }).click();
+        await expect(message(page, 'Created successfully.')).toBeVisible();
+        await expect(picture).toContainText(name);
+
+        // The draft's preview shows it as visitors will see it: the photo, not a drawing, under the headline.
+        const edit = page.url();
+        await page.goto((await page.getByRole('link', { name: /Preview in English/ }).getAttribute('href')) ?? '');
+        await expect(page.locator('h1')).toHaveText(title);
+        await expect(page.getByText('A headline over a wide photo')).toBeVisible();
+        await expect(page.getByRole('main').locator('img[src*="/storage/"]').first()).toBeVisible();
+        expect(await overflowingElements(page)).toEqual([]);
+
+        await page.goto(edit);
+        await page.getByRole('button', { name: 'Delete' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+        await expect(message(page, 'Deleted.')).toBeVisible();
     });
 
     test('services are reordered with the arrow buttons, and focus follows the moved row', async ({ page }) => {

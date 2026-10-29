@@ -236,6 +236,14 @@
         backdrop-filter: blur(14px) saturate(1.25);
     }
 
+    /* The same frosted panel on a dark picture. */
+    .glass-dark {
+        border: 1px solid rgb(255 255 255 / 0.14);
+        background-color: rgb(255 255 255 / 0.08);
+        box-shadow: 0 24px 48px -24px rgb(0 0 0 / 0.55);
+        backdrop-filter: blur(14px) saturate(1.2);
+    }
+
     /* The blurred ribbon of light behind an illustration. */
     .art-ribbon {
         filter: blur(44px);

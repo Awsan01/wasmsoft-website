@@ -692,8 +692,11 @@ return [
         'empty_title' => 'Henüz özel sayfa yok',
         'empty_text' => 'Hakkımızda, Kariyer veya Gizlilik politikası gibi sayfalar oluşturun.',
         'summary_hint' => 'Başlığın altında gösterilir; SEO açıklaması girilmezse arama açıklaması olarak da kullanılır.',
+        'summary_headline_hint' => 'Sayfanın başlık cümlesi; sayfa adının altında büyük gösterilir, kısa bir cümle en iyisidir. Arama açıklaması yazılmadıysa o da bu olur.',
         'system_edit_description' => 'Bu sayfanın adresi sabittir. Başlığı ana manşet, özeti ise altındaki giriş metnidir.',
         'template_hint' => 'Hakkımızda şablonu, metnin ardından değerlerinizi, ekibinizi ve kilometre taşlarınızı ekler.',
+        'image' => 'Görsel',
+        'image_hint' => 'Sayfanın başlık cümlesinin altında, sayfa genişliğinde gösterilen geniş bir fotoğraf. Önemli kısmı ortada tutun: kenarları her ekrana sığacak şekilde kırpılır. En az 2000 piksel genişliğinde bir fotoğraf en iyisidir. Fotoğraf yoksa sayfada bir çizim gösterilir.',
         'columns' => [
             'page' => 'Sayfa',
             'updated' => 'Güncellendi',

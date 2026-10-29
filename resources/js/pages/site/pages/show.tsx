@@ -1,23 +1,19 @@
-import { PageHero } from '@/components/site/page-hero';
-import { Prose } from '@/components/ui/prose';
+import { BannerPicture, PageBanner } from '@/components/site/page-banner';
+import { PageSections } from '@/components/site/page-sections';
 import { useSitePage } from '@/hooks/use-site';
-import type { Crumb } from '@/types/site';
+import type { PageContent } from '@/types/site';
 
-export type PageContent = { title: string; summary: string | null; body: string };
-
-/** A page created in the dashboard with the standard template. */
+/** A page created in the dashboard with the standard template: its banner and wide picture, then its text. */
 export default function PageShow() {
-    const { page, breadcrumbs } = useSitePage<{ page: PageContent; breadcrumbs: Crumb[] }>();
+    const { page } = useSitePage<{ page: PageContent }>();
 
     return (
         <>
-            <PageHero title={page.title} lead={page.summary} breadcrumbs={breadcrumbs} />
+            <PageBanner title={page.title} headline={page.summary}>
+                <BannerPicture image={page.image} art="page" />
+            </PageBanner>
 
-            {page.body !== '' && (
-                <div className="container-page pt-section-sm pb-section">
-                    <Prose html={page.body} />
-                </div>
-            )}
+            <PageSections sections={page.sections} className="pb-section" />
         </>
     );
 }

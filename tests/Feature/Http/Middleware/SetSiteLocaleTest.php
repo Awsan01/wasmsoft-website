@@ -34,7 +34,7 @@ class SetSiteLocaleTest extends TestCase
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
             // The menu and the interface strings the page translates in the browser.
-            ->where('navigation.header.0.label', $expected)
+            ->where('navigation.header.1.label', $expected)
             ->where('translations.site.nav.services', $expected));
         $this->assertNotSame($otherLanguage, $response->inertiaProps('translations.site.nav.services'));
     }
@@ -44,7 +44,7 @@ class SetSiteLocaleTest extends TestCase
         $response = $this->get('/tr');
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.header.0.url', url('/tr/services'))
+            ->where('navigation.header.1.url', url('/tr/services'))
             ->where('site.urls.contact', url('/tr/contact')));
         $this->assertStringNotContainsString(url('/en/services'), (string) json_encode($response->inertiaPage()['props'], JSON_UNESCAPED_SLASHES));
     }

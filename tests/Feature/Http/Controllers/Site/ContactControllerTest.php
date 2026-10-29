@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Http\Controllers\Site;
 
+use App\Content\SystemPage;
 use App\Inquiries\InquiryStatus;
 use App\Models\Inquiry;
+use App\Models\Page;
 use App\Models\Service;
 use App\Notifications\InquiryReceived;
 use App\Security\SpamGuard;
@@ -72,6 +74,20 @@ class ContactControllerTest extends TestCase
         $this->get('/en/contact')->assertInertia(fn (AssertableInertia $page) => $page
             ->where('footer.contact.email', 'hello@wasmsoft.example')
             ->where('footer.contact.emailHref', 'mailto:hello@wasmsoft.example'));
+    }
+
+    public function test_the_headline_is_the_contact_pages_summary_or_a_short_invitation(): void
+    {
+        $this->get('/en/contact')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', 'Contact us')
+            ->where('headline', 'Let’s talk about your project')
+            ->missing('breadcrumbs'));
+
+        Page::factory()->system(SystemPage::Contact)->translated(['en'], ['en' => ['title' => 'Get in touch', 'summary' => 'Tell us what you are building']])->create();
+
+        $this->get('/en/contact')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', 'Get in touch')
+            ->where('headline', 'Tell us what you are building'));
     }
 
     public function test_a_message_is_stored_and_the_team_inbox_is_notified(): void

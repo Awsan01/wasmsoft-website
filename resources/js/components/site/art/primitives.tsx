@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
@@ -22,6 +22,11 @@ export function WindowBar({ className }: { className?: string }) {
             <span className="ms-3 h-2.5 flex-1 rounded-full bg-lavender" />
         </div>
     );
+}
+
+/** A floating badge (an icon on a coloured shape); placed and sized by its className. */
+export function Chip({ className, children }: { className?: string; children: ReactNode }) {
+    return <span className={cn('absolute grid place-items-center shadow-float', className)}>{children}</span>;
 }
 
 /** An id that is safe in url(#…) references of SVG paint servers. */

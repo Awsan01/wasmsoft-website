@@ -30,8 +30,16 @@ return [
     'no_file_chosen' => 'لم يُختر أي ملف',
 
     'carousel' => [
+        // Spoken by screen readers for the carousel and each of its items.
+        'carousel' => 'عرض متتابع',
+        'slide' => 'عنصر',
+        'position' => ':position من :total',
         'previous' => 'عرض العناصر السابقة',
         'next' => 'عرض العناصر التالية',
+        'pause' => 'إيقاف التحريك التلقائي',
+        'play' => 'تشغيل التحريك التلقائي',
+        'showing_one' => 'يُعرض العنصر :position من :total',
+        'showing_range' => 'تُعرض العناصر من :from إلى :to من أصل :total',
     ],
 
     'pagination' => [

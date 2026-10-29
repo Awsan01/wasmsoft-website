@@ -73,6 +73,7 @@ class DemoContentSeeder extends Seeder
         $author = User::query()->where('email', 'author@wasmsoft.test')->first();
 
         $this->homePage();
+        $this->listingPages();
         $this->aboutPage();
         $this->partnershipsPage();
         $this->siteSettings();
@@ -96,8 +97,24 @@ class DemoContentSeeder extends Seeder
     }
 
     /**
-     * An about page, first in the header and in the footer's first column,
-     * unless the site already has one (or its addresses are taken).
+     * The headlines and introductions of the services, projects and news
+     * pages, unless they have been written.
+     */
+    private function listingPages(): void
+    {
+        foreach ([SystemPage::Services, SystemPage::Projects, SystemPage::News] as $key) {
+            $page = Page::query()->system($key)->first() ?? $this->systemPage($key);
+
+            if ($page->translations()->doesntExist()) {
+                $page->syncTranslations(DemoContent::LISTINGS[$key->value]);
+            }
+        }
+    }
+
+    /**
+     * An about page, first in the header after the link to the home page and
+     * first in the footer's first column, unless the site already has one
+     * (or its addresses are taken).
      */
     private function aboutPage(): void
     {
@@ -107,9 +124,13 @@ class DemoContentSeeder extends Seeder
             return;
         }
 
-        MenuItem::query()->where('menu', MenuLocation::Header)->increment('position');
+        $header = fn () => MenuItem::query()->where('menu', MenuLocation::Header)->whereNull('parent_id');
+        $home = $header()->where('type', MenuLinkType::System)->where('system_page', SystemPage::Home)->orderBy('position')->value('position');
+        $position = $home === null ? 0 : (int) $home + 1;
+
+        $header()->where('position', '>=', $position)->increment('position');
         MenuItem::query()->create(['menu' => MenuLocation::Header, 'type' => MenuLinkType::Page, 'page_id' => $page->id])
-            ->forceFill(['position' => 0])->save();
+            ->forceFill(['position' => $position])->save();
 
         $column = $this->firstFooterColumn();
 

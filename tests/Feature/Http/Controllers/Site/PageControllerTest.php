@@ -4,6 +4,7 @@ namespace Tests\Feature\Http\Controllers\Site;
 
 use App\Content\HighlightGroup;
 use App\Models\Highlight;
+use App\Models\Media;
 use App\Models\Milestone;
 use App\Models\Page;
 use App\Models\TeamMember;
@@ -29,7 +30,7 @@ class PageControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('site/pages/about')
-                ->where('page.body', fn (string $body): bool => str_contains($body, 'Our mission is to build useful software.'))
+                ->where('page.sections.0.html', fn (string $html): bool => str_contains($html, 'Our mission is to build useful software.'))
                 ->where('values.0.title', 'Honesty')
                 ->where('team.0.name', 'Omar Haddad')
                 ->where('team.0.role', 'Software engineer')
@@ -85,7 +86,7 @@ class PageControllerTest extends TestCase
             'title' => 'Careers at Wasmsoft',
             'slug' => 'careers',
             'summary' => 'Join the team.',
-            'body' => "## Open roles\n\nWe are hiring.",
+            'body' => "Come and work with us.\n\n## Open roles\n\nWe are hiring.\n\n## How to apply\n\nSend us a message.",
         ]])->create();
 
         $response = $this->get('/en/careers');
@@ -98,7 +99,34 @@ class PageControllerTest extends TestCase
             ->component('site/pages/show')
             ->where('page.title', 'Careers at Wasmsoft')
             ->where('page.summary', 'Join the team.')
-            ->where('page.body', fn (string $body): bool => str_contains($body, '<h2>Open roles</h2>')));
+            // The text in parts, one per main heading, for the page to lay out.
+            ->where('page.sections', [
+                ['heading' => null, 'html' => '<p>Come and work with us.</p>'],
+                ['heading' => 'Open roles', 'html' => '<p>We are hiring.</p>'],
+                ['heading' => 'How to apply', 'html' => '<p>Send us a message.</p>'],
+            ]));
+    }
+
+    public function test_the_page_picture_is_shown_and_used_for_link_previews(): void
+    {
+        $image = Media::factory()->create(['alt' => ['en' => 'The team planning a project']]);
+        Page::factory()->published()->translated(['en'], ['en' => ['title' => 'Careers', 'slug' => 'careers']])->create(['image_id' => $image->id]);
+
+        $response = $this->get('/en/careers');
+
+        $response->assertOk();
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('page.image.src', $image->urlForWidth(1600))
+            ->where('page.image.alt', 'The team planning a project'));
+        $response->assertSee('<meta data-inertia="og:image" property="og:image" content="'.$image->urlForWidth(1200).'">', false);
+        $response->assertSee('<meta data-inertia="og:image:alt" property="og:image:alt" content="The team planning a project">', false);
+    }
+
+    public function test_a_page_without_a_picture_says_so(): void
+    {
+        Page::factory()->published()->translated(['en'], ['en' => ['slug' => 'careers']])->create();
+
+        $this->get('/en/careers')->assertInertia(fn (AssertableInertia $page) => $page->where('page.image', null));
     }
 
     public function test_arabic_page_is_served_from_its_arabic_slug_right_to_left(): void
@@ -192,8 +220,8 @@ class PageControllerTest extends TestCase
         $response = $this->get('/en/unsafe');
 
         $response->assertOk();
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('page.body', fn (string $body): bool => str_contains($body, '&lt;script&gt;')
-            && ! str_contains($body, '<script>')
-            && ! str_contains($body, 'javascript:')));
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('page.sections.0.html', fn (string $html): bool => str_contains($html, '&lt;script&gt;')
+            && ! str_contains($html, '<script>')
+            && ! str_contains($html, 'javascript:')));
     }
 }

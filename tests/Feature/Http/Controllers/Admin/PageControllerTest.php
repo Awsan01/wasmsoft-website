@@ -7,6 +7,7 @@ use App\Auth\Role;
 use App\Content\PageTemplate;
 use App\Content\PublicationStatus;
 use App\Content\SystemPage;
+use App\Models\Media;
 use App\Models\Page;
 use App\Models\PageTranslation;
 use App\Models\User;
@@ -126,6 +127,50 @@ class PageControllerTest extends TestCase
         $this->assertDatabaseHas('page_translations', ['locale' => 'en', 'slug' => 'privacy-policy']);
     }
 
+    public function test_editor_gives_a_page_a_picture_and_takes_it_away_again(): void
+    {
+        $editor = User::factory()->editor()->create();
+        $image = Media::factory()->create();
+
+        $this->actingAs($editor)->post(route('admin.pages.store'), $this->payload(
+            ['en' => ['title' => 'Careers']],
+            ['image_id' => (string) $image->id],
+        ));
+
+        $page = Page::query()->sole();
+        $this->assertSame($image->id, $page->image_id);
+
+        $this->actingAs($editor)->get(route('admin.pages.edit', $page))
+            ->assertInertia(fn (AssertableInertia $form) => $form->where('form.image.id', $image->id));
+
+        $this->actingAs($editor)->put(route('admin.pages.update', $page), $this->payload(['en' => ['title' => 'Careers']], ['image_id' => null]));
+
+        $this->assertNull($page->refresh()->image_id);
+    }
+
+    public function test_only_images_can_be_the_picture_of_a_page(): void
+    {
+        $document = Media::factory()->document()->create();
+
+        $response = $this->actingAs(User::factory()->editor()->create())->post(route('admin.pages.store'), $this->payload(
+            ['en' => ['title' => 'Careers']],
+            ['image_id' => (string) $document->id],
+        ));
+
+        $response->assertSessionHasErrors('image_id');
+        $this->assertSame(0, Page::query()->count());
+    }
+
+    public function test_an_image_used_by_a_page_cannot_be_deleted(): void
+    {
+        $image = Media::factory()->create();
+        Page::factory()->translated(['en'])->create(['image_id' => $image->id]);
+
+        $this->actingAs(User::factory()->editor()->create())->delete(route('admin.media.destroy', $image));
+
+        $this->assertModelExists($image);
+    }
+
     public function test_system_pages_keep_their_status_whatever_is_submitted(): void
     {
         $home = Page::factory()->system(SystemPage::Home)->create();
@@ -150,6 +195,21 @@ class PageControllerTest extends TestCase
 
         $response->assertSessionHasErrors('translations.en');
         $this->assertDatabaseMissing('page_translations', ['slug' => 'my-home']);
+    }
+
+    public function test_system_pages_have_no_picture(): void
+    {
+        $editor = User::factory()->editor()->create();
+        $news = Page::factory()->system(SystemPage::News)->create();
+        $image = Media::factory()->create();
+        $payload = $this->payload(['en' => ['title' => 'News']], ['image_id' => (string) $image->id]);
+        $payload['translations'] = array_map(fn (array $fields): array => array_diff_key($fields, ['slug' => true]), $payload['translations']);
+
+        $this->actingAs($editor)->get(route('admin.pages.edit', $news))
+            ->assertInertia(fn (AssertableInertia $form) => $form->missing('form.image'));
+        $this->actingAs($editor)->put(route('admin.pages.update', $news), $payload)->assertSessionHasNoErrors();
+
+        $this->assertNull($news->refresh()->image_id);
     }
 
     public function test_system_pages_cannot_be_deleted(): void
@@ -226,7 +286,7 @@ class PageControllerTest extends TestCase
             ->where('preview', true)
             ->where('locale.code', 'tr')
             ->where('page.title', 'Kariyer')
-            ->where('page.body', fn (string $body): bool => str_contains($body, 'Taslak metin.'))
+            ->where('page.sections.0.html', fn (string $html): bool => str_contains($html, 'Taslak metin.'))
             ->where('translations.site.preview.banner', __('site.preview.banner', [], 'tr')));
         $response->assertHeader('Cache-Control', 'no-store, private');
     }

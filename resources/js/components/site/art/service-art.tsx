@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/cn';
 import type { IconName } from '@/lib/icons';
-import { Line, WindowBar } from './primitives';
+import { Chip, Line, WindowBar } from './primitives';
 
 /**
  * The picture of a service: interface pieces that show the kind of work
@@ -282,10 +282,6 @@ function ListRow() {
             </div>
         </div>
     );
-}
-
-function Chip({ className, children }: { className?: string; children: ReactNode }) {
-    return <span className={cn('absolute grid place-items-center shadow-float', className)}>{children}</span>;
 }
 
 const variants: Partial<Record<IconName, () => ReactNode>> = {

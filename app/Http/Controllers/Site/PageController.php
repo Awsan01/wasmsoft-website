@@ -38,7 +38,7 @@ class PageController extends Controller
 
     public function show(string $slug): Response|SymfonyResponse|RedirectResponse
     {
-        $page = $this->findTranslated(Page::query()->custom()->published(), $slug);
+        $page = $this->findTranslated(Page::query()->custom()->published()->with('image'), $slug);
 
         if (! $page instanceof Page) {
             return $page;
@@ -53,7 +53,9 @@ class PageController extends Controller
      */
     public function render(Page $page, string $locale, bool $preview = false): Response
     {
+        $page->loadMissing('image');
         $translation = $page->translation($locale);
+        // For search engines (structured data); the page itself shows none.
         $breadcrumbs = [
             ['label' => __('site.nav.home'), 'url' => route('site.home')],
             ['label' => (string) $translation?->title, 'url' => null],
@@ -63,9 +65,10 @@ class PageController extends Controller
             'page' => [
                 'title' => (string) $translation?->title,
                 'summary' => $translation?->summary,
-                'body' => Markdown::toHtml($translation?->body)->toHtml(),
+                // The text in parts, one per main heading, so that each can be laid out on its own.
+                'sections' => Markdown::sections($translation?->body),
+                'image' => $this->presenter->image($page->image, $locale, width: 1600),
             ],
-            'breadcrumbs' => $breadcrumbs,
         ];
 
         $component = match ($page->template) {
@@ -89,6 +92,8 @@ class PageController extends Controller
         return $this->sitePage($component, $props, new SeoMeta(
             title: ($translation?->meta_title ?: $translation?->title).' · '.$this->brand->name(),
             description: $translation?->meta_description ?: Markdown::toText($translation?->summary ?: $translation?->body),
+            image: $page->image?->urlForWidth(1200),
+            imageAlt: $page->image?->altText($locale),
             canonical: $preview ? null : $page->publicUrl($locale),
             alternates: $preview ? [] : Alternates::of($page, $this->locales),
             indexable: ! $preview,

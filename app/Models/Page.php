@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -33,13 +34,15 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property SystemPage|null $system_key
  * @property PageTemplate $template
+ * @property int|null $image_id
  * @property PublicationStatus $status
  * @property Carbon|null $published_at
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Collection<int, PageTranslation> $translations
+ * @property-read Media|null $image
  */
-#[Fillable(['template'])]
+#[Fillable(['template', 'image_id'])]
 class Page extends Model implements Auditable, PubliclyRoutable, PublishableContent, TranslatableContent
 {
     use FlushesContentCache, Publishable;
@@ -56,6 +59,7 @@ class Page extends Model implements Auditable, PubliclyRoutable, PublishableCont
     protected $attributes = [
         'system_key' => null,
         'template' => 'default',
+        'image_id' => null,
         'status' => 'draft',
         'published_at' => null,
     ];
@@ -76,6 +80,16 @@ class Page extends Model implements Auditable, PubliclyRoutable, PublishableCont
     public function translations(): HasMany
     {
         return $this->hasMany(PageTranslation::class);
+    }
+
+    /**
+     * The page's picture (about, partnerships and custom pages).
+     *
+     * @return BelongsTo<Media, $this>
+     */
+    public function image(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'image_id');
     }
 
     public function isSystem(): bool

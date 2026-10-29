@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from 'react';
+import { BannerArt } from '@/components/site/art/banner-art';
 import { ServiceArt } from '@/components/site/art/service-art';
 import { PageHero } from '@/components/site/page-hero';
 import { ServiceList } from '@/components/site/service-list';
@@ -178,6 +179,16 @@ export default function Styleguide() {
                                 <ServiceArt icon={icon} />
                                 <p className="text-sm text-muted" dir="ltr">
                                     ServiceArt icon=&quot;{icon}&quot;
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                    <ul className="grid gap-8">
+                        {(['about', 'partnerships', 'contact', 'page'] as const).map((kind) => (
+                            <li key={kind} className="grid gap-2">
+                                <BannerArt kind={kind} />
+                                <p className="text-sm text-muted" dir="ltr">
+                                    BannerArt kind=&quot;{kind}&quot;: the wide picture of a page banner while the page has no photo
                                 </p>
                             </li>
                         ))}

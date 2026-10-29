@@ -47,10 +47,6 @@ class PostController extends Controller
             'title' => $title,
             'lead' => $intro?->summary,
             'kicker' => null,
-            'breadcrumbs' => [
-                ['label' => __('site.nav.home'), 'url' => route('site.home')],
-                ['label' => __('site.nav.news'), 'url' => null],
-            ],
         ], new SeoMeta(
             title: ($intro?->meta_title ?: $title).' · '.$this->brand->name(),
             description: $intro?->meta_description
@@ -77,11 +73,6 @@ class PostController extends Controller
             'title' => $name,
             'lead' => null,
             'kicker' => __('site.news.category'),
-            'breadcrumbs' => [
-                ['label' => __('site.nav.home'), 'url' => route('site.home')],
-                ['label' => __('site.nav.news'), 'url' => route('site.news.index')],
-                ['label' => $name, 'url' => null],
-            ],
         ], new SeoMeta(
             title: $name.' · '.__('site.nav.news').' · '.$this->brand->name(),
             description: __('site.news.category_description', ['category' => $name, 'name' => $this->brand->name()]),
@@ -110,11 +101,6 @@ class PostController extends Controller
             'title' => $name,
             'lead' => null,
             'kicker' => __('site.news.tag'),
-            'breadcrumbs' => [
-                ['label' => __('site.nav.home'), 'url' => route('site.home')],
-                ['label' => __('site.nav.news'), 'url' => route('site.news.index')],
-                ['label' => $name, 'url' => null],
-            ],
         ], new SeoMeta(
             title: $name.' · '.__('site.nav.news').' · '.$this->brand->name(),
             description: __('site.news.tag_description', ['tag' => $name, 'name' => $this->brand->name()]),

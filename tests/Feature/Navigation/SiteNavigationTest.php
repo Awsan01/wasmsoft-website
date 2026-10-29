@@ -22,11 +22,14 @@ class SiteNavigationTest extends TestCase
         $this->get('/en')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('navigation.header', 3)
-                ->where('navigation.header.0.url', url('/en/services'))
-                ->where('navigation.header.1.url', url('/en/projects'))
-                ->where('navigation.header.2.url', url('/en/news'))
-                ->where('navigation.header.2.label', __('site.nav.news'))
+                ->has('navigation.header', 4)
+                ->where('navigation.header.0.url', url('/en'))
+                ->where('navigation.header.0.label', __('site.nav.home'))
+                ->where('navigation.header.0.panel', null)
+                ->where('navigation.header.1.url', url('/en/services'))
+                ->where('navigation.header.2.url', url('/en/projects'))
+                ->where('navigation.header.3.url', url('/en/news'))
+                ->where('navigation.header.3.label', __('site.nav.news'))
                 ->has('footer.groups', 2)
                 ->where('footer.groups.0.label', __('site.footer.company'))
                 ->where('footer.groups.0.children.0.label', __('site.nav.news'))
@@ -39,7 +42,30 @@ class SiteNavigationTest extends TestCase
         $this->get('/en/news')
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('navigation.header.0.current', false)
-                ->where('navigation.header.2.current', true));
+                ->where('navigation.header.1.current', false)
+                ->where('navigation.header.3.current', true));
+
+        $this->get('/en')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('navigation.header.0.current', true)
+                ->where('navigation.header.3.current', false));
+    }
+
+    public function test_an_existing_menu_gets_the_home_link_in_front_of_its_links_once(): void
+    {
+        MenuItem::query()->where('menu', MenuLocation::Header)->where('system_page', 'home')->delete();
+        $page = Page::factory()->published()->about()->translated(['en'], ['en' => ['title' => 'About us', 'slug' => 'about']])->create();
+        MenuItem::factory()->toPage($page)->create()->forceFill(['position' => 0])->save();
+        $migration = require database_path('migrations/2026_10_28_155640_add_home_to_header_menu.php');
+
+        $migration->up();
+        $migration->up();
+
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('navigation.header', 5)
+            ->where('navigation.header.0.url', url('/en'))
+            ->where('navigation.header.1.label', 'About us')
+            ->where('navigation.header.2.url', url('/en/services')));
     }
 
     public function test_a_page_link_appears_only_where_the_page_is_published(): void
@@ -48,17 +74,17 @@ class SiteNavigationTest extends TestCase
         MenuItem::factory()->toPage($page)->create();
 
         $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.header.3.label', 'About us')
-            ->where('navigation.header.3.url', url('/en/about')));
-        $this->get('/ar')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 3));
+            ->where('navigation.header.4.label', 'About us')
+            ->where('navigation.header.4.url', url('/en/about')));
+        $this->get('/ar')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 4));
     }
 
     public function test_custom_labels_are_used_per_language(): void
     {
         MenuItem::query()->where('menu', MenuLocation::Header)->where('system_page', 'services')->update(['label' => json_encode(['en' => 'What we do'])]);
 
-        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->where('navigation.header.0.label', 'What we do'));
-        $this->get('/tr')->assertInertia(fn (AssertableInertia $page) => $page->where('navigation.header.0.label', __('site.nav.services', [], 'tr')));
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->where('navigation.header.1.label', 'What we do'));
+        $this->get('/tr')->assertInertia(fn (AssertableInertia $page) => $page->where('navigation.header.1.label', __('site.nav.services', [], 'tr')));
     }
 
     public function test_external_links_open_in_a_new_tab_when_asked(): void
@@ -67,10 +93,10 @@ class SiteNavigationTest extends TestCase
 
         // The site renders such links with target="_blank" rel="noopener noreferrer".
         $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.header.3.url', 'https://partner.example')
-            ->where('navigation.header.3.newTab', true)
-            ->where('navigation.header.3.external', true));
-        $this->get('/ar')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 3));
+            ->where('navigation.header.4.url', 'https://partner.example')
+            ->where('navigation.header.4.newTab', true)
+            ->where('navigation.header.4.external', true));
+        $this->get('/ar')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 4));
     }
 
     public function test_hidden_links_and_empty_columns_are_left_out(): void
@@ -81,7 +107,7 @@ class SiteNavigationTest extends TestCase
         $response = $this->get('/en');
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('navigation.header', 2)
+            ->has('navigation.header', 3)
             ->has('footer.groups', 2)
             // Only the footer link to the news remains.
             ->where('footer.groups.0.children.0.url', url('/en/news')));
@@ -91,16 +117,16 @@ class SiteNavigationTest extends TestCase
 
     public function test_menu_changes_show_at_once(): void
     {
-        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 3));
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 4));
 
         $page = Page::factory()->published()->translated(['en'], ['en' => ['title' => 'Careers', 'slug' => 'careers']])->create();
         MenuItem::factory()->toPage($page)->create();
 
-        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->where('navigation.header.3.label', 'Careers'));
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->where('navigation.header.4.label', 'Careers'));
 
         MenuItem::query()->where('type', MenuLinkType::Page)->firstOrFail()->delete();
 
-        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 3));
+        $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page->has('navigation.header', 4));
     }
 
     public function test_the_services_and_projects_links_open_panels_with_their_published_content(): void
@@ -111,9 +137,9 @@ class SiteNavigationTest extends TestCase
         Project::factory()->published()->featured()->translated(['en'], ['en' => ['title' => 'Booking portal']])->create(['project_category_id' => $category->id]);
 
         $this->get('/en')->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('navigation.header.0.panel', 'services')
-            ->where('navigation.header.1.panel', 'projects')
-            ->where('navigation.header.2.panel', null)
+            ->where('navigation.header.1.panel', 'services')
+            ->where('navigation.header.2.panel', 'projects')
+            ->where('navigation.header.3.panel', null)
             ->has('navigation.panels.services', 1)
             ->where('navigation.panels.services.0.title', 'Mobile apps')
             ->where('navigation.panels.services.0.url', url('/en/services/mobile-apps'))

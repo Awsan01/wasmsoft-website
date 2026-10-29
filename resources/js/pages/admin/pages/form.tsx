@@ -1,5 +1,6 @@
 import { DangerZone } from '@/components/admin/danger-zone';
 import { AdminForm, FormColumn } from '@/components/admin/form';
+import { MediaPicker } from '@/components/admin/media-picker';
 import { PageHeader } from '@/components/admin/page-header';
 import { PublishingPanel, ViewLinks } from '@/components/admin/publishing';
 import { Section } from '@/components/admin/section';
@@ -8,15 +9,15 @@ import { Select } from '@/components/ui/field';
 import { fieldId, useAdminPage } from '@/hooks/use-admin';
 import { useAdminForm } from '@/hooks/use-admin-form';
 import { useTranslation } from '@/hooks/use-site';
-import type { Deletion, Editor, FormAction, Option, Status, TranslationValues, ViewLink } from '@/types/admin';
+import type { Deletion, Editor, FormAction, MediaItem, Option, Status, TranslationValues, ViewLink } from '@/types/admin';
 
 type PageFormProps = {
     description: string | null;
     canEdit: boolean;
     submit: FormAction;
     editor: Editor;
-    /** System pages have no status or template. */
-    form: { translations: TranslationValues; status?: string; template?: string };
+    /** System pages have no status, template or picture. */
+    form: { translations: TranslationValues; status?: string; template?: string; image?: MediaItem | null };
     fixedStatus: Status | null;
     statusOptions: Option[];
     templateOptions: Option[];
@@ -24,11 +25,11 @@ type PageFormProps = {
     destroy: Deletion | null;
 };
 
-/** Creates or edits a page; system pages keep their address and are always published. */
+/** Creates or edits a page; system pages keep their address and are always published, and have no picture. */
 export default function PageForm() {
     const props = useAdminPage<PageFormProps>();
     const { t } = useTranslation();
-    const { form, submit, errors } = useAdminForm(props.form, props.submit);
+    const { form, submit, errors } = useAdminForm(props.form, props.submit, ({ image, ...data }) => (image === undefined ? data : { ...data, image_id: image?.id ?? null }));
     const exists = props.submit.method !== 'post';
 
     return (
@@ -69,6 +70,20 @@ export default function PageForm() {
                                 hint={t('admin.pages.template_hint')}
                                 error={errors.template}
                                 required
+                            />
+                        </Section>
+                    )}
+
+                    {form.data.image !== undefined && (
+                        <Section title={t('admin.pages.image')}>
+                            <MediaPicker
+                                id={fieldId('image_id')}
+                                label={t('admin.pages.image')}
+                                labelHidden
+                                value={form.data.image}
+                                onChange={(media) => form.setData('image', media)}
+                                hint={t('admin.pages.image_hint')}
+                                error={errors.image_id}
                             />
                         </Section>
                     )}

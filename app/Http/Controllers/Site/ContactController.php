@@ -61,11 +61,8 @@ class ContactController extends Controller
 
         return $this->sitePage('site/contact', [
             'title' => $title,
-            'lead' => $intro?->summary ?: __('site.contact.lead'),
-            'breadcrumbs' => [
-                ['label' => __('site.nav.home'), 'url' => route('site.home')],
-                ['label' => __('site.nav.contact'), 'url' => null],
-            ],
+            // Shown large under the page's name, like the about page's.
+            'headline' => $intro?->summary ?: __('site.contact.headline'),
             'services' => $services,
             'form' => [
                 ...$this->contactFormFields(),

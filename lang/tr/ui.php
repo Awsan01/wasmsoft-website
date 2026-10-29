@@ -30,8 +30,16 @@ return [
     'no_file_chosen' => 'Dosya seçilmedi',
 
     'carousel' => [
+        // Spoken by screen readers for the carousel and each of its items.
+        'carousel' => 'kayan liste',
+        'slide' => 'öğe',
+        'position' => ':position / :total',
         'previous' => 'Önceki öğeleri göster',
         'next' => 'Sonraki öğeleri göster',
+        'pause' => 'Otomatik kaydırmayı durdur',
+        'play' => 'Otomatik kaydır',
+        'showing_one' => ':total öğeden :position. öğe gösteriliyor',
+        'showing_range' => ':total öğeden :from–:to arası gösteriliyor',
     ],
 
     'pagination' => [

@@ -104,6 +104,21 @@
     }
 }
 
+/* The page's name above the headline of an inner page's banner. */
+@utility text-label {
+    font-size: var(--text-sm);
+    line-height: 1.25rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+
+    &:lang(ar) {
+        font-size: var(--text-base);
+        line-height: 1.5rem;
+        text-transform: none;
+    }
+}
+
 /* Small all-caps label for dense UI (sidebar groups, table captions). */
 @utility text-overline {
     font-size: var(--text-xs);
@@ -176,6 +191,14 @@
         linear-gradient(115deg, var(--color-violet-deep), var(--color-violet));
 }
 
+/* Faint dots on a dark picture, fading out towards its edges. */
+@utility bg-night-dots {
+    background-image: radial-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1.6px);
+    background-size: 22px 22px;
+    background-position: center;
+    mask-image: radial-gradient(ellipse 75% 80% at 50% 50%, #000 30%, transparent 85%);
+}
+
 /* Background of an illustration: lavender into blush. */
 @utility bg-art {
     background-color: var(--color-lavender);
@@ -185,27 +208,69 @@
 }
 
 /*
- * A horizontal rail that starts at the page's content edge and runs to the
- * edge of the screen (the home page's projects): each item snaps to the start.
+ * Carousel of whole cards (the home page's projects, components/site/carousel.tsx).
+ * The viewport shows --carousel-visible cards side by side, never a part of
+ * one, and cannot be scrolled; the track moves by one card, to the card
+ * index the component sets (--carousel-index), in the reading direction.
  */
-@utility rail {
-    --rail-inset: max(var(--spacing-gutter), calc((100% - var(--container-page)) / 2));
-    display: grid;
-    grid-auto-flow: column;
-    gap: 1.25rem;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--rail-inset);
-    padding-inline: var(--rail-inset);
-    scrollbar-width: none;
+@utility carousel-viewport {
+    /* As wide as its place in the layout, never as wide as the row of cards (clip, unlike hidden, would not allow that). */
+    min-inline-size: 0;
+    overflow-x: hidden;
+    overflow-x: clip;
+    /* Room for the cards' focus outline; the next card stays out of sight (it is a gap further). */
+    overflow-clip-margin: 0.5rem;
+    touch-action: pan-y;
+}
 
-    &::-webkit-scrollbar {
-        display: none;
+@utility carousel-track {
+    --carousel-visible: 1;
+    --carousel-gap: 1.25rem;
+    --carousel-index: 0;
+    --carousel-direction: 1;
+    display: flex;
+    gap: var(--carousel-gap);
+    transform: translateX(calc(var(--carousel-index) * var(--carousel-direction) * -1 * (100% + var(--carousel-gap)) / var(--carousel-visible)));
+    transition: transform 700ms var(--ease-standard);
+
+    &:dir(rtl) {
+        --carousel-direction: -1;
+    }
+
+    @media (width >= 40rem) {
+        --carousel-visible: 2;
+        --carousel-gap: 1.5rem;
+    }
+
+    @media (width >= 64rem) {
+        --carousel-visible: 3;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
     }
 
     & > * {
-        scroll-snap-align: start;
+        flex: 0 0 calc((100% - (var(--carousel-visible) - 1) * var(--carousel-gap)) / var(--carousel-visible));
+        min-inline-size: 0;
+    }
+}
+
+/*
+ * The share of the wait before the cards move on (--carousel-progress, 0 to
+ * 1, set by the component), as a filling bar; a still mark of where the
+ * cards are for visitors who asked for less motion.
+ */
+@utility carousel-progress-fill {
+    transform: scaleX(var(--carousel-progress, 0));
+    transform-origin: left;
+
+    &:dir(rtl) {
+        transform-origin: right;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transform: none;
     }
 }
 

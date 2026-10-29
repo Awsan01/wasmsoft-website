@@ -107,7 +107,7 @@ class PageController extends Controller
     {
         Gate::authorize('view', $page);
 
-        return $this->form($page->load('translations'));
+        return $this->form($page->load(['translations', 'image']));
     }
 
     public function update(PageRequest $request, Page $page): RedirectResponse
@@ -135,7 +135,7 @@ class PageController extends Controller
 
         abort_unless(! $page->isSystem() && $locales->isSupported($locale), 404);
 
-        $page->load('translations');
+        $page->load(['translations', 'image']);
 
         abort_if($page->translation($locale) === null, 404);
 
@@ -147,7 +147,7 @@ class PageController extends Controller
 
     /**
      * The form of a page. System pages have a fixed address and are always
-     * published: no slug, template or status.
+     * published: no slug, template, status or picture.
      */
     private function form(Page $page): Response
     {
@@ -159,10 +159,13 @@ class PageController extends Controller
             default => $page->displayTranslation()->title ?? __('admin.pages.untitled'),
         };
 
+        // Custom pages and the news and contact pages show their summary as the headline under their name.
+        $headline = ! $system || in_array($page->system_key, [SystemPage::News, SystemPage::Contact], true);
+
         $editor = $this->present->editor($page, [
             'title' => ['required' => true, 'maxlength' => 200],
             ...($system ? [] : ['slug' => ['type' => 'slug', 'maxlength' => 120]]),
-            'summary' => ['type' => 'textarea', 'rows' => 3, 'maxlength' => 600, 'hint' => __('admin.pages.summary_hint')],
+            'summary' => ['type' => 'textarea', 'rows' => 3, 'maxlength' => 600, 'hint' => __($headline ? 'admin.pages.summary_headline_hint' : 'admin.pages.summary_hint')],
             'body' => ['type' => 'markdown', 'rows' => 14],
             'meta_title' => ['seo' => true, 'maxlength' => 70],
             'meta_description' => ['type' => 'textarea', 'seo' => true, 'rows' => 2, 'maxlength' => 200],
@@ -175,7 +178,7 @@ class PageController extends Controller
             'editor' => $editor,
             'form' => [
                 'translations' => $this->present->translationValues($page, $editor['fields']),
-                ...($system ? [] : ['status' => $page->status->value, 'template' => $page->template->value]),
+                ...($system ? [] : ['status' => $page->status->value, 'template' => $page->template->value, 'image' => $this->present->media($page->image)]),
             ],
             // System pages show their (fixed) status instead of a choice.
             'fixedStatus' => $system ? $this->present->status($page) : null,

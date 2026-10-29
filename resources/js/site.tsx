@@ -1,6 +1,7 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import type { ComponentType } from 'react';
 import SiteLayout from '@/layouts/site-layout';
+import { onVisit, type VisitTarget } from '@/lib/visits';
 
 /**
  * The public site: React pages (resources/js/pages/site) rendered by Inertia
@@ -28,10 +29,11 @@ void createInertiaApp({
 
 // An answer that is not a page of the site (a server error page, maintenance) is loaded
 // as a full page after a link visit, instead of being shown in a dialog over this page.
-let lastVisit: { url: URL; method: string } | null = null;
+// Prefetches are not visits: a link under the pointer must not replace the page being loaded.
+let lastVisit: VisitTarget | null = null;
 
-router.on('start', (event) => {
-    lastVisit = { url: event.detail.visit.url, method: event.detail.visit.method };
+onVisit((visit) => {
+    lastVisit = { url: visit.url, method: visit.method };
 });
 
 router.on('httpException', (event) => {

@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/react';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { onVisit } from '@/lib/visits';
 
 /**
  * Open state of a menu or panel opened by a button: Escape closes it and
@@ -55,7 +55,7 @@ export function useDisclosure<Container extends HTMLElement = HTMLElement, Trigg
         };
     }, [open, close]);
 
-    useEffect(() => router.on('start', () => setOpen(false)), []);
+    useEffect(() => onVisit(() => setOpen(false)), []);
 
     return { open, setOpen, toggle, close, containerRef, triggerRef };
 }

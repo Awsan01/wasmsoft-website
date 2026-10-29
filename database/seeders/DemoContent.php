@@ -33,11 +33,34 @@ final class DemoContent
         ],
     ];
 
+    /**
+     * Introductions of the services and projects pages, and the news page's
+     * headline (their titles are the default ones).
+     */
+    public const LISTINGS = [
+        'services' => [
+            'ar' => ['title' => 'الخدمات', 'summary' => 'ست خدمات يقدّمها فريق واحد: من موقعك الإلكتروني وتطبيقاتك إلى أنظمة أعمالك والبنية السحابية التي تعمل عليها، من أول حديث إلى ما بعد الإطلاق بكثير.'],
+            'en' => ['title' => 'Services', 'summary' => 'Six services from one team: your website and apps, your business systems and the cloud they run on, from the first conversation to long after launch.'],
+            'tr' => ['title' => 'Hizmetler', 'summary' => 'Tek ekipten altı hizmet: web siteniz ve uygulamalarınız, iş sistemleriniz ve bunların çalıştığı bulut altyapısı; ilk görüşmeden lansmanın çok sonrasına kadar.'],
+        ],
+        'projects' => [
+            'ar' => ['title' => 'المشاريع', 'summary' => 'منصات نبنيها للشركات، ومنتجات نطوّرها بأنفسنا. تصفّح المشاريع حسب نوع العمل أو ابحث عن مشروع بعينه.'],
+            'en' => ['title' => 'Projects', 'summary' => 'Platforms we build for businesses, and products of our own. Browse them by kind of work or search for a project.'],
+            'tr' => ['title' => 'Projeler', 'summary' => 'İşletmeler için geliştirdiğimiz platformlar ve kendi ürünlerimiz. Projelere iş türüne göre göz atın ya da aradığınız projeyi bulun.'],
+        ],
+        'news' => [
+            'ar' => ['title' => 'الأخبار', 'summary' => 'أخبار وأفكار من فريق Wasmsoft', 'meta_description' => 'أخبار الشركة ومقالات عن بناء البرمجيات وتشغيلها، نكتبها لأصحاب الأعمال وفرقهم.'],
+            'en' => ['title' => 'News', 'summary' => 'News and ideas from the Wasmsoft team', 'meta_description' => 'Company news and articles about building and running software, written for business owners and their teams.'],
+            'tr' => ['title' => 'Haberler', 'summary' => 'Wasmsoft ekibinden haberler ve fikirler', 'meta_description' => 'Şirketimizden haberler ve yazılımın geliştirilmesi ile işletilmesi üzerine yazılar; işletme sahipleri ve ekipleri için.'],
+        ],
+    ];
+
     public const ABOUT = [
         'ar' => [
             'title' => 'من نحن',
             'slug' => 'من-نحن',
-            'summary' => 'نبني المواقع الإلكترونية وتطبيقات الجوال وحلول الذكاء الاصطناعي وأنظمة الأعمال للشركات التي تريد أن تنمو بالتقنية.',
+            'summary' => 'نبني برمجيات تساعد الشركات على النمو',
+            'meta_description' => 'نبني المواقع الإلكترونية وتطبيقات الجوال وحلول الذكاء الاصطناعي وأنظمة الأعمال للشركات التي تريد أن تنمو بالتقنية.',
             'body' => <<<'MD'
                 ## من نحن
 
@@ -58,7 +81,8 @@ final class DemoContent
         'en' => [
             'title' => 'About us',
             'slug' => 'about',
-            'summary' => 'We build websites, mobile apps, AI solutions and business systems for companies that want to grow with technology.',
+            'summary' => 'We build software that helps businesses grow',
+            'meta_description' => 'We build websites, mobile apps, AI solutions and business systems for companies that want to grow with technology.',
             'body' => <<<'MD'
                 ## Who we are
 
@@ -79,7 +103,8 @@ final class DemoContent
         'tr' => [
             'title' => 'Hakkımızda',
             'slug' => 'hakkimizda',
-            'summary' => 'Teknolojiyle büyümek isteyen şirketler için web siteleri, mobil uygulamalar, yapay zekâ çözümleri ve iş sistemleri geliştiriyoruz.',
+            'summary' => 'İşletmelerin büyümesine yardımcı olan yazılımlar geliştiriyoruz',
+            'meta_description' => 'Teknolojiyle büyümek isteyen şirketler için web siteleri, mobil uygulamalar, yapay zekâ çözümleri ve iş sistemleri geliştiriyoruz.',
             'body' => <<<'MD'
                 ## Biz kimiz
 
@@ -103,7 +128,8 @@ final class DemoContent
         'ar' => [
             'title' => 'الشراكات',
             'slug' => 'الشراكات',
-            'summary' => 'نرحّب بالعمل مع شركات تكمّل مهاراتها ومنتجاتها ما نقدّمه، ليحصل العملاء على حلول متكاملة.',
+            'summary' => 'لنبنِ معًا حلولًا متكاملة',
+            'meta_description' => 'نرحّب بالعمل مع شركات تكمّل مهاراتها ومنتجاتها ما نقدّمه، ليحصل العملاء على حلول متكاملة.',
             'body' => <<<'MD'
                 ## العمل مع Wasmsoft
 
@@ -115,7 +141,8 @@ final class DemoContent
         'en' => [
             'title' => 'Partnerships',
             'slug' => 'partnerships',
-            'summary' => 'We are open to working with companies whose skills and products complement ours, so clients get complete solutions.',
+            'summary' => 'Let’s build complete solutions together',
+            'meta_description' => 'We are open to working with companies whose skills and products complement ours, so clients get complete solutions.',
             'body' => <<<'MD'
                 ## Working with Wasmsoft
 
@@ -127,7 +154,8 @@ final class DemoContent
         'tr' => [
             'title' => 'İş ortaklıkları',
             'slug' => 'is-ortakliklari',
-            'summary' => 'Müşterilerin eksiksiz çözümler alabilmesi için yetkinlikleri ve ürünleri bizimkileri tamamlayan şirketlerle çalışmaya açığız.',
+            'summary' => 'Eksiksiz çözümleri birlikte geliştirelim',
+            'meta_description' => 'Müşterilerin eksiksiz çözümler alabilmesi için yetkinlikleri ve ürünleri bizimkileri tamamlayan şirketlerle çalışmaya açığız.',
             'body' => <<<'MD'
                 ## Wasmsoft ile çalışmak
 

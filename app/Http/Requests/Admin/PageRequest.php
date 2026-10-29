@@ -4,12 +4,13 @@ namespace App\Http\Requests\Admin;
 
 use App\Content\PageTemplate;
 use App\Content\PublicationStatus;
+use App\Media\MediaKind;
 use App\Models\Page;
 use Illuminate\Validation\Rule;
 
 /**
- * Create or update a page. System pages have no slug, template or status:
- * their address is fixed and they are always published.
+ * Create or update a page. System pages have no slug, template, status or
+ * picture: their address is fixed and they are always published.
  */
 class PageRequest extends TranslatableRequest
 {
@@ -32,6 +33,7 @@ class PageRequest extends TranslatableRequest
         if (! $this->content()->isSystem()) {
             $rules['template'] = ['required', Rule::enum(PageTemplate::class)];
             $rules['status'] = ['required', Rule::enum(PublicationStatus::class)];
+            $rules['image_id'] = ['nullable', 'integer', Rule::exists('media', 'id')->where('kind', MediaKind::Image->value)];
         }
 
         return $rules;
@@ -46,6 +48,7 @@ class PageRequest extends TranslatableRequest
             ...parent::attributes(),
             'template' => __('admin.fields.template'),
             'status' => __('admin.fields.status'),
+            'image_id' => __('admin.pages.image'),
         ];
     }
 
@@ -59,7 +62,14 @@ class PageRequest extends TranslatableRequest
      */
     public function pageAttributes(): array
     {
-        return $this->content()->isSystem() ? [] : ['template' => $this->validated('template')];
+        if ($this->content()->isSystem()) {
+            return [];
+        }
+
+        return [
+            'template' => $this->validated('template'),
+            'image_id' => $this->filled('image_id') ? $this->integer('image_id') : null,
+        ];
     }
 
     protected function translationFields(): array

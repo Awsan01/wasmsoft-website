@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import { REQUEST_FAILED_EVENT } from '@/layouts/request-failure';
+import { onVisit, type VisitTarget } from '@/lib/visits';
 
 /**
  * The dashboard: React pages (resources/js/pages/admin) rendered by Inertia
@@ -28,10 +29,11 @@ void createInertiaApp({
     progress: { includeCSS: false, showSpinner: false, delay: 250 },
 });
 
-let lastVisit: { url: URL; method: string } | null = null;
+// Prefetches are not visits: a link under the pointer must not replace the page being loaded.
+let lastVisit: VisitTarget | null = null;
 
-router.on('start', (event) => {
-    lastVisit = { url: event.detail.visit.url, method: event.detail.visit.method };
+onVisit((visit) => {
+    lastVisit = { url: visit.url, method: visit.method };
 });
 
 const reportFailure = (status: number) => window.dispatchEvent(new CustomEvent(REQUEST_FAILED_EVENT, { detail: { status } }));

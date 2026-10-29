@@ -1,13 +1,13 @@
 import { http, useHttp } from '@inertiajs/react';
-import { type FormEvent, type ReactNode, type Ref, useImperativeHandle, useRef, useState } from 'react';
+import { type FormEvent, type ReactNode, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { DashboardArt } from '@/components/site/art/dashboard-art';
 import { GlobeArt } from '@/components/site/art/globe-art';
 import { HeroArt } from '@/components/site/art/hero-art';
+import { CarouselControls, CarouselTrack, useCarousel } from '@/components/site/carousel';
 import { ContactForm, type ContactFormData, type ContactFormFields, ContactSent, type ContactTopic, contactFieldId, emptyContactForm } from '@/components/site/contact-form';
 import { PostCard } from '@/components/site/post-card';
 import { ProjectCard } from '@/components/site/project-card';
-import { RailControls, useRail } from '@/components/site/rail';
 import { SectionHeading } from '@/components/site/section-heading';
 import { ServiceList } from '@/components/site/service-list';
 import { Testimonials } from '@/components/site/testimonials';
@@ -35,9 +35,6 @@ type HomeProps = {
     contactForm: HomeContactForm;
 };
 
-/** Opens the contact form at the end of the page, with the email given in the hero already filled in. */
-type ContactStarter = { start: (email: string) => void };
-
 /** The contact section at the end of the page; "Start a project" leads there. */
 const CONTACT_ANCHOR = '#contact';
 
@@ -49,7 +46,6 @@ const CONTACT_ANCHOR = '#contact';
 export default function Home() {
     const { hero, intro, services, projects, posts, differentiators, figures, testimonials, contactForm, site } = useSitePage<HomeProps>();
     const { t } = useTranslation();
-    const contact = useRef<ContactStarter>(null);
 
     return (
         <>
@@ -64,7 +60,14 @@ export default function Home() {
 
                         <p className="max-w-xl text-lead text-muted">{hero.lead}</p>
 
-                        <HeroEmail onStart={(email) => contact.current?.start(email)} />
+                        <div className="flex flex-wrap items-center gap-3 pt-2">
+                            <Button href={CONTACT_ANCHOR} size="lg">
+                                {t('site.nav.cta')}
+                            </Button>
+                            <Button href={site.urls.projects} variant="outline" size="lg" prefetch>
+                                {t('site.home.hero_secondary')}
+                            </Button>
+                        </div>
                     </div>
 
                     <HeroArt className="mx-auto max-w-[36rem]" />
@@ -176,59 +179,19 @@ export default function Home() {
                 </section>
             )}
 
-            <HomeContact ref={contact} settings={contactForm} />
+            <HomeContact settings={contactForm} />
         </>
     );
 }
 
-/**
- * The hero's email box. It does not send anything: it carries the address
- * into the contact form at the end of the page and moves there.
- */
-function HeroEmail({ onStart }: { onStart: (email: string) => void }) {
-    const { t } = useTranslation();
-    const [email, setEmail] = useState('');
-
-    const submit = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        onStart(email.trim());
-    };
-
-    return (
-        <form action={CONTACT_ANCHOR} onSubmit={submit} noValidate className="grid max-w-xl gap-3 pt-1">
-            <label htmlFor="hero-email" className="sr-only">
-                {t('site.home.hero_email_label')}
-            </label>
-            <div className="flex flex-col gap-2 rounded-3xl border border-border-strong bg-surface p-2 shadow-sm transition-base has-[input:focus-visible]:border-secondary has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-secondary sm:flex-row sm:items-center sm:rounded-full sm:p-1.5 sm:ps-6">
-                <input
-                    id="hero-email"
-                    type="email"
-                    name="email"
-                    autoComplete="email"
-                    dir="auto"
-                    maxLength={254}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder={t('site.home.hero_email_placeholder')}
-                    className="h-12 min-w-0 flex-1 bg-transparent px-4 text-base text-ink placeholder:text-muted focus:outline-hidden sm:px-0"
-                />
-                <Button type="submit" className="w-full sm:w-auto">
-                    {t('site.nav.cta')}
-                </Button>
-            </div>
-            <p className="px-4 text-sm text-muted sm:px-6">{t('site.home.hero_email_note')}</p>
-        </form>
-    );
-}
-
-/** Projects and products on the dark band, as a rail with previous / next buttons. */
+/** Projects and products on the dark band: three whole cards at a time (fewer on small screens), moving on their own and with buttons. */
 function ProjectsBand({ projects, projectsUrl }: { projects: Project[]; projectsUrl: string }) {
     const { t } = useTranslation();
-    const rail = useRail();
+    const carousel = useCarousel(projects.length);
 
     return (
-        <section aria-labelledby="home-projects" className="surface-dark overflow-hidden bg-night-glow py-section">
-            <div className="container-page">
+        <section aria-labelledby="home-projects" aria-roledescription={t('ui.carousel.carousel')} {...carousel.regionProps} className="surface-dark overflow-hidden bg-night-glow py-section">
+            <div className="container-page grid gap-12">
                 <SectionHeading
                     id="home-projects"
                     title={t('site.home.projects_title')}
@@ -236,22 +199,20 @@ function ProjectsBand({ projects, projectsUrl }: { projects: Project[]; projects
                     tone="dark"
                     action={
                         <>
-                            <RailControls rail={rail} tone="dark" />
+                            <CarouselControls carousel={carousel} tone="dark" />
                             <Button href={projectsUrl} variant="on-dark-outline" prefetch>
                                 {t('site.home.projects_all')}
                             </Button>
                         </>
                     }
                 />
-            </div>
 
-            <ul ref={rail.ref} id={rail.id} className="rail mt-12 auto-cols-[min(21rem,84%)] sm:auto-cols-[23rem]">
-                {projects.map((project) => (
-                    <li key={project.id}>
-                        <ProjectCard project={project} headingLevel={3} tone="dark" sizes="23rem" />
-                    </li>
-                ))}
-            </ul>
+                <CarouselTrack carousel={carousel} tone="dark">
+                    {projects.map((project) => (
+                        <ProjectCard key={project.id} project={project} headingLevel={3} tone="dark" sizes="(min-width: 64rem) 24rem, (min-width: 40rem) 50vw, 100vw" />
+                    ))}
+                </CarouselTrack>
+            </div>
         </section>
     );
 }
@@ -296,7 +257,7 @@ type TokenResponse = { token: string };
  * form asks for its token, which starts one, when the visitor first moves
  * into it, and is sent without leaving the page.
  */
-function HomeContact({ settings, ref }: { settings: HomeContactForm; ref?: Ref<ContactStarter> }) {
+function HomeContact({ settings }: { settings: HomeContactForm }) {
     const { footer } = useSitePage();
     const { t } = useTranslation();
     const contact = footer.contact;
@@ -332,25 +293,6 @@ function HomeContact({ settings, ref }: { settings: HomeContactForm; ref?: Ref<C
         token.current = null;
         void requestToken().catch(() => undefined);
     };
-
-    useImperativeHandle(ref, () => ({
-        start: (email: string) => {
-            flushSync(() => {
-                setSent(false);
-
-                if (email !== '') {
-                    form.setData('email', email);
-                }
-            });
-
-            const field = document.getElementById(contactFieldId(email !== '' ? 'name' : 'email'));
-            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            field?.focus({ preventScroll: true });
-            field?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
-            void requestToken().catch(() => undefined);
-        },
-    }));
 
     const refused = () => setRefusals((count) => count + 1);
 

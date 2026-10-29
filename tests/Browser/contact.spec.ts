@@ -48,18 +48,15 @@ test('the home page ends with the contact form, which is sent without leaving th
     await expect(name).toHaveValue('');
 });
 
-test('the email typed in the hero is carried into the contact form, which takes the focus', async ({ page }) => {
+test('the hero leads to the contact form at the end of the page', async ({ page }) => {
     await page.goto('/en');
-    const section = page.locator('#contact');
+    const hero = page.locator('section[aria-labelledby="hero-title"]');
 
-    await page.getByRole('textbox', { name: 'Your email address' }).fill('visitor@example.com');
-    await page.locator('form').filter({ has: page.locator('#hero-email') }).getByRole('button', { name: 'Start a project' }).click();
+    await expect(hero.getByRole('textbox')).toHaveCount(0);
+    await hero.getByRole('link', { name: 'Start a project' }).click();
 
-    await expect(section.getByLabel('Your name')).toBeFocused();
-    await expect(section.getByLabel('Your name')).toBeInViewport();
-    await expect(section.getByLabel('Email address')).toHaveValue('visitor@example.com');
-    // Still the home page: nothing was sent yet.
-    expect(new URL(page.url()).pathname).toBe('/en');
+    await expect(page).toHaveURL(/\/en#contact$/);
+    await expect(page.locator('#contact').getByRole('heading', { name: 'Send us a message' })).toBeInViewport();
 });
 
 test('a home page form that was open for too long is sent on the next try', async ({ page }) => {
